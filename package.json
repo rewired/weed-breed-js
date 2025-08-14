@@ -9,8 +9,8 @@
   "scripts": {
     "start": "node src/server/index.js",
     "dev": "node --watch src/server/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "sim": "node src/index.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "sim": "node src/demos/structure_rooms_zones_demo.js"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
@@ -23,5 +23,8 @@
     "uuid": "^11.1.0",
     "ws": "^8.18.3",
     "xstate": "^5.20.2"
+  },
+  "devDependencies": {
+    "jest": "^30.0.5"
   }
 }

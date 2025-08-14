@@ -1,0 +1,15 @@
+{
+  "id": "hcu-01",
+  "name": "Humidity Control Unit L1",
+  "kind": "HumidityControlUnit",
+  "power": 0.35,
+  "description": "A standard unit to control humidity.",
+  "lifespanInHours": 8760,
+  "baseMaintenanceCostPerTick": 0.002,
+  "costIncreasePer1000Ticks": 0.1,
+  "capitalExpenditure": 250,
+  "attributes": {
+    "humidifyRateKgPerTick": 0.1,
+    "dehumidifyRateKgPerTick": 0.1
+  }
+}

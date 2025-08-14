@@ -59,7 +59,12 @@ export function createTickMachine() {
       commitAndIncrementTick: assign({
         tick: ({ context }) => {
             if (context.zone?.id) {
-                emit('sim.tickCompleted', { zoneId: context.zone.id }, context.tick);
+                const eventPayload = {
+                  structureId: context.zone.structureId,
+                  roomId: context.zone.roomId,
+                  zoneId: context.zone.id,
+                };
+                emit('sim.tickCompleted', eventPayload, context.tick);
               } else {
                 emit('sim.tickCompleted', { zoneId: null }, context.tick, 'warn');
               }
