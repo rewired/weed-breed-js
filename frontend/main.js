@@ -1,3 +1,6 @@
+import { makeSmoother } from "./smoother";
+import { formatUnits } from "./formatter";
+
 // --- Formatting helpers ---------------------------------------------------
 const fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNUM = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
