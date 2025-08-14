@@ -1,0 +1,56 @@
+{
+  "easy": {
+    "name": "Easy",
+    "description": "A relaxed experience with more resilient plants, reliable equipment, and favorable economic conditions.",
+    "modifiers": {
+      "plantStress": {
+        "optimalRangeMultiplier": 1.2,
+        "stressAccumulationMultiplier": 0.8
+      },
+      "deviceFailure": {
+        "mtbfMultiplier": 1.5
+      },
+      "economics": {
+        "initialCapital": 20000,
+        "itemPriceMultiplier": 0.9,
+        "harvestPriceMultiplier": 1.1
+      }
+    }
+  },
+  "normal": {
+    "name": "Normal",
+    "description": "A balanced simulation reflecting standard conditions.",
+    "modifiers": {
+      "plantStress": {
+        "optimalRangeMultiplier": 1.0,
+        "stressAccumulationMultiplier": 1.0
+      },
+      "deviceFailure": {
+        "mtbfMultiplier": 1.0
+      },
+      "economics": {
+        "initialCapital": 15000,
+        "itemPriceMultiplier": 1.0,
+        "harvestPriceMultiplier": 1.0
+      }
+    }
+  },
+  "hard": {
+    "name": "Hard",
+    "description": "A challenging simulation with sensitive plants, less reliable equipment, and tighter economic constraints.",
+    "modifiers": {
+      "plantStress": {
+        "optimalRangeMultiplier": 0.8,
+        "stressAccumulationMultiplier": 1.2
+      },
+      "deviceFailure": {
+        "mtbfMultiplier": 0.75
+      },
+      "economics": {
+        "initialCapital": 10000,
+        "itemPriceMultiplier": 1.1,
+        "harvestPriceMultiplier": 0.9
+      }
+    }
+  }
+}

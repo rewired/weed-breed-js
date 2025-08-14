@@ -1,0 +1,54 @@
+{
+  "id": "scrog",
+  "kind": "CultivationMethod",
+  "name": "Screen of Green",
+  "setupCost": 15.0,
+  "laborIntensity": 0.7,
+  "areaPerPlant": 1.0,
+  "minimumSpacing": 0.8,
+  "maxCycles": 4,
+  "substrate": {
+    "type": "soil",
+    "costPerSquareMeter": 3.5,
+    "maxCycles": 2
+  },
+  "containerSpec": {
+    "type": "pot",
+    "volumeInLiters": 25,
+    "footprintArea": 0.3,
+    "reusableCycles": 6,
+    "costPerUnit": 4.0,
+    "packingDensity": 0.90
+  },
+  "strainTraitCompatibility": {
+    "preferred": {
+      "genotype.sativa": { "min": 0.5 }
+    },
+    "conflicting": {
+      "genotype.indica": { "min": 0.7 }
+    }
+  },
+  "idealConditions": {
+    "idealTemperature": [
+      21,
+      27
+    ],
+    "idealHumidity": [
+      0.55,
+      0.70
+    ]
+  },
+  "meta": {
+    "description": "Screen of Green (SCROG) is a low-density cultivation method that uses a screen to train plants to grow horizontally, creating a flat, even canopy. It maximizes light exposure for a smaller number of larger plants.",
+    "advantages": [
+      "Maximizes yield per plant",
+      "Excellent light distribution",
+      "Good for limited height spaces"
+    ],
+    "disadvantages": [
+      "Longer vegetative phase required",
+      "High training effort (pruning, tucking)",
+      "Less suitable for very fast-cycling grows"
+    ]
+  }
+}

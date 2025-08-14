@@ -1,0 +1,112 @@
+import { TICK_HOURS_DEFAULT } from '../config/env.js';
+import { Zone } from '../engine/Zone.js';
+import { Plant } from '../engine/Plant.js';
+import { logger } from '../lib/logger.js';
+import { createDevice } from '../engine/deviceFactory.js';
+import * as DeviceLoader from '../engine/deviceLoader.js';
+import { loadStrainBySlug } from '../engine/strainLoader.js';
+import { loadCultivationMethod } from '../engine/cultivationMethodLoader.js';
+import { loadDevicePriceMap, loadStrainPriceMap } from '../engine/priceLoader.js';
+import { CostEngine } from '../engine/CostEngine.js';
+import { createRng } from '../lib/rng.js';
+import { createTickMachine }from './tickMachine.js';
+import { loadSavegame } from '../server/savegameLoader.js';
+import { loadDifficultyConfig } from '../engine/difficultyLoader.js';
+
+// --- Loader-Wrapper ---------------------------------------------------------
+async function getDeviceBlueprints() {
+  return DeviceLoader.loadAllDevices();
+}
+
+// --- Runtime Helpers ------------------------------------------------------
+function findBlueprint(blueprints, query = {}) {
+    const { id, kind, nameIncludes } = query;
+    if (id) return blueprints.find(b => b.id === id) ?? null;
+    const candidates = blueprints.filter(b =>
+      (kind ? b.kind === kind : true) &&
+      (nameIncludes ? (b.name ?? '').toLowerCase().includes(String(nameIncludes).toLowerCase()) : true)
+    );
+    return candidates[0] ?? null;
+}
+
+function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
+    if (!blueprint) {
+      logger.warn({ overrides }, 'addDeviceN: blueprint not found');
+      return [];
+    }
+    const n = Math.max(1, Math.floor(Number(count ?? 1)));
+    const out = [];
+    for (let i = 1; i <= n; i++) {
+      const clone = JSON.parse(JSON.stringify(blueprint));
+      clone.id = `${blueprint.id}#${i}`;
+      clone.name = typeof clone.name === 'string' ? `${clone.name} #${i}` : `${blueprint.kind ?? 'Device'} #${i}`;
+      clone.blueprintId = blueprint.id;
+
+      const inst = createDevice(clone, runtimeCtx, overrides);
+      inst.blueprintId = inst.blueprintId ?? clone.blueprintId;
+      zone.addDevice?.(inst);
+      out.push(inst);
+    }
+    return out;
+}
+
+export async function initializeSimulation(savegame = 'default', difficulty = 'normal') {
+    // --- Load Configuration ---
+    const config = await loadSavegame(savegame);
+    const difficultyConfig = await loadDifficultyConfig();
+    const difficultyModifiers = difficultyConfig[difficulty]?.modifiers || difficultyConfig.normal.modifiers;
+
+    const { rngSeed, costEngine: costEngineConfig, zones: zonesConfig } = config;
+
+    // --- Initialize Simulation Environment ---
+    const devicePriceMap = await loadDevicePriceMap();
+    const strainPriceMap = await loadStrainPriceMap();
+    const blueprints = await getDeviceBlueprints();
+    const rng = createRng(rngSeed || 'weed-sim-1');
+
+    const costEngine = new CostEngine({
+      devicePriceMap,
+      strainPriceMap,
+      ...costEngineConfig,
+      ...difficultyModifiers.economics,
+    });
+
+    const zones = [];
+    const runtime = { logger, costEngine, rng, strainPriceMap, devicePriceMap, blueprints, difficulty: difficultyModifiers };
+
+    for (const zoneConfig of zonesConfig) {
+      const zone = new Zone({ ...zoneConfig, runtime });
+
+      // --- Add Devices ---
+      const deviceRuntimeCtx = { zone, tickLengthInHours: zone.tickLengthInHours, devicePriceMap, logger, rng };
+      if (zoneConfig.devices) {
+        for (const device of zoneConfig.devices) {
+          const blueprint = findBlueprint(blueprints, { kind: device.kind });
+          addDeviceN(zone, blueprint, device.count, deviceRuntimeCtx, device.overrides);
+        }
+      }
+
+      // --- Add Plants ---
+      const { simulation: simConfig } = zoneConfig;
+      if (simConfig) {
+        const method = await loadCultivationMethod(simConfig.methodId);
+        const strain = await loadStrainBySlug(simConfig.strainSlug);
+        const numPlants = Math.floor(zone.area / method.areaPerPlant);
+        for (let i = 0; i < numPlants; i++) {
+          const area_m2 = method?.areaPerPlant ?? 0.25;
+          zone.addPlant(new Plant({ strain, method, rng, area_m2 }));
+        }
+      }
+      zones.push(zone);
+    }
+
+    const tickMachineLogic = createTickMachine();
+
+    return {
+        zones,
+        costEngine,
+        rng,
+        tickMachineLogic,
+        blueprints
+    };
+}

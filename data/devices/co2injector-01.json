@@ -1,0 +1,2 @@
+{ "id": "co2-01", "kind": "CO2Injector", "name": "CO2 Pulse",
+  "settings": { "power": 0.05, "setpoint": 1100, "hysteresis": 60, "pulsePpmPerTick": 150 } }

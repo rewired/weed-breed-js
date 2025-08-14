@@ -1,0 +1,2 @@
+{ "id": "dh-01", "kind": "Dehumidifier", "name": "DryBox 200",
+  "settings": { "latentRemovalKgPerTick": 0.05, "power": 0.3 } }

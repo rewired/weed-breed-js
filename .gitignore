@@ -1,0 +1,48 @@
+# Node.js – Abhängigkeiten & Build-Artefakte
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Logs & Debug
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Betriebssystem-Artefakte
+.DS_Store
+Thumbs.db
+
+# Lokale Umgebungsdateien
+.env
+.env.local
+.env.*.local
+
+# Temporäre Dateien/Ordner
+.tmp/
+temp/
+*.tmp
+*.temp
+
+# Editor & IDE
+.vscode/
+.idea/
+*.swp
+
+# Tests & Snapshots
+__tests__/coverage/
+*.snap
+
+# Frontend-Artefakte (falls Editor/React im Projekt)
+*.cache
+.cache/
+.next/
+out/
+
+# Projekt-spezifisch: Keine generierten JSON-Instanzen im Repo
+data/generated/
+data/cache/

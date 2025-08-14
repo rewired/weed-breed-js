@@ -1,0 +1,44 @@
+{
+  "name": "Default Multi-Zone Simulation",
+  "rngSeed": "weed-sim-2",
+  "costEngine": {
+    "initialCapital": 15000,
+    "energyPricePerKWh": 0.30
+  },
+  "zones": [
+    {
+      "id": "zone_a",
+      "name": "Grow-Tent A",
+      "area": 10,
+      "height": 2.5,
+      "tickLengthInHours": 3,
+      "simulation": {
+        "strainSlug": "ak-47",
+        "methodId": "sog"
+      },
+      "devices": [
+        { "kind": "Lamp", "count": 5 },
+        { "kind": "ClimateUnit", "count": 2, "overrides": { "targetTemperature": 24 } },
+        { "kind": "HumidityControlUnit", "count": 2, "overrides": { "targetHumidity": 0.6, "humidifyRateKgPerTick": 0.1, "dehumidifyRateKgPerTick": 0.1, "power": 0.5 } },
+        { "kind": "CO2Injector", "count": 2 }
+      ]
+    },
+    {
+      "id": "zone_b",
+      "name": "Grow-Tent B",
+      "area": 20,
+      "height": 2.5,
+      "tickLengthInHours": 3,
+      "simulation": {
+        "strainSlug": "white-widow",
+        "methodId": "sog"
+      },
+      "devices": [
+        { "kind": "Lamp", "count": 10 },
+        { "kind": "ClimateUnit", "count": 4, "overrides": { "targetTemperature": 22 } },
+        { "kind": "HumidityControlUnit", "count": 4, "overrides": { "targetHumidity": 0.6, "humidifyRateKgPerTick": 0.1, "dehumidifyRateKgPerTick": 0.1, "power": 0.5 } },
+        { "kind": "CO2Injector", "count": 4 }
+      ]
+    }
+  ]
+}

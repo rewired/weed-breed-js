@@ -1,0 +1,35 @@
+{
+  "id": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e",
+  "kind": "Lamp",
+  "name": "LED VegLight 600",
+  "quality": 0.95,
+  "complexity": 0.2,
+  "mtbf_hours": 52560,
+  "maintenance": {
+    "baseCost": 0.002,
+    "costIncreasePer1000": 0.0005
+  },
+  "settings": {
+    "power": 0.6,
+    "ppfd": 800,
+    "coverageArea": 1.2,
+    "spectralRange": [
+      400,
+      700
+    ],
+    "heatFraction": 0.3
+  },
+  "meta": {
+    "description": "Full-spectrum LED grow light optimized for the vegetative phase of cannabis plants. Balanced light distribution with low heat generation.",
+    "advantages": [
+      "High energy efficiency",
+      "Low heat output",
+      "Ideal for early growth stages"
+    ],
+    "disadvantages": [
+      "Limited effectiveness for flowering",
+      "Higher upfront cost compared to HPS"
+    ],
+    "notes": "Best used in enclosed environments with adequate canopy management."
+  }
+}
