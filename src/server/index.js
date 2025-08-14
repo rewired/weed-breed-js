@@ -50,7 +50,18 @@ async function _runSimulationTick() {
   const absoluteTick = (costEngine._tickCounter || 0) + 1;
   costEngine.startTick(absoluteTick);
 
+  // --- Rent Calculation ---
+  const structureRent = structure.area * costEngine.rentPerSqmStructurePerTick;
+  if (structureRent > 0) {
+    costEngine.bookExpense(`Rent (Structure: ${structure.id})`, structureRent);
+  }
+
   for (const room of structure.rooms) {
+    const roomRent = room.area * costEngine.rentPerSqmRoomPerTick;
+    if (roomRent > 0) {
+      costEngine.bookExpense(`Rent (Room: ${room.id})`, roomRent);
+    }
+
     for (const zone of room.zones) {
         const tickActor = createActor(tickMachineLogic, {
             input: {
@@ -149,10 +160,12 @@ async function runTick() {
 }
 
 async function runDayAsBatch() {
-  const { zones } = simulationState;
-  if (!zones.length) return;
+  const { structure } = simulationState;
+  if (!structure?.rooms?.length) return;
+  const allZones = structure.rooms.flatMap(r => r.zones);
+  if (!allZones.length) return;
 
-  const ticksPerDay = Math.round(24 / zones[0].tickLengthInHours);
+  const ticksPerDay = Math.round(24 / allZones[0].tickLengthInHours);
   for (let i = 0; i < ticksPerDay; i++) {
     await _runSimulationTick();
   }
@@ -196,7 +209,8 @@ app.post('/simulation/start', async (req, res) => {
 
     simulationState.intervalId = setInterval(tickHandler, tickIntervalMs);
 
-    res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${zones.length} zones.` });
+    const allZones = structure.rooms.flatMap(r => r.zones);
+    res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${allZones.length} zones.` });
   } catch (err) {
     logger.error({ err }, 'Error starting simulation');
     res.status(500).send({ message: 'Failed to start simulation.' });
