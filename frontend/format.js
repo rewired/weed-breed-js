@@ -5,7 +5,9 @@
  * @returns {string} The formatted string with units.
  */
 export default function formatUnits(value, type) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  const floatValue = parseFloat(value);
+
+  if (isNaN(floatValue) || !isFinite(floatValue)) {
     return '-';
   }
 
@@ -28,14 +30,14 @@ export default function formatUnits(value, type) {
 
   const scale = scales[type];
   if (!scale) {
-    return `${value.toFixed(2)}`;
+    return `${floatValue.toFixed(2)}`;
   }
 
   for (const { limit, divisor, unit } of scale) {
-    if (value >= limit) {
-      return `${(value / divisor).toFixed(2)} ${unit}`;
+    if (floatValue >= limit) {
+      return `${(floatValue / divisor).toFixed(2)} ${unit}`;
     }
   }
 
-  return `${value.toFixed(2)}`;
+  return `${floatValue.toFixed(2)}`;
 }
