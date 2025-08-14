@@ -157,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div>Erwart. Ertrag:</div>
             <div><b>${formatUnits(parseFloat(summary.expectedYield), 'grams')}</b></div>
-
             <div>Tage z. Ernte:</div>
             <div><b>~${summary.timeToHarvest}</b></div>
           </div>
