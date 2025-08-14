@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
 
 // --- Simulation State ---
 let simulationState = {
-  zones: [], // Changed from zone: null
+  structure: null,
   costEngine: null,
   rng: null,
   tickMachineLogic: null,
@@ -44,28 +44,32 @@ const speedPresets = {
 
 // --- Simulation Tick Runner ----------------------------------------------
 async function _runSimulationTick() {
-  const { zones, costEngine, tickMachineLogic } = simulationState;
+  const { structure, costEngine, tickMachineLogic } = simulationState;
+  if (!structure) return;
+
   const absoluteTick = (costEngine._tickCounter || 0) + 1;
   costEngine.startTick(absoluteTick);
 
-  for (const zone of zones) {
-    const tickActor = createActor(tickMachineLogic, {
-      input: {
-        zone,
-        tick: absoluteTick,
-        tickLengthInHours: zone.tickLengthInHours,
-        logger,
-      },
-    });
+  for (const room of structure.rooms) {
+    for (const zone of room.zones) {
+        const tickActor = createActor(tickMachineLogic, {
+            input: {
+                zone,
+                tick: absoluteTick,
+                tickLengthInHours: zone.tickLengthInHours,
+                logger: zone.logger, // Use contextual logger
+            },
+        });
 
-    await new Promise((resolve) => {
-      tickActor.subscribe((snapshot) => {
-        if (snapshot.status === 'done') {
-          resolve(snapshot);
-        }
-      });
-      tickActor.start();
-    });
+        await new Promise((resolve) => {
+            tickActor.subscribe((snapshot) => {
+                if (snapshot.status === 'done') {
+                    resolve(snapshot);
+                }
+            });
+            tickActor.start();
+        });
+    }
   }
 
   costEngine.commitTick();
@@ -73,12 +77,15 @@ async function _runSimulationTick() {
 }
 
 function _broadcastStatusUpdate() {
-  const { zones, costEngine } = simulationState;
-  if (!zones.length) return;
+  const { structure, costEngine } = simulationState;
+  if (!structure) return;
+
+  const allZones = structure.rooms.flatMap(r => r.zones);
+  if (!allZones.length) return;
 
   const tickTotals = costEngine.getTotals();
   const absoluteTick = simulationState.tickCounter;
-  const representativeZone = zones[0];
+  const representativeZone = allZones[0];
   const tickLengthInHours = representativeZone.tickLengthInHours;
   const ticksPerDay = 24 / tickLengthInHours;
 
@@ -86,9 +93,9 @@ function _broadcastStatusUpdate() {
   const dailyWaterL = tickTotals.waterL * ticksPerDay;
 
   // --- Zone Summary Calculation ---
-  const zoneSummaries = zones.map(zone => {
+  const zoneSummaries = allZones.map(zone => {
     if (zone.plants.length === 0) {
-      return { name: zone.name, plantCount: 0 };
+      return { id: zone.id, name: zone.name, plantCount: 0 };
     }
     const p0 = zone.plants[0];
     const vegDays = p0.strain?.photoperiod?.vegetationDays ?? 21;
@@ -163,11 +170,11 @@ app.post('/simulation/start', async (req, res) => {
   const realSecondsPerSimDay = speedPresets[preset] || speedPresets.normal;
 
   try {
-    const { zones, costEngine, rng, tickMachineLogic } = await initializeSimulation(savegame, difficulty);
+    const { structure, costEngine, rng, tickMachineLogic } = await initializeSimulation(savegame, difficulty);
 
     simulationState = {
       ...simulationState,
-      zones,
+      structure,
       costEngine,
       rng,
       tickMachineLogic,
@@ -175,7 +182,7 @@ app.post('/simulation/start', async (req, res) => {
       tickCounter: 0,
     };
 
-    const ticksPerSimDay = 24 / zones[0].tickLengthInHours;
+    const ticksPerSimDay = 24 / structure.rooms[0].zones[0].tickLengthInHours;
     let tickIntervalMs;
     let tickHandler;
 
@@ -211,7 +218,7 @@ app.post('/simulation/resume', (req, res) => {
   }
   const { preset = 'normal' } = req.body;
   const realSecondsPerSimDay = speedPresets[preset] || speedPresets.normal;
-  const ticksPerSimDay = 24 / simulationState.zones[0].tickLengthInHours;
+  const ticksPerSimDay = 24 / simulationState.structure.rooms[0].zones[0].tickLengthInHours;
 
   let tickIntervalMs;
   let tickHandler;
@@ -230,28 +237,52 @@ app.post('/simulation/resume', (req, res) => {
 });
 
 app.get('/simulation/status', (req, res) => {
-  if (!simulationState.zones.length) {
+  const { structure, costEngine, status, tickCounter } = simulationState;
+  if (!structure) {
     return res.status(404).send({ message: 'Simulation not started.' });
   }
-  const { zones, costEngine, status, tickCounter } = simulationState;
-  const zone = zones[0]; // Temporary
+
+  const tickLengthInHours = structure.rooms[0]?.zones[0]?.tickLengthInHours ?? 3;
+
   res.status(200).send({
     status,
     tick: tickCounter,
-    time: new Date(tickCounter * zone.tickLengthInHours * 60 * 60 * 1000).toISOString().substr(11, 8),
-    day: Math.floor((tickCounter * zone.tickLengthInHours) / 24) + 1,
+    time: new Date(tickCounter * tickLengthInHours * 60 * 60 * 1000).toISOString().substr(11, 8),
+    day: Math.floor((tickCounter * tickLengthInHours) / 24) + 1,
     balance: (costEngine.getGrandTotals().finalBalanceEUR ?? 0).toFixed(2),
-    zone: zone.status, // Temporary
+    structure: {
+      id: structure.id,
+      name: structure.name,
+      rooms: structure.rooms.map(r => ({
+        id: r.id,
+        name: r.name,
+        zones: r.zones.map(z => ({ id: z.id, name: z.name }))
+      }))
+    }
   });
 });
 
-app.get('/api/zone/details', (req, res) => {
-  if (simulationState.status === 'stopped' || !simulationState.zones.length) {
-    return res.status(404).send({ message: 'Simulation not running or zone not found.' });
+app.get('/api/zones/:zoneId/details', (req, res) => {
+  const { zoneId } = req.params;
+  const { structure, costEngine } = simulationState;
+
+  if (simulationState.status === 'stopped' || !structure) {
+    return res.status(404).send({ message: 'Simulation not running.' });
   }
 
-  const { zones, costEngine } = simulationState;
-  const zone = zones[0]; // Temporary, for now just show the first zone
+  // Find the zone in the hierarchy
+  let zone = null;
+  for (const room of structure.rooms) {
+    const foundZone = room.zones.find(z => z.id === zoneId);
+    if (foundZone) {
+      zone = foundZone;
+      break;
+    }
+  }
+
+  if (!zone) {
+    return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
+  }
 
   const devices = zone.devices.map(d => {
     const maintenanceCost = costEngine.devicePriceMap.get(d.blueprintId)?.baseMaintenanceCostPerTick ?? 0;
