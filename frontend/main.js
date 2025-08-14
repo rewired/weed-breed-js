@@ -144,13 +144,30 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="tile">
           <div class="hdr">
             <div><a href="#/sim/zone/${summary.id}"><b>${summary.name}</b></a></div>
-            <span class="muted">🌱 ${summary.plantCount}</span>
+            <div class="muted" style="font-size: 11px;">
+              <span title="Strain">${summary.strainName}</span>
+              ·
+              <span title="Anzahl Pflanzen">🌱 ${summary.plantCount}</span>
+            </div>
           </div>
-          <div class="grid cols-2" style="margin-top:8px; font-size: 12px;">
-            <span>Ø Gesundheit:</span> <b>${summary.avgHealth}%</b>
-            <span>Erwart. Ertrag:</span> <b>${formatUnits(summary.expectedYield, 'grams')}</b>
-            <span>Tage z. Ernte:</span> <b>~${summary.timeToHarvest}</b>
+
+          <div class="stat-grid" style="margin-top:8px; font-size: 12px;">
+            <div>Ø Gesundheit:</div>
+            <div><b>${summary.avgHealth}%</b></div>
+
+            <div>Erwart. Ertrag:</div>
+            <div><b>${formatUnits(parseFloat(summary.expectedYield), 'grams')}</b></div>
+
+            <div>Tage z. Ernte:</div>
+            <div><b>~${summary.timeToHarvest}</b></div>
           </div>
+
+          <div class="climate-grid" style="margin-top: 10px; font-size: 11px;">
+              <div title="Temperatur">🌡️ ${summary.temperatureC.toFixed(1)}°C</div>
+              <div title="rel. Luftfeuchtigkeit">💧 ${(summary.humidity * 100).toFixed(0)}%</div>
+              <div title="CO₂-Konzentration">💨 ${summary.co2ppm.toFixed(0)}ppm</div>
+          </div>
+
         </div>
       `;
     }

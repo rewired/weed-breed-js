@@ -104,11 +104,14 @@ function _broadcastStatusUpdate() {
     return {
       id: zone.id,
       name: zone.name,
+      strainName: p0.strain?.name,
       plantCount: zone.plants.length,
       avgHealth: (avgHealth * 100).toFixed(0),
       expectedYield: expectedYield.toFixed(2),
       timeToHarvest: timeToHarvest,
-      ...zone.status,
+      temperatureC: zone.status.temperatureC,
+      humidity: zone.status.humidity,
+      co2ppm: zone.status.co2ppm,
     };
   });
 
