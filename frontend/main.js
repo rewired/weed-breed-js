@@ -1,5 +1,9 @@
-import { makeSmoother } from "./smoother";
-import { formatUnits } from "./formatter";
+import { makeSmoother } from "./smoother.js";
+import formatUnits from "./format.js";
+
+// --- Value Smoothers ------------------------------------------------------
+const smoothWater = makeSmoother({ alpha: 0.5, deadband: 0.1, maxUpdateMs: 1000 });
+const smoothEnergy = makeSmoother({ alpha: 0.5, deadband: 0.1, maxUpdateMs: 1000 });
 
 // --- Formatting helpers ---------------------------------------------------
 const fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
@@ -41,8 +45,14 @@ function render(data) {
   $('#revenue-today').textContent = fmtEUR.format(uiState.revenueToday);
   $('#expenses-today').textContent = fmtEUR.format(uiState.expensesToday);
 
-  $('#water-tick').textContent = fmtNUM.format(data.waterL || 0);
-  $('#energy-tick').textContent = fmtNUM.format(data.energyKWh || 0);
+  const smoothedWater = smoothWater(data.waterL || 0);
+  if (smoothedWater !== null) {
+    $('#water-tick').textContent = formatUnits(smoothedWater, 'liters');
+  }
+  const smoothedEnergy = smoothEnergy(data.energyKWh || 0);
+  if (smoothedEnergy !== null) {
+    $('#energy-tick').textContent = formatUnits(smoothedEnergy, 'kWh');
+  }
 
   $('#rent-tick').textContent = fmtEUR.format(data.rentCost || 0);
   $('#energy-cost-tick').textContent = fmtEUR.format(data.energyCost || 0);
@@ -63,7 +73,7 @@ function render(data) {
         <td>${zone.strainName || 'N/A'}</td>
         <td>${zone.plantCount}</td>
         <td>${zone.avgHealth ? zone.avgHealth + '%' : 'N/A'}</td>
-        <td>${zone.expectedYield ? fmtNUM.format(zone.expectedYield) + 'g' : 'N/A'}</td>
+        <td>${zone.expectedYield ? formatUnits(zone.expectedYield, 'grams') : 'N/A'}</td>
         <td>${zone.timeToHarvest === undefined ? 'N/A' : zone.timeToHarvest}</td>
         <td>${zone.temperatureC ? parseFloat(zone.temperatureC).toFixed(1) + '°C' : 'N/A'}</td>
         <td>${zone.humidity !== undefined ? (zone.humidity * 100).toFixed(1) + '%' : 'N/A'}</td>
