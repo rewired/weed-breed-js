@@ -2,8 +2,8 @@ import { makeSmoother } from "./smoother.js";
 import formatUnits from "./format.js";
 
 // --- Value Smoothers ------------------------------------------------------
-const smoothWater = makeSmoother({ alpha: 0.5, deadband: 0.1, maxUpdateMs: 1000 });
-const smoothEnergy = makeSmoother({ alpha: 0.5, deadband: 0.1, maxUpdateMs: 1000 });
+const smoothWater = makeSmoother({ alpha: 0.18, deadband: 0.1, maxUpdateMs: 1000 });
+const smoothEnergy = makeSmoother({ alpha: 0.01, deadband: 200, maxUpdateMs: 1000 });
 
 // --- Formatting helpers ---------------------------------------------------
 const fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
