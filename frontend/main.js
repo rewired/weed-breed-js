@@ -2,8 +2,17 @@ import { makeSmoother } from "./smoother.js";
 import formatUnits from "./format.js";
 
 // --- Value Smoothers ------------------------------------------------------
-const smoothWater = makeSmoother({ alpha: 0.18, deadband: 0.1, maxUpdateMs: 1000 });
-const smoothEnergy = makeSmoother({ alpha: 0.01, deadband: 200, maxUpdateMs: 1000 });
+const smoothWater = makeSmoother({ alpha: 0.5, deadband: 0.1, maxUpdateMs: 1000 });
+const smoothEnergy = makeSmoother({ alpha: 0.5, deadband: 0.1, maxUpdateMs: 1000 });
+const smoothRevenueToday = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothExpensesToday = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothNetChange = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothRentCost = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothEnergyCost = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothWaterCost = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothOtherCosts = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+const smoothSumCosts = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
+
 
 // --- Formatting helpers ---------------------------------------------------
 const fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
@@ -42,8 +51,21 @@ function render(data) {
 
   // KPIs
   $('#balance').textContent = fmtEUR.format(data.balance);
-  $('#revenue-today').textContent = fmtEUR.format(uiState.revenueToday);
-  $('#expenses-today').textContent = fmtEUR.format(uiState.expensesToday);
+
+  const smoothedRevenue = smoothRevenueToday(uiState.revenueToday);
+  if (smoothedRevenue !== null) {
+    $('#revenue-today').textContent = fmtEUR.format(smoothedRevenue);
+  }
+
+  const smoothedExpenses = smoothExpensesToday(uiState.expensesToday);
+  if (smoothedExpenses !== null) {
+    $('#expenses-today').textContent = fmtEUR.format(smoothedExpenses);
+  }
+
+  const smoothedNetChange = smoothNetChange(uiState.revenueToday - uiState.expensesToday);
+  if (smoothedNetChange !== null) {
+    $('#net-change').textContent = "heute: " + fmtEUR.format(smoothedNetChange);
+  }
 
   const smoothedWater = smoothWater(data.waterL || 0);
   if (smoothedWater !== null) {
@@ -54,11 +76,30 @@ function render(data) {
     $('#energy-tick').textContent = formatUnits(smoothedEnergy, 'kWh');
   }
 
-  $('#rent-tick').textContent = fmtEUR.format(data.rentCost || 0);
-  $('#energy-cost-tick').textContent = fmtEUR.format(data.energyCost || 0);
-  $('#water-cost-tick').textContent = fmtEUR.format(data.waterCost || 0);
-  $('#other-costs-tick').textContent = fmtEUR.format(data.maintenanceCost || 0);
-  $('#sum-costs-tick').textContent = fmtEUR.format(data.expenses || 0);
+  const smoothedRentCost = smoothRentCost(data.rentCost || 0);
+  if(smoothedRentCost !== null) {
+    $('#rent-tick').textContent = fmtEUR.format(smoothedRentCost);
+  }
+
+  const smoothedEnergyCost = smoothEnergyCost(data.energyCost || 0);
+  if(smoothedEnergyCost !== null) {
+    $('#energy-cost-tick').textContent = fmtEUR.format(smoothedEnergyCost);
+  }
+
+  const smoothedWaterCost = smoothWaterCost(data.waterCost || 0);
+  if(smoothedWaterCost !== null) {
+    $('#water-cost-tick').textContent = fmtEUR.format(smoothedWaterCost);
+  }
+
+  const smoothedOtherCosts = smoothOtherCosts(data.maintenanceCost || 0);
+  if(smoothedOtherCosts !== null) {
+    $('#other-costs-tick').textContent = fmtEUR.format(smoothedOtherCosts);
+  }
+
+  const smoothedSumCosts = smoothSumCosts(data.expenses || 0);
+  if(smoothedSumCosts !== null) {
+    $('#sum-costs-tick').textContent = fmtEUR.format(smoothedSumCosts);
+  }
 
   const zonesTbody = $('#zones-tbody');
   zonesTbody.innerHTML = '';
