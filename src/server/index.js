@@ -32,7 +32,6 @@ let simulationState = {
   intervalId: null,
   status: 'stopped', // 'running', 'paused'
   tickCounter: 0,
-  zones: [],
 };
 
 const speedPresets = {
@@ -172,7 +171,6 @@ app.post('/simulation/start', async (req, res) => {
 
   try {
     const { structure, costEngine, rng, tickMachineLogic } = await initializeSimulation(savegame, difficulty);
-    const allZones = structure.rooms.flatMap(r => r.zones);
 
     simulationState = {
       ...simulationState,
@@ -182,7 +180,6 @@ app.post('/simulation/start', async (req, res) => {
       tickMachineLogic,
       status: 'running',
       tickCounter: 0,
-      zones: allZones,
     };
 
     const ticksPerSimDay = 24 / structure.rooms[0].zones[0].tickLengthInHours;
@@ -199,7 +196,7 @@ app.post('/simulation/start', async (req, res) => {
 
     simulationState.intervalId = setInterval(tickHandler, tickIntervalMs);
 
-    res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${allZones.length} zones.` });
+    res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${zones.length} zones.` });
   } catch (err) {
     logger.error({ err }, 'Error starting simulation');
     res.status(500).send({ message: 'Failed to start simulation.' });
