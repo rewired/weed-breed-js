@@ -13,7 +13,9 @@
       "economics": {
         "initialCapital": 20000,
         "itemPriceMultiplier": 0.9,
-        "harvestPriceMultiplier": 1.1
+        "harvestPriceMultiplier": 1.1,
+        "rentPerSqmStructurePerTick": 0.1,
+        "rentPerSqmRoomPerTick": 0.2
       }
     }
   },
@@ -31,7 +33,9 @@
       "economics": {
         "initialCapital": 15000,
         "itemPriceMultiplier": 1.0,
-        "harvestPriceMultiplier": 1.0
+        "harvestPriceMultiplier": 1.0,
+        "rentPerSqmStructurePerTick": 0.15,
+        "rentPerSqmRoomPerTick": 0.3
       }
     }
   },
@@ -49,7 +53,9 @@
       "economics": {
         "initialCapital": 10000,
         "itemPriceMultiplier": 1.1,
-        "harvestPriceMultiplier": 0.9
+        "harvestPriceMultiplier": 0.9,
+        "rentPerSqmStructurePerTick": 0.2,
+        "rentPerSqmRoomPerTick": 0.4
       }
     }
   }
