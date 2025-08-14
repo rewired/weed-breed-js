@@ -23,6 +23,10 @@ app.use(express.json());
 // Serve static files from the frontend directory
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
 
+// Serve static files from the frontend directory
+const frontendPath = path.join(__dirname, '..', '..', 'frontend');
+app.use(express.static(frontendPath));
+
 // --- Simulation State ---
 let simulationState = {
   structure: null,
@@ -207,7 +211,13 @@ app.post('/simulation/start', async (req, res) => {
       tickHandler = runTick;
     }
 
-    simulationState.intervalId = setInterval(tickHandler, tickIntervalMs);
+    const run = () => {
+      if (simulationState.status !== 'running') return;
+      tickHandler().then(() => {
+        simulationState.intervalId = setTimeout(run, tickIntervalMs);
+      });
+    };
+    run();
 
     const allZones = structure.rooms.flatMap(r => r.zones);
     res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${allZones.length} zones.` });
@@ -267,10 +277,20 @@ app.get('/simulation/status', (req, res) => {
     structure: {
       id: structure.id,
       name: structure.name,
+      usableArea: structure.usableArea,
+      height: structure.height,
       rooms: structure.rooms.map(r => ({
         id: r.id,
         name: r.name,
-        zones: r.zones.map(z => ({ id: z.id, name: z.name }))
+        type: r.type,
+        area: r.area,
+        height: r.height,
+        rentPerTick: r.rentPerTick,
+        zones: r.zones.map(z => ({
+          id: z.id,
+          name: z.name,
+          deviceCount: z.devices.length
+        }))
       }))
     }
   });
