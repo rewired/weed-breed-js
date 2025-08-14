@@ -50,13 +50,21 @@ function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
     return out;
 }
 
+import { createStructure } from '../engine/factories/structureFactory.js';
+import { createRoom } from '../engine/factories/roomFactory.js';
+import { createZone } from '../engine/factories/zoneFactory.js';
+
+
 export async function initializeSimulation(savegame = 'default', difficulty = 'normal') {
     // --- Load Configuration ---
     const config = await loadSavegame(savegame);
     const difficultyConfig = await loadDifficultyConfig();
     const difficultyModifiers = difficultyConfig[difficulty]?.modifiers || difficultyConfig.normal.modifiers;
 
-    const { rngSeed, costEngine: costEngineConfig, zones: zonesConfig } = config;
+    const { rngSeed, costEngine: costEngineConfig, structure: structureConfig } = config;
+    if (!structureConfig) {
+        throw new Error('Savegame must contain a "structure" definition.');
+    }
 
     // --- Initialize Simulation Environment ---
     const devicePriceMap = await loadDevicePriceMap();
@@ -71,39 +79,46 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
       ...difficultyModifiers.economics,
     });
 
-    const zones = [];
-    const runtime = { logger, costEngine, rng, strainPriceMap, devicePriceMap, blueprints, difficulty: difficultyModifiers };
+    const globalRuntime = { logger, costEngine, rng, strainPriceMap, devicePriceMap, blueprints, difficulty: difficultyModifiers };
 
-    for (const zoneConfig of zonesConfig) {
-      const zone = new Zone({ ...zoneConfig, runtime });
+    // --- Build World Hierarchy ---
+    const structure = createStructure(structureConfig, globalRuntime);
 
-      // --- Add Devices ---
-      const deviceRuntimeCtx = { zone, tickLengthInHours: zone.tickLengthInHours, devicePriceMap, logger, rng };
-      if (zoneConfig.devices) {
-        for (const device of zoneConfig.devices) {
-          const blueprint = findBlueprint(blueprints, { kind: device.kind });
-          addDeviceN(zone, blueprint, device.count, deviceRuntimeCtx, device.overrides);
+    for (const roomConfig of structureConfig.rooms ?? []) {
+        const room = createRoom(roomConfig, { ...globalRuntime, logger: structure.logger });
+        structure.addRoom(room); // This also sets parentId, height, and logger
+
+        for (const zoneConfig of roomConfig.zones ?? []) {
+            const zone = createZone(zoneConfig, { ...globalRuntime, logger: room.logger });
+            room.addZone(zone); // This also sets parentIds, height, and logger
+
+            // --- Add Devices ---
+            const deviceRuntimeCtx = { zone, tickLengthInHours: zone.tickLengthInHours, devicePriceMap, logger: zone.logger, rng };
+            if (zoneConfig.devices) {
+                for (const device of zoneConfig.devices) {
+                    const blueprint = findBlueprint(blueprints, { kind: device.kind });
+                    addDeviceN(zone, blueprint, device.count, deviceRuntimeCtx, device.overrides);
+                }
+            }
+
+            // --- Add Plants ---
+            const { simulation: simConfig } = zoneConfig;
+            if (simConfig) {
+                const method = await loadCultivationMethod(simConfig.methodId);
+                const strain = await loadStrainBySlug(simConfig.strainSlug);
+                const numPlants = Math.floor(zone.area / method.areaPerPlant);
+                for (let i = 0; i < numPlants; i++) {
+                    const area_m2 = method?.areaPerPlant ?? 0.25;
+                    zone.addPlant(new Plant({ strain, method, rng, area_m2 }));
+                }
+            }
         }
-      }
-
-      // --- Add Plants ---
-      const { simulation: simConfig } = zoneConfig;
-      if (simConfig) {
-        const method = await loadCultivationMethod(simConfig.methodId);
-        const strain = await loadStrainBySlug(simConfig.strainSlug);
-        const numPlants = Math.floor(zone.area / method.areaPerPlant);
-        for (let i = 0; i < numPlants; i++) {
-          const area_m2 = method?.areaPerPlant ?? 0.25;
-          zone.addPlant(new Plant({ strain, method, rng, area_m2 }));
-        }
-      }
-      zones.push(zone);
     }
 
     const tickMachineLogic = createTickMachine();
 
     return {
-        zones,
+        structure, // Return the whole structure instead of flat zones array
         costEngine,
         rng,
         tickMachineLogic,

@@ -18,32 +18,24 @@
 
 ## 🧱 World Structure
 
+> **Decision Record:** The implementation of this hierarchical model is documented in [ADR-001](./adr/ADR-001-zones-in-rooms-structures.md).
+
+The simulation world is organized in a strict physical hierarchy. This structure is defined in the `savegame.json` and instantiated by the simulation engine at startup.
+
 ### Hierarchy
 
 ```
-Building → Rooms → Zones → Plants
+Structure → Room → Zone → Device / Plant
 ```
 
-### Rooms
+-   **Structure**: The top-level building container.
+    -   See schema: [`docs/schema/structure_schema.md`](./schema/structure_schema.md)
+-   **Room**: A physical room within a `Structure`.
+    -   See schema: [`docs/schema/room_schema.md`](./schema/room_schema.md)
+-   **Zone**: A designated area within a `Room` where devices and plants are located.
+    -   See schema: [`docs/schema/zone_schema.md`](./schema/zone_schema.md)
 
-- Have area (m²) and height (m)
-- Get their behavior via `roomType`
-- Types: e.g., `grow-chamber`, `cooling-storage`, `sales-room`
-- Sales rooms have access to storage (no transfer costs)
-
-### Room Types (Examples)
-
-```json
-{
-  "id": "sales-room",
-  "isSalesRoom": true,
-  "areaCost": 5.0,
-  "energyPerSquareMeterPerHour": 0.1,
-  "baseRentPerTick": 2.0,
-  "advertisingPerTick": 1.0,
-  "maxProductsVisible": 5
-}
-```
+This model allows for key physical invariants (e.g., total area of rooms cannot exceed the structure's area) and a logical, bottom-up aggregation of operational costs.
 
 ---
 

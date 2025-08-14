@@ -16,15 +16,19 @@ export class Zone {
     id = 'zone',
     name = 'Zone',
     area = 1,
-    height = (env?.defaults?.ceilingHeightM ?? 2.5),
+    height, // Inherited from Room/Structure
     tickLengthInHours = (env?.time?.tickLengthInHoursDefault ?? 3),
-    runtime = {}
+    runtime = {},
+    roomId = null,
+    structureId = null,
   } = {}) {
     this.id = id;
     this.name = name;
     this.area = Number(area);
-    this.height = Number(height);
+    this.height = height; // Let validation/inheritance handle Number() conversion and defaults
     this.tickLengthInHours = Number(tickLengthInHours);
+    this.roomId = roomId;
+    this.structureId = structureId;
 
     // Runtime dependencies
     this.runtime = runtime;
@@ -125,7 +129,15 @@ export class Zone {
 
   addDevice(device) {
     if (!device) return;
-    device.runtimeCtx = { ...(device.runtimeCtx ?? {}), zone: this, tickLengthInHours: this.tickLengthInHours, logger: this.logger };
+    const deviceLogger = this.logger.child({ deviceId: device.id, deviceKind: device.kind });
+    device.runtimeCtx = {
+      ...(device.runtimeCtx ?? {}),
+      structureId: this.structureId,
+      roomId: this.roomId,
+      zone: this,
+      tickLengthInHours: this.tickLengthInHours,
+      logger: deviceLogger,
+    };
     this.devices.push(device);
   }
 
@@ -310,6 +322,49 @@ export class Zone {
     let c = Number(s.co2ppm ?? (env?.defaults?.co2ppm ?? 420));
     c += Number(s._co2PpmDelta ?? 0);
     s.co2ppm = clamp(c, co2Min, co2Max);
+  }
+
+  getTickCosts(tickIndex) {
+    if (!this.costEngine) {
+      return { total: 0, energy: 0, maintenance: 0, water: 0, fertilizer: 0, other: 0, devices: [] };
+    }
+
+    let totalEnergyCost = 0;
+    let totalMaintenanceCost = 0;
+    const deviceCosts = [];
+
+    for (const device of this.devices) {
+      const kWh = device.estimateEnergyKWh?.(this.tickLengthInHours) ?? 0;
+      const energyPrice = this.costEngine.getEnergyPriceForDevice(device.blueprintId ?? device.id);
+      const energyCost = kWh * energyPrice;
+
+      const baseMaintenance = this.costEngine.devicePriceMap.get(device.blueprintId)?.baseMaintenanceCostPerTick ?? 0;
+      const inc = this.costEngine.devicePriceMap.get(device.blueprintId)?.costIncreasePer1000Ticks ?? 0;
+      const factor = 1 + inc * Math.floor(tickIndex / 1000);
+      const maintenanceCost = baseMaintenance * factor;
+
+      totalEnergyCost += energyCost;
+      totalMaintenanceCost += maintenanceCost;
+      deviceCosts.push({
+        id: device.id,
+        kind: device.kind,
+        energyCost,
+        maintenanceCost,
+        total: energyCost + maintenanceCost,
+      });
+    }
+
+    // In a real scenario, water/fertilizer would be tracked here too,
+    // but the current logic books them directly. We'll represent zone-level overhead as 0 for now.
+    const zoneOverhead = 0;
+
+    return {
+      total: totalEnergyCost + totalMaintenanceCost + zoneOverhead,
+      energy: totalEnergyCost,
+      maintenance: totalMaintenanceCost,
+      other: zoneOverhead,
+      devices: deviceCosts,
+    };
   }
 
   get status() {
