@@ -36,20 +36,23 @@ function render(data) {
   $('#day').textContent = data.day;
   $('#time').textContent = data.time;
 
+  // Reset daily counters if a new day has begun
   if (data.day > uiState.lastTickDay) {
     uiState.revenueToday = 0;
     uiState.expensesToday = 0;
     uiState.lastTickDay = data.day;
   }
-  // The server sends the total cost per tick as `expenses`
-  if(data.expenses) {
-    uiState.expensesToday += data.expenses;
+
+  // Accumulate revenue and expenses for the current day
+  if (data.totalExpensesEUR) {
+    uiState.expensesToday += data.totalExpensesEUR;
   }
-  if(data.revenue) {
-    uiState.revenueToday += data.revenue;
+  if (data.revenueEUR) {
+    uiState.revenueToday += data.revenueEUR;
   }
 
   // KPIs
+  // --- Main financial overview ---
   $('#balance').textContent = fmtEUR.format(data.balance);
 
   const smoothedRevenue = smoothRevenueToday(uiState.revenueToday);
@@ -67,6 +70,7 @@ function render(data) {
     $('#net-change').textContent = "heute: " + fmtEUR.format(smoothedNetChange);
   }
 
+  // --- Consumption KPIs ---
   const smoothedWater = smoothWater(data.waterL || 0);
   if (smoothedWater !== null) {
     $('#water-tick').textContent = formatUnits(smoothedWater, 'liters');
@@ -76,27 +80,29 @@ function render(data) {
     $('#energy-tick').textContent = formatUnits(smoothedEnergy, 'kWh');
   }
 
-  const smoothedRentCost = smoothRentCost(data.rentCost || 0);
+  // --- Cost KPIs (per tick) ---
+  const smoothedRentCost = smoothRentCost(data.rentEUR || 0);
   if(smoothedRentCost !== null) {
     $('#rent-tick').textContent = fmtEUR.format(smoothedRentCost);
   }
 
-  const smoothedEnergyCost = smoothEnergyCost(data.energyCost || 0);
+  const smoothedEnergyCost = smoothEnergyCost(data.energyEUR || 0);
   if(smoothedEnergyCost !== null) {
     $('#energy-cost-tick').textContent = fmtEUR.format(smoothedEnergyCost);
   }
 
-  const smoothedWaterCost = smoothWaterCost(data.waterCost || 0);
+  const smoothedWaterCost = smoothWaterCost(data.waterEUR || 0);
   if(smoothedWaterCost !== null) {
     $('#water-cost-tick').textContent = fmtEUR.format(smoothedWaterCost);
   }
 
-  const smoothedOtherCosts = smoothOtherCosts(data.maintenanceCost || 0);
+  const otherCosts = (data.maintenanceEUR || 0) + (data.fertilizerEUR || 0) + (data.otherExpenseEUR || 0);
+  const smoothedOtherCosts = smoothOtherCosts(otherCosts);
   if(smoothedOtherCosts !== null) {
     $('#other-costs-tick').textContent = fmtEUR.format(smoothedOtherCosts);
   }
 
-  const smoothedSumCosts = smoothSumCosts(data.expenses || 0);
+  const smoothedSumCosts = smoothSumCosts(data.totalExpensesEUR || 0);
   if(smoothedSumCosts !== null) {
     $('#sum-costs-tick').textContent = fmtEUR.format(smoothedSumCosts);
   }
@@ -145,13 +151,7 @@ socket.onopen = () => {
 
 socket.onmessage = (event) => {
   const serverData = JSON.parse(event.data);
-  if (serverData.day > uiState.lastTickDay) {
-    uiState.revenueToday = 0;
-    uiState.expensesToday = 0;
-    uiState.lastTickDay = serverData.day;
-  }
-  uiState.expensesToday += serverData.expenses || 0;
-  uiState.revenueToday += serverData.revenue || 0;
+  // The render function now handles all state updates
   render(serverData);
 };
 

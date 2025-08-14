@@ -46,6 +46,9 @@ export class CostEngine {
     // 💰 Cumulative grand totals
     this.grandTotalRevenueEUR = 0;
     this.grandTotalEnergyEUR = 0;
+    this.grandTotalWaterEUR = 0;
+    this.grandTotalFertilizerEUR = 0;
+    this.grandTotalRentEUR = 0;
     this.grandTotalMaintenanceEUR = 0;
     this.grandTotalCapexEUR = 0;
     this.grandTotalOtherExpenseEUR = 0;
@@ -60,13 +63,19 @@ export class CostEngine {
       tick: this._tickCounter,
       openingBalanceEUR: this.balanceEUR,
       closingBalanceEUR: this.balanceEUR, // finalized in commitTick
+      revenueEUR: 0,
+      // Expenses
       energyEUR: 0,
-      energyKWh: 0,
-      waterL: 0,
+      waterEUR: 0,
+      fertilizerEUR: 0,
+      rentEUR: 0,
       maintenanceEUR: 0,
       capexEUR: 0,
       otherExpenseEUR: 0,
-      revenueEUR: 0,
+      // Consumption
+      energyKWh: 0,
+      waterL: 0,
+      // Calculated
       netEUR: 0,
       // Only if needed: collect entries (can generate a lot of output)
       entries: this.keepEntries ? [] : undefined
@@ -110,7 +119,9 @@ export class CostEngine {
 
     this.ledger.waterL += amountL;
     const eur = amountL * this.waterPricePerLiter;
-    this._add('expense', eur, this.keepEntries ? { subType: 'water', liters: amountL, pricePerLiter: this.waterPricePerLiter } : undefined);
+    if (eur > 0) {
+      this._add('water', eur, this.keepEntries ? { liters: amountL, pricePerLiter: this.waterPricePerLiter } : undefined);
+    }
   }
 
   /** Book fertilizer consumption (in mg N, P, K) */
@@ -127,7 +138,7 @@ export class CostEngine {
     const totalCost = costN + costP + costK;
 
     if (totalCost > 0) {
-      this._add('expense', totalCost, this.keepEntries ? { subType: 'fertilizer', demand: { N: demandN, P: demandP, K: demandK } } : undefined);
+      this._add('fertilizer', totalCost, this.keepEntries ? { demand: { N: demandN, P: demandP, K: demandK } } : undefined);
     }
   }
 
@@ -179,9 +190,10 @@ export class CostEngine {
   /** General expenses (not maintenance/energy/CapEx), e.g., substrate, rent, personnel etc. */
   bookExpense(label, eur) {
     const val = Number(eur) || 0;
-    if (val > 0) {
-      this._add('expense', val, this.keepEntries ? { label } : undefined);
-    }
+    if (val <= 0) return;
+
+    const type = String(label).startsWith('Rent') ? 'rent' : 'expense';
+    this._add(type, val, this.keepEntries ? { label } : undefined);
   }
 
   /** Seed purchase as a convenience */
@@ -211,28 +223,37 @@ export class CostEngine {
    * Does NOT mutate the state; calculates netEUR & provisional closingBalanceEUR.
    */
   getTotals() {
-    const totalExpenses = this.ledger.energyEUR
-      + this.ledger.maintenanceEUR
-      + this.ledger.capexEUR
-      + this.ledger.otherExpenseEUR;
+    const {
+      energyEUR, maintenanceEUR, capexEUR, rentEUR, waterEUR, fertilizerEUR, otherExpenseEUR,
+      revenueEUR, openingBalanceEUR, tick, energyKWh, waterL, entries
+    } = this.ledger;
 
-    const netEUR = this.ledger.revenueEUR - totalExpenses;
-    const closing = this.ledger.openingBalanceEUR + netEUR;
+    const totalExpensesEUR = energyEUR + maintenanceEUR + capexEUR + rentEUR + waterEUR + fertilizerEUR + otherExpenseEUR;
+    const netEUR = revenueEUR - totalExpensesEUR;
+    const closingBalanceEUR = openingBalanceEUR + netEUR;
 
     return {
-      tick: this.ledger.tick,
-      openingBalanceEUR: this.ledger.openingBalanceEUR,
-      energyEUR: this.ledger.energyEUR,
-      energyKWh: this.ledger.energyKWh,
-      waterL: this.ledger.waterL,
-      maintenanceEUR: this.ledger.maintenanceEUR,
-      capexEUR: this.ledger.capexEUR,
-      otherExpenseEUR: this.ledger.otherExpenseEUR,
-      revenueEUR: this.ledger.revenueEUR,
+      tick,
+      openingBalanceEUR,
+      // Revenues
+      revenueEUR,
+      // Expenses
+      energyEUR,
+      waterEUR,
+      fertilizerEUR,
+      rentEUR,
+      maintenanceEUR,
+      capexEUR,
+      otherExpenseEUR,
+      totalExpensesEUR,
+      // Consumption
+      energyKWh,
+      waterL,
+      // Calculated
       netEUR,
-      closingBalanceEUR: closing,
+      closingBalanceEUR,
       // Only if keepEntries=true, otherwise undefined (=> less debug noise)
-      entries: this.ledger.entries
+      entries
     };
   }
 
@@ -241,36 +262,21 @@ export class CostEngine {
    * Returns a flat summary.
    */
   commitTick() {
-    const totalExpenses = this.ledger.energyEUR
-      + this.ledger.maintenanceEUR
-      + this.ledger.capexEUR
-      + this.ledger.otherExpenseEUR;
-
-    this.ledger.netEUR = this.ledger.revenueEUR - totalExpenses;
-    this.balanceEUR = this.ledger.closingBalanceEUR =
-      this.ledger.openingBalanceEUR + this.ledger.netEUR;
+    const totals = this.getTotals();
+    this.ledger.netEUR = totals.netEUR;
+    this.balanceEUR = this.ledger.closingBalanceEUR = totals.closingBalanceEUR;
 
     // Update cumulative totals
     this.grandTotalRevenueEUR += this.ledger.revenueEUR;
     this.grandTotalEnergyEUR += this.ledger.energyEUR;
+    this.grandTotalWaterEUR += this.ledger.waterEUR;
+    this.grandTotalFertilizerEUR += this.ledger.fertilizerEUR;
+    this.grandTotalRentEUR += this.ledger.rentEUR;
     this.grandTotalMaintenanceEUR += this.ledger.maintenanceEUR;
     this.grandTotalCapexEUR += this.ledger.capexEUR;
     this.grandTotalOtherExpenseEUR += this.ledger.otherExpenseEUR;
 
-    return {
-      tick: this.ledger.tick,
-      openingBalanceEUR: this.ledger.openingBalanceEUR,
-      energyEUR: this.ledger.energyEUR,
-      energyKWh: this.ledger.energyKWh,
-      waterL: this.ledger.waterL,
-      maintenanceEUR: this.ledger.maintenanceEUR,
-      capexEUR: this.ledger.capexEUR,
-      otherExpenseEUR: this.ledger.otherExpenseEUR,
-      revenueEUR: this.ledger.revenueEUR,
-      netEUR: this.ledger.netEUR,
-      closingBalanceEUR: this.ledger.closingBalanceEUR,
-      entries: this.ledger.entries
-    };
+    return { ...totals, totalExpensesEUR: totals.totalExpensesEUR };
   }
 
   /**
@@ -280,6 +286,9 @@ export class CostEngine {
     const totalExpenses = this.grandTotalEnergyEUR
       + this.grandTotalMaintenanceEUR
       + this.grandTotalCapexEUR
+      + this.grandTotalRentEUR
+      + this.grandTotalWaterEUR
+      + this.grandTotalFertilizerEUR
       + this.grandTotalOtherExpenseEUR;
 
     return {
@@ -290,6 +299,9 @@ export class CostEngine {
       totalRevenueEUR: this.grandTotalRevenueEUR,
       totalExpensesEUR: totalExpenses,
       totalEnergyEUR: this.grandTotalEnergyEUR,
+      totalWaterEUR: this.grandTotalWaterEUR,
+      totalFertilizerEUR: this.grandTotalFertilizerEUR,
+      totalRentEUR: this.grandTotalRentEUR,
       totalMaintenanceEUR: this.grandTotalMaintenanceEUR,
       totalCapexEUR: this.grandTotalCapexEUR,
       totalOtherExpenseEUR: this.grandTotalOtherExpenseEUR
@@ -302,6 +314,9 @@ export class CostEngine {
     if (val <= 0) return;
 
     if (type === 'energy') this.ledger.energyEUR += val;
+    else if (type === 'water') this.ledger.waterEUR += val;
+    else if (type === 'fertilizer') this.ledger.fertilizerEUR += val;
+    else if (type === 'rent') this.ledger.rentEUR += val;
     else if (type === 'maintenance') this.ledger.maintenanceEUR += val;
     else if (type === 'capex') this.ledger.capexEUR += val;
     else if (type === 'expense') this.ledger.otherExpenseEUR += val;
