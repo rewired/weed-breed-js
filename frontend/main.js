@@ -190,10 +190,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const sections = document.querySelectorAll('main > .content > section');
 
   async function fetchAndRenderZoneDetails() {
+    const hash = window.location.hash;
+    const zoneId = hash.split('/')[3]; // Based on #/sim/zone/{zoneId}
+    if (!zoneId) {
+      console.error('No zoneId found in URL hash');
+      return;
+    }
+
     try {
-      const res = await fetch('/api/zone/details');
+      const res = await fetch(`/api/zones/${zoneId}/details`);
       if (!res.ok) {
-        throw new Error(`Failed to fetch zone details: ${res.statusText}`);
+        throw new Error(`Failed to fetch zone details for ${zoneId}: ${res.statusText}`);
       }
       const data = await res.json();
       renderZoneEnvironment(data.environment);
