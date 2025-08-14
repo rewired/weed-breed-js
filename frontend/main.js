@@ -13,6 +13,7 @@ const smoothWaterCost = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 
 const smoothOtherCosts = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
 const smoothSumCosts = makeSmoother({ alpha: 0.1, deadband: 0.01, maxUpdateMs: 1000 });
 
+
 // --- Formatting helpers ---------------------------------------------------
 const fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 const fmtNUM = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
