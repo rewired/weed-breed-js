@@ -13,22 +13,27 @@ const fmtEUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EU
 
 // --- State ---------------------------------------------------------------
 const state = {
-    treeMode: "structure", // 'structure' | 'finance' | 'shop'
+    treeMode: "structure", // 'structure' | 'company' | 'shop'
     level: "none",
     structureId: null,
     roomId: null,
     zoneId: null,
     plantId: null,
-    finSel: null,
+    companySel: null,
     shopSel: null,
     running: false,
     speed: 1,
     tick: 0,
+    day: 1,
     tickHours: 3,
     simTime: new Date(2025, 0, 1, 8, 0, 0),
     balance: 0,
     dailyEnergyKWh: 0,
     dailyWaterL: 0,
+    tickEnergyKWh: 0,
+    tickWaterL: 0,
+    tickCostEUR: 0,
+    grandTotals: {},
     structureData: { structures: [] },
 };
 
@@ -75,7 +80,7 @@ async function fetchInitialData() {
                     selectNode("structure", state.structureData.structures[0].id);
                 }
             }
-            if (data.tick) {
+            if (data.tick !== undefined) {
                 updateWithLiveData(data);
             }
         }
@@ -90,8 +95,13 @@ function updateWithLiveData(data) {
     state.simTime = new Date(data.isoTime);
     state.balance = Number(data.balance);
     state.tickHours = Number(data.tickIntervalHours);
+    state.day = Number(data.day) || state.day;
     state.dailyEnergyKWh = Number(data.dailyEnergyKWh);
     state.dailyWaterL = Number(data.dailyWaterL);
+    state.tickEnergyKWh = Number(data.energyKWh) || 0;
+    state.tickWaterL = Number(data.waterL) || 0;
+    state.tickCostEUR = Number(data.totalExpensesEUR) || 0;
+    if (data.grandTotals) state.grandTotals = data.grandTotals;
 
     // Update live data in the structure data
     if (data.zoneSummaries) {
@@ -125,8 +135,7 @@ function buildTree() {
     const tree = $("#tree");
     tree.innerHTML = "";
     if (state.treeMode === "structure") buildStructureTree(tree);
-    // Placeholder for other trees
-    if (state.treeMode === "finance") buildFinanceTree(tree);
+    if (state.treeMode === "company") buildCompanyTree(tree);
     if (state.treeMode === "shop") buildShopTree(tree);
 }
 
@@ -183,6 +192,15 @@ function buildStructureTree(root) {
     });
 }
 
+function buildCompanyTree(root) {
+    const li = nodeLi("company", "overview", "🏢", "Overview");
+    root.appendChild(li);
+}
+
+function buildShopTree(root) {
+    // Placeholder for future shop tree
+}
+
 // --- Selection & Rendering -----------------------------------------------
 function selectNode(kind, id) {
     if (state.treeMode === "structure") {
@@ -210,6 +228,8 @@ function selectNode(kind, id) {
             state.roomId = p?.r?.id || null;
             state.zoneId = p?.z?.id || null;
         }
+    } else if (state.treeMode === "company") {
+        state.companySel = id;
     }
     // ... other tree modes
 
@@ -224,9 +244,12 @@ function selectNode(kind, id) {
 
 function renderContent() {
     const root = $("#content");
+    const scrollPos = root.scrollTop;
     root.innerHTML = "";
-    if (state.treeMode === "structure") return renderStructureContent(root);
+    if (state.treeMode === "structure") renderStructureContent(root);
+    else if (state.treeMode === "company") renderCompanyContent(root);
     // ... other tree modes
+    root.scrollTop = scrollPos;
 }
 
 function renderStructureContent(root) {
@@ -252,6 +275,16 @@ function renderStructureContent(root) {
     if (level === 'plant' && p) { title = p.name; subtitle = `${p.strain || '—'} • ${p.phase || '—'}`; }
     header.innerHTML = `<header style="display:flex;justify-content:space-between;align-items:center"><div><strong>${title}</strong><div style="color:var(--muted);font-size:12px">${subtitle}</div></div><div class="badge">Kontext: ${level}</div></header>`;
     root.appendChild(header);
+
+    if (level === 'structure') {
+        const consumptionGrid = document.createElement('div');
+        consumptionGrid.className = 'grid';
+        consumptionGrid.style.marginBottom = '12px';
+        consumptionGrid.appendChild(card('Costs (Tick)', fmtEUR.format(state.tickCostEUR)));
+        consumptionGrid.appendChild(card('Energy (Tick)', formatUnits(state.tickEnergyKWh, 'kWh')));
+        consumptionGrid.appendChild(card('Water (Tick)', formatUnits(state.tickWaterL, 'liters')));
+        header.insertAdjacentElement('afterend', consumptionGrid);
+    }
 
     // KPI row
     const kpis = document.createElement('div');
@@ -303,7 +336,7 @@ function renderStructureContent(root) {
     // Context detail blocks
     if (level === 'structure' && s) {
         root.appendChild(section('Rooms in Structure', table([
-            ['Room', 'Zones', 'Plants', 'Yield (g)', 'Devices', 'Alerts'],
+            ['Room', 'Zones', 'Plants', 'Yield', 'Devices', 'Alerts'],
             ...s.rooms.map(r => [
                 link(`room:${r.id}`, r.name),
                 r.zones.length,
@@ -316,7 +349,7 @@ function renderStructureContent(root) {
     }
     if (level === 'room' && r) {
         root.appendChild(section('Zones in Room', table([
-            ['Zone', 'Plants', 'Harvest in (d)', 'Yield (g)', 'Devices', 'Alerts'],
+            ['Zone', 'Plants', 'Harvest in (d)', 'Yield', 'Devices', 'Alerts'],
             ...r.zones.map(z => [
                 link(`zone:${z.id}`, z.name),
                 z.plants?.length || 0,
@@ -366,7 +399,7 @@ function renderBreadcrumbs() {
         if (!parts.length) { c.innerHTML = '<span style="color:var(--muted)">Bitte links ein Element wählen…</span>'; return; }
         parts.forEach((p, i) => { const a = document.createElement('a'); a.href = 'javascript:void(0)'; a.textContent = p.label; a.addEventListener('click', () => selectNode(p.kind, p.id)); c.appendChild(a); if (i < parts.length - 1) { const s = document.createElement('span'); s.textContent = '›'; s.style.color = 'var(--muted)'; s.style.margin = '0 4px'; c.appendChild(s); } });
     } else {
-        const label = state.treeMode === 'finance' ? 'Finance Explorer' : 'Shop Explorer';
+        const label = state.treeMode === 'company' ? 'Company Overview' : 'Shop Explorer';
         c.innerHTML = `<strong>${label}</strong>`;
     }
 }
@@ -425,9 +458,24 @@ function renderZoneOverview(root, dto, zone) {
     }, { once: true });
 }
 
+function renderCompanyContent(root) {
+    const header = document.createElement('div');
+    header.className = 'section';
+    header.innerHTML = `<header><strong>Company Overview</strong></header>`;
+    root.appendChild(header);
+
+    const gt = state.grandTotals || {};
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    grid.appendChild(card('Final Balance', fmtEUR.format(gt.finalBalanceEUR || 0)));
+    grid.appendChild(card('Total Revenue', fmtEUR.format(gt.totalRevenueEUR || 0)));
+    grid.appendChild(card('Total Expenses', fmtEUR.format(gt.totalExpensesEUR || 0)));
+    header.insertAdjacentElement('afterend', grid);
+}
+
 function renderTop() {
     txt("#tick", state.tick);
-    txt("#day", Math.ceil((state.simTime.getTime() - new Date(state.simTime).setHours(0, 0, 0, 0)) / (24 * 3600 * 1000)));
+    txt("#day", state.day);
     txt("#time", state.simTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }));
     txt("#balance-top", fmtEUR.format(state.balance));
     txt("#tick-hours", state.tickHours);
@@ -486,6 +534,7 @@ $("#btn-play").addEventListener("click", async () => {
     $("#btn-play").disabled = true;
     $("#btn-pause").disabled = false;
     renderTop();
+    await fetchInitialData();
 });
 
 $("#btn-pause").addEventListener("click", async () => {
@@ -522,7 +571,7 @@ function init() {
             state.treeMode = b.dataset.mode;
             state.level = "none";
             state.structureId = state.roomId = state.zoneId = state.plantId = null;
-            state.finSel = state.shopSel = null;
+            state.companySel = state.shopSel = null;
             buildTree();
             renderBreadcrumbs();
             renderContent();
