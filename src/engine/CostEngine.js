@@ -24,6 +24,7 @@ export class CostEngine {
     harvestPriceMultiplier = 1.0,
     rentPerSqmStructurePerTick = 0,
     rentPerSqmRoomPerTick = 0,
+    wagePerTick = 0,
     keepEntries = false
   } = {}) {
     this.devicePriceMap = devicePriceMap;
@@ -37,6 +38,7 @@ export class CostEngine {
     this.harvestPriceMultiplier = Number(harvestPriceMultiplier) || 1.0;
     this.rentPerSqmStructurePerTick = Number(rentPerSqmStructurePerTick) || 0;
     this.rentPerSqmRoomPerTick = Number(rentPerSqmRoomPerTick) || 0;
+    this.wagePerTick = Number(wagePerTick) || 0;
     this.keepEntries = !!keepEntries;
 
     // 💰 Current balance (incl. initial capital)
