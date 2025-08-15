@@ -61,6 +61,21 @@ export class Plant {
     const optimalRangeMultiplier = difficulty.optimalRangeMultiplier ?? 1.0;
     const stressAccumulationMultiplier = difficulty.stressAccumulationMultiplier ?? 1.0;
 
+    // Determine if lights are expected to be on for this tick
+    let lightsOn = zone.runtime?.lightsOn;
+    if (typeof lightsOn !== 'boolean') {
+      const lightCycle = this.strain?.environmentalPreferences?.lightCycle;
+      if (lightCycle) {
+        const cycle = lightCycle[this.stage] ?? lightCycle.default ?? [18, 6];
+        const lightHours = cycle[0];
+        const tickH = Number(zone.tickLengthInHours ?? tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
+        const currentSimHour = (tickIndex * tickH) % 24;
+        lightsOn = currentSimHour < lightHours;
+      } else {
+        lightsOn = true;
+      }
+    }
+
     // ---- Transpiration (VPD-Proxy) ----
     const lai = this.leafAreaIndex ?? env.plant.laiDefault;
     const vpdProxy = Math.max(0, (1 - RH) * Math.max(0, T - env.plant.tBase)) * (env.plant.vpdBeta ?? 1);
@@ -104,8 +119,11 @@ export class Plant {
     const rhStress = Math.abs(RH - rhOpt) / (env.plant.rhWidth * optimalRangeMultiplier);
     if (rhStress > 0.1) this.stressors.humidity = { actual: RH, target: rhOpt };
 
-    const lStress = (L < lightPreferences[0] || L > lightPreferences[1]) ? 0.2 : 0;
-    if (lStress > 0) this.stressors.light = { actual: L, target: lightPreferences };
+    let lStress = 0;
+    if (lightsOn) {
+      lStress = (L < lightPreferences[0] || L > lightPreferences[1]) ? 0.2 : 0;
+      if (lStress > 0) this.stressors.light = { actual: L, target: lightPreferences };
+    }
 
     const envStress = Math.min(1, (tStress + rhStress + lStress) / 3);
 

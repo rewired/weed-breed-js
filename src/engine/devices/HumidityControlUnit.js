@@ -29,7 +29,11 @@ export class HumidityControlUnit extends BaseDevice {
       if (kg > 0) addLatentWater(s, -kg);
     } else if (this.state === 'humidifying') {
       const kg = Number(settings.humidifyRateKgPerTick ?? 0);
-      if (kg > 0) addLatentWater(s, kg);
+      if (kg > 0) {
+        addLatentWater(s, kg);
+        // book water usage via cost engine if available
+        this.runtimeCtx?.zone?.costEngine?.bookWater(kg, { zoneId: this.runtimeCtx?.zone?.id, deviceId: this.id });
+      }
     }
   }
 
