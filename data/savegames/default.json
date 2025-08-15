@@ -30,9 +30,9 @@
               "methodId": "sog"
             },
             "devices": [
-              { "kind": "Lamp", "count": 8 },
-              { "kind": "ClimateUnit", "count": 2, "overrides": { "targetTemperature": 24 } },
-              { "kind": "HumidityControlUnit", "count": 2, "overrides": { "targetHumidity": 0.6 } },
+              { "kind": "Lamp", "count": 16 },
+              { "kind": "ClimateUnit", "count": 1, "overrides": { "targetTemperature": 24 } },
+              { "kind": "HumidityControlUnit", "count": 1, "overrides": { "targetHumidity": 0.6 } },
               { "kind": "CO2Injector", "count": 1 }
             ]
           },
@@ -45,10 +45,10 @@
               "methodId": "scrog"
             },
             "devices": [
-              { "kind": "Lamp", "count": 12 },
-              { "kind": "ClimateUnit", "count": 3, "overrides": { "targetTemperature": 22 } },
+              { "kind": "Lamp", "count": 25 },
+              { "kind": "ClimateUnit", "count": 1, "overrides": { "targetTemperature": 22 } },
               { "kind": "HumidityControlUnit", "count": 2, "overrides": { "targetHumidity": 0.6 } },
-              { "kind": "CO2Injector", "count": 2 }
+              { "kind": "CO2Injector", "count": 1 }
             ]
           }
         ]
