@@ -111,10 +111,11 @@
           <button class="btn primary" id="btn-play" title="Start">▶ Start</button>
           <button class="btn" id="btn-pause" title="Pause" disabled>⏸ Pause</button>
           <span style="width:10px"></span>
-          <button class="btn speed" data-speed="0.5" aria-pressed="false">0.5×</button>
-          <button class="btn speed" data-speed="1" aria-pressed="true">1×</button>
-          <button class="btn speed" data-speed="2" aria-pressed="false">2×</button>
-          <button class="btn speed" data-speed="5" aria-pressed="false">5×</button>
+          <button class="btn speed" data-speed="slow" aria-pressed="false">Langsam</button>
+          <button class="btn speed" data-speed="normal" aria-pressed="true">Normal</button>
+          <button class="btn speed" data-speed="fast" aria-pressed="false">Schnell</button>
+          <button class="btn speed" data-speed="turbo" aria-pressed="false">Turbo</button>
+          <button class="btn speed" data-speed="insane" aria-pressed="false">Ultra</button>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <div id="clock" class="clock" aria-live="polite">
@@ -205,8 +206,10 @@
       treeMode:'structure', // 'structure' | 'finance' | 'shop'
       level:'none', structureId:null, roomId:null, zoneId:null, plantId:null,
       finSel:null, shopSel:null,
-      running:false, speed:1, tick:0, tickHours:3, simTime:new Date(2025,0,1,8,0,0), balance:25000
+      running:false, speed:'normal', tick:0, tickHours:3, simTime:new Date(2025,0,1,8,0,0), balance:25000
     };
+
+    const speedFactors = { slow:0.5, normal:1, fast:2, turbo:5, insane:10 };
 
     // ---------- Build Trees --------------------------------------------------
     function buildTree(){
@@ -469,7 +472,7 @@
       const clock=$('#clock'); if(clock) clock.classList.toggle('running', state.running);
     }
     function mockStep(){ state.tick++; state.simTime = new Date(state.simTime.getTime() + state.tickHours*3600*1000); state.balance -= 1.25; renderTop(); }
-    function play(){ if(handle) return; state.running=true; renderTop(); handle=setInterval(mockStep, 800/state.speed); $('#btn-play').disabled=true; $('#btn-pause').disabled=false; }
+    function play(){ if(handle) return; state.running=true; renderTop(); handle=setInterval(mockStep, 800/speedFactors[state.speed]); $('#btn-play').disabled=true; $('#btn-pause').disabled=false; }
     function pause(){ state.running=false; renderTop(); clearInterval(handle); handle=null; $('#btn-play').disabled=false; $('#btn-pause').disabled=true; }
 
     // ---------- Wiring -------------------------------------------------------
@@ -499,7 +502,7 @@
       $('#btn-step').addEventListener('click', mockStep);
       $('#btn-play').addEventListener('click', play);
       $('#btn-pause').addEventListener('click', pause);
-      $$('.speed').forEach(b=>b.addEventListener('click',()=>{ state.speed=parseFloat(b.dataset.speed); $$('.speed').forEach(x=>x.setAttribute('aria-pressed', String(x===b))); if(handle){ pause(); play(); } }));
+      $$('.speed').forEach(b=>b.addEventListener('click',()=>{ state.speed=b.dataset.speed; $$('.speed').forEach(x=>x.setAttribute('aria-pressed', String(x===b))); if(handle){ pause(); play(); } }));
 
       renderTop();
       runTests();
