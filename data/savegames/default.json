@@ -4,7 +4,8 @@
   "costEngine": {
     "initialCapital": 25000,
     "energyPricePerKWh": 0.30,
-    "keepEntries": true
+    "keepEntries": true,
+    "wagePerTick": 10
   },
   "structure": {
     "id": "main_building_01",

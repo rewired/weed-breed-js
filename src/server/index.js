@@ -54,6 +54,11 @@ async function _runSimulationTick() {
   const absoluteTick = (costEngine._tickCounter || 0) + 1;
   costEngine.startTick(absoluteTick);
 
+  const wagePerTick = costEngine.wagePerTick;
+  if (wagePerTick > 0) {
+    costEngine.bookExpense('Labor', wagePerTick);
+  }
+
   // --- Rent Calculation ---
   const structureRent = structure.area * costEngine.rentPerSqmStructurePerTick;
   if (structureRent > 0) {
