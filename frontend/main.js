@@ -34,6 +34,8 @@ const state = {
     tickWaterL: 0,
     tickCostEUR: 0,
     grandTotals: {},
+    aggregates: {},
+    companyPeriod: '24h',
     structureData: { structures: [] },
     // per-zone smoothing helpers
     zoneSmoothers: {},
@@ -122,6 +124,7 @@ function updateWithLiveData(data) {
     state.tickWaterL = Number(data.waterL) || 0;
     state.tickCostEUR = Number(data.totalExpensesEUR) || 0;
     if (data.grandTotals) state.grandTotals = data.grandTotals;
+    if (data.aggregates) state.aggregates = data.aggregates;
 
     // Update live data in the structure data
     if (data.zoneSummaries) {
@@ -491,18 +494,69 @@ function renderZoneOverview(root, dto, zone) {
 }
 
 function renderCompanyContent(root) {
+    const period = state.companyPeriod || '24h';
+    const aggregates = state.aggregates || {};
+    const agg = aggregates[period] || {};
+
     const header = document.createElement('div');
     header.className = 'section';
     header.innerHTML = `<header><strong>Company Overview</strong></header>`;
+
+    const tabs = document.createElement('div');
+    tabs.className = 'tabs';
+    [ ['24h','24\u202fh'], ['7d','7\u202fd'], ['1m','1\u202fm'] ].forEach(([p,label]) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        if (p === period) btn.classList.add('active');
+        btn.addEventListener('click', () => {
+            state.companyPeriod = p;
+            renderContent();
+        });
+        tabs.appendChild(btn);
+    });
+    header.appendChild(tabs);
     root.appendChild(header);
 
-    const gt = state.grandTotals || {};
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-    grid.appendChild(card('Final Balance', fmtEUR.format(gt.finalBalanceEUR || 0)));
-    grid.appendChild(card('Total Revenue', fmtEUR.format(gt.totalRevenueEUR || 0)));
-    grid.appendChild(card('Total Expenses', fmtEUR.format(gt.totalExpensesEUR || 0)));
-    header.insertAdjacentElement('afterend', grid);
+    // Resource Usage
+    const resSection = document.createElement('div');
+    resSection.className = 'section';
+    resSection.innerHTML = `<header>Resource Usage</header>`;
+    const resGrid = document.createElement('div');
+    resGrid.className = 'grid';
+    resGrid.appendChild(card('Energy', formatUnits(agg.energyKWh || 0, 'kWh')));
+    resGrid.appendChild(card('Water', formatUnits(agg.waterL || 0, 'liters')));
+    resSection.appendChild(resGrid);
+    root.appendChild(resSection);
+
+    // Cost Breakdown
+    const costSection = document.createElement('div');
+    costSection.className = 'section';
+    costSection.innerHTML = `<header>Cost Breakdown</header>`;
+    const costGrid = document.createElement('div');
+    costGrid.className = 'grid';
+    costGrid.appendChild(card('Energy', fmtEUR.format(agg.energyEUR || 0)));
+    costGrid.appendChild(card('Water', fmtEUR.format(agg.waterEUR || 0)));
+    costGrid.appendChild(card('Fertilizer', fmtEUR.format(agg.fertilizerEUR || 0)));
+    costGrid.appendChild(card('Rent', fmtEUR.format(agg.rentEUR || 0)));
+    costGrid.appendChild(card('Maintenance', fmtEUR.format(agg.maintenanceEUR || 0)));
+    costGrid.appendChild(card('Capex', fmtEUR.format(agg.capexEUR || 0)));
+    costGrid.appendChild(card('Other', fmtEUR.format(agg.otherExpenseEUR || 0)));
+    costGrid.appendChild(card('Total', fmtEUR.format(agg.totalExpensesEUR || 0)));
+    costSection.appendChild(costGrid);
+    root.appendChild(costSection);
+
+    // Financial Position
+    const finSection = document.createElement('div');
+    finSection.className = 'section';
+    finSection.innerHTML = `<header>Financial Position</header>`;
+    const finGrid = document.createElement('div');
+    finGrid.className = 'grid';
+    finGrid.appendChild(card('Opening Balance', fmtEUR.format(agg.openingBalanceEUR || 0)));
+    finGrid.appendChild(card('Closing Balance', fmtEUR.format(agg.closingBalanceEUR || 0)));
+    finGrid.appendChild(card('Revenue', fmtEUR.format(agg.revenueEUR || 0)));
+    finGrid.appendChild(card('Net', fmtEUR.format(agg.netEUR || 0)));
+    finSection.appendChild(finGrid);
+    root.appendChild(finSection);
 }
 
 function renderTop() {
