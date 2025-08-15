@@ -22,7 +22,7 @@ const state = {
     companySel: null,
     shopSel: null,
     running: false,
-    speed: 1,
+    speed: "normal",
     tick: 0,
     day: 1,
     tickHours: 3,
@@ -585,7 +585,7 @@ $("#btn-step").addEventListener("click", async () => {
 
 $$(".speed").forEach((b) => {
     b.addEventListener("click", () => {
-        state.speed = parseFloat(b.dataset.speed);
+        state.speed = b.dataset.speed;
         $$(".speed").forEach((btn) => btn.setAttribute("aria-pressed", "false"));
         b.setAttribute("aria-pressed", "true");
         if (state.running) {
