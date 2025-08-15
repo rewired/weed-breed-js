@@ -34,6 +34,34 @@ export function createZoneOverviewDTO(zone, costEngine) {
     const harvestEtaDays = zone.plants.length > 0 ? Math.round(zone.plants.reduce((sum, p) => sum + (p.strain.photoperiod.vegetationDays + p.strain.photoperiod.floweringDays - p.ageHours / 24), 0) / zone.plants.length) : 0;
     const yieldForecastGrams = zone.plants.reduce((sum, p) => sum + p.calculateYield(), 0);
 
+    // --- Plant Stress Aggregation ---
+    const stressTotals = {
+        temperature: { count: 0, total: 0 },
+        humidity: { count: 0, total: 0 },
+        light: { count: 0, total: 0 },
+        nutrients: { count: 0, total: 0 },
+    };
+    const totalStress = zone.plants.reduce((sum, p) => {
+        sum += p.stress;
+        const stressors = p.stressors || {};
+        for (const key of Object.keys(stressors)) {
+            if (stressTotals[key]) {
+                stressTotals[key].count++;
+                stressTotals[key].total += p.stress;
+            }
+        }
+        return sum;
+    }, 0);
+    const plantStress = {
+        avgStress: zone.plants.length > 0 ? totalStress / zone.plants.length : 0,
+        breakdown: Object.fromEntries(
+            Object.entries(stressTotals).map(([k, v]) => [k, {
+                count: v.count,
+                avgStress: v.count > 0 ? v.total / v.count : 0,
+            }])
+        ),
+    };
+
     const co2Device = zone.devices.find(d => d.kind === 'CO2Injector');
     const co2Target = co2Device?.settings?.targetCO2 ?? 800;
     const co2Hyster = co2Device?.settings?.hysteresis ?? 50;
@@ -61,6 +89,7 @@ export function createZoneOverviewDTO(zone, costEngine) {
             co2: { set: co2Target, actual: zone.status.co2ppm, delta: 0, stability: 0 }, // TODO
             ppfd: { set: 700, actual: zone.status.ppfd, delta: 0, stability: 0 }, // TODO
         },
+        plantStress,
         controllers: {
             hvac: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
             dehumidifier: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
