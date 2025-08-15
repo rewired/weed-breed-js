@@ -361,14 +361,16 @@ export class Zone {
       });
     }
 
-    // In a real scenario, water/fertilizer would be tracked here too,
-    // but the current logic books them directly. We'll represent zone-level overhead as 0 for now.
+    const { waterEUR, fertilizerEUR } = this.costEngine.getWaterAndFertilizerTotalsForZone(this.id);
+
     const zoneOverhead = 0;
 
     return {
-      total: totalEnergyCost + totalMaintenanceCost + zoneOverhead,
+      total: totalEnergyCost + totalMaintenanceCost + waterEUR + fertilizerEUR + zoneOverhead,
       energy: totalEnergyCost,
       maintenance: totalMaintenanceCost,
+      water: waterEUR,
+      fertilizer: fertilizerEUR,
       other: zoneOverhead,
       devices: deviceCosts,
     };
