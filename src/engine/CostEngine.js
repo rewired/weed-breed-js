@@ -333,6 +333,21 @@ export class CostEngine {
     return totals;
   }
 
+  getWaterAndFertilizerTotalsForZone(zoneId) {
+    if (!this.keepEntries || !this.ledger.entries) return { waterEUR: 0, fertilizerEUR: 0 };
+    const records = this.ledger.entries.filter(r => r.meta?.zoneId === zoneId);
+    let waterEUR = 0;
+    let fertilizerEUR = 0;
+    for (const record of records) {
+      if (record.type === 'water') {
+        waterEUR += record.eur;
+      } else if (record.type === 'fertilizer') {
+        fertilizerEUR += record.eur;
+      }
+    }
+    return { waterEUR, fertilizerEUR };
+  }
+
   /** internal summation + optional entries tracking */
   _add(type, eur, meta) {
     const val = Number(eur) || 0;
