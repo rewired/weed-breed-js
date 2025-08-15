@@ -133,8 +133,8 @@ function _broadcastStatusUpdate() {
       name: zone.name,
       strainName: p0.strain?.name,
       plantCount: zone.plants.length,
-      avgHealth: (avgHealth * 100).toFixed(0),
-      expectedYield: expectedYield.toFixed(2),
+      avgHealth: avgHealth * 100,
+      expectedYield,
       timeToHarvest: timeToHarvest,
       temperatureC: zone.status.temperatureC,
       humidity: zone.status.humidity,
@@ -155,11 +155,13 @@ function _broadcastStatusUpdate() {
     tick: absoluteTick,
     time: new Date(simulationState.tickCounter * tickLengthInHours * 60 * 60 * 1000).toISOString().substr(11, 8),
     day: Math.floor((simulationState.tickCounter * tickLengthInHours) / 24) + 1,
-    balance: (costEngine.getGrandTotals().finalBalanceEUR ?? 0).toFixed(2),
+    isoTime: new Date(simulationState.tickCounter * tickLengthInHours * 60 * 60 * 1000).toISOString(),
+    tickIntervalHours: tickLengthInHours,
+    balance: costEngine.getGrandTotals().finalBalanceEUR ?? 0,
     zoneSummaries, // Changed from zoneSummary
     roomSummaries,
-    dailyEnergyKWh: dailyEnergyKWh.toFixed(2),
-    dailyWaterL: dailyWaterL.toFixed(2),
+    dailyEnergyKWh,
+    dailyWaterL,
     ...tickTotals
   };
 
@@ -285,9 +287,10 @@ app.get('/simulation/status', (req, res) => {
   res.status(200).send({
     status,
     tick: tickCounter,
-    time: new Date(tickCounter * tickLengthInHours * 60 * 60 * 1000).toISOString().substr(11, 8),
+    isoTime: new Date(tickCounter * tickLengthInHours * 60 * 60 * 1000).toISOString(),
+    tickIntervalHours: tickLengthInHours,
     day: Math.floor((tickCounter * tickLengthInHours) / 24) + 1,
-    balance: (costEngine.getGrandTotals().finalBalanceEUR ?? 0).toFixed(2),
+    balance: costEngine.getGrandTotals().finalBalanceEUR ?? 0,
     structure: structure
   });
 });
