@@ -35,6 +35,7 @@ function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
       return [];
     }
     const n = Math.max(1, Math.floor(Number(count ?? 1)));
+    zone?.costEngine?.bookCapex?.(blueprint.id, n);
     const out = [];
     for (let i = 1; i <= n; i++) {
       const clone = JSON.parse(JSON.stringify(blueprint));
