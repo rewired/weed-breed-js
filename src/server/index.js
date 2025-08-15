@@ -349,7 +349,7 @@ app.get('/api/zones/:zoneId/details', (req, res) => {
 
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'index-new.html'));
+  res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'index.html'));
 });
 
 // WebSocket connection handler
