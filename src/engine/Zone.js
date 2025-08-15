@@ -169,6 +169,10 @@ export class Zone {
     const currentSimHour = (tickIndex * this.tickLengthInHours) % 24;
 
     const lightsOn = currentSimHour < lightHours;
+    // expose lights-on state for plant stress calculations
+    if (this.runtime) {
+      this.runtime.lightsOn = lightsOn;
+    }
 
     for (const device of this.devices) {
       if (device.kind === 'Lamp') {
@@ -222,7 +226,6 @@ export class Zone {
           this.costEngine.bookRevenue('Harvest', revenue);
           this.logger.info({ plantId: plant.id.slice(0,8), yieldGrams: yieldGrams.toFixed(2), revenue: revenue.toFixed(2) }, 'HARVEST');
         }
-        this.costEngine.bookSeeds(strainId, 1);
 
         const newPlant = new Plant({
           strain: plant.strain,
@@ -231,6 +234,7 @@ export class Zone {
         });
         this.plants[i] = newPlant;
         this.logger.info({ oldPlantId: plant.id.slice(0,8), newPlantId: newPlant.id.slice(0,8) }, 'REPLANT');
+        this.costEngine.bookSeeds(strainId, 1);
       }
     }
   }

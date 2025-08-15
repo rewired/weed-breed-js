@@ -10,6 +10,7 @@ export class CostEngine {
    * @param {number} [opts.energyPricePerKWh=0.35]  - global electricity price (EUR/kWh), if no device override exists
    * @param {number} [opts.initialCapital=0]        - initial capital in EUR
    * @param {boolean} [opts.keepEntries=false]      - If true, individual bookings are stored in the ledger (more debug output)
+   * @param {number} [opts.co2PricePerPpm=0.00001]  - price per injected CO₂ ppm
    */
   constructor({
     devicePriceMap = new Map(),
@@ -19,6 +20,7 @@ export class CostEngine {
     pricePerMgN = 0.001,
     pricePerMgP = 0.002,
     pricePerMgK = 0.0015,
+    co2PricePerPpm = 0.00001,
     initialCapital = 0,
     itemPriceMultiplier = 1.0,
     harvestPriceMultiplier = 1.0,
@@ -40,6 +42,7 @@ export class CostEngine {
     this.rentPerSqmRoomPerTick = Number(rentPerSqmRoomPerTick) || 0;
     this.wagePerTick = Number(wagePerTick) || 0;
     this.keepEntries = !!keepEntries;
+    this.co2PricePerPpm = Number(co2PricePerPpm) || 0;
 
     // 💰 Current balance (incl. initial capital)
     this.balanceEUR = Number(initialCapital) || 0;
@@ -141,6 +144,16 @@ export class CostEngine {
 
     if (totalCost > 0) {
       this._add('fertilizer', totalCost, this.keepEntries ? { ...meta, demand: { N: demandN, P: demandP, K: demandK } } : undefined);
+    }
+  }
+
+  /** Book CO₂ consumption in ppm */
+  bookCO2(ppm, meta = {}) {
+    const amount = Number(ppm) || 0;
+    if (amount <= 0) return;
+    const eur = amount * this.co2PricePerPpm;
+    if (eur > 0) {
+      this._add('expense', eur, this.keepEntries ? { ...meta, subType: 'co2', ppm: amount, pricePerPpm: this.co2PricePerPpm } : undefined);
     }
   }
 
