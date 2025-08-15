@@ -390,7 +390,7 @@ app.get('/api/zones/:zoneId/overview', (req, res) => {
   const { structure, costEngine } = simulationState;
 
   if (simulationState.status === 'stopped' || !structure) {
-    return res.status(404).send({ message: 'Simulation not running.' });
+    return res.status(404).send({ error: 'Simulation not running.' });
   }
 
   let zone = null;
@@ -403,7 +403,7 @@ app.get('/api/zones/:zoneId/overview', (req, res) => {
   }
 
   if (!zone) {
-    return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
+    return res.status(404).send({ error: `Zone with id ${zoneId} not found.` });
   }
 
   const dto = createZoneOverviewDTO(zone, costEngine);
@@ -415,7 +415,7 @@ app.get('/api/zones/:zoneId/details', (req, res) => {
   const { structure } = simulationState;
 
   if (simulationState.status === 'stopped' || !structure) {
-    return res.status(404).send({ message: 'Simulation not running.' });
+    return res.status(404).send({ error: 'Simulation not running.' });
   }
 
   // Find the zone in the hierarchy
@@ -429,7 +429,7 @@ app.get('/api/zones/:zoneId/details', (req, res) => {
   }
 
   if (!zone) {
-    return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
+    return res.status(404).send({ error: `Zone with id ${zoneId} not found.` });
   }
 
   const dto = createZoneDetailDTO(zone);
@@ -441,7 +441,7 @@ app.get('/api/zones/:zoneId/plants/:plantId', (req, res) => {
   const { structure } = simulationState;
 
   if (simulationState.status === 'stopped' || !structure) {
-    return res.status(404).send({ message: 'Simulation not running.' });
+    return res.status(404).send({ error: 'Simulation not running.' });
   }
 
   let zone = null;
@@ -453,12 +453,12 @@ app.get('/api/zones/:zoneId/plants/:plantId', (req, res) => {
     }
   }
   if (!zone) {
-    return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
+    return res.status(404).send({ error: `Zone with id ${zoneId} not found.` });
   }
 
   const plant = zone.plants.find(p => p.id === plantId);
   if (!plant) {
-    return res.status(404).send({ message: `Plant with id ${plantId} not found in zone ${zoneId}.` });
+    return res.status(404).send({ error: `Plant with id ${plantId} not found in zone ${zoneId}.` });
   }
 
   const dto = createPlantDetailDTO(zone, plant);

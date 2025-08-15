@@ -344,10 +344,11 @@ function renderStructureContent(root) {
             kpis.remove();
         }
         fetch(`/api/zones/${z.id}/overview`)
-            .then(res => res.json())
-            .then(dto => {
-                if (dto.error) {
-                    root.innerHTML += `<p style="color:var(--danger)">Error: ${dto.error}</p>`;
+            .then(res => res.json().then(dto => ({ ok: res.ok, dto })))
+            .then(({ ok, dto }) => {
+                if (!ok || dto.error || dto.message) {
+                    const msg = dto.error || dto.message || 'Unknown error';
+                    root.innerHTML += `<p style="color:var(--danger)">Error: ${msg}</p>`;
                     return;
                 }
                 renderZoneOverview(root, dto, z);
@@ -361,10 +362,11 @@ function renderStructureContent(root) {
         kpis.appendChild(card('Stress', (p.stress * 100).toFixed(1) + '%'));
         root.appendChild(kpis);
         fetch(`/api/zones/${z.id}/plants/${p.id}`)
-            .then(res => res.json())
-            .then(dto => {
-                if (dto.error) {
-                    root.innerHTML += `<p style="color:var(--danger)">Error: ${dto.error}</p>`;
+            .then(res => res.json().then(dto => ({ ok: res.ok, dto })))
+            .then(({ ok, dto }) => {
+                if (!ok || dto.error || dto.message) {
+                    const msg = dto.error || dto.message || 'Unknown error';
+                    root.innerHTML += `<p style="color:var(--danger)">Error: ${msg}</p>`;
                     return;
                 }
                 renderPlantDetail(root, dto, z);
@@ -412,10 +414,11 @@ function renderStructureContent(root) {
     }
     if (level === 'plants' && z) {
         fetch(`/api/zones/${z.id}/details`)
-            .then(res => res.json())
-            .then(dto => {
-                if (dto.error) {
-                    root.appendChild(section('Plants', `<p style="color:var(--danger)">Error: ${dto.error}</p>`));
+            .then(res => res.json().then(dto => ({ ok: res.ok, dto })))
+            .then(({ ok, dto }) => {
+                if (!ok || dto.error || dto.message) {
+                    const msg = dto.error || dto.message || 'Unknown error';
+                    root.appendChild(section('Plants', `<p style="color:var(--danger)">Error: ${msg}</p>`));
                     return;
                 }
                 renderZonePlantsDetails(root, dto);
