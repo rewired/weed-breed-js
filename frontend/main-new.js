@@ -27,6 +27,8 @@ const state = {
     tickHours: 3,
     simTime: new Date(2025, 0, 1, 8, 0, 0),
     balance: 0,
+    dailyEnergyKWh: 0,
+    dailyWaterL: 0,
     structureData: { structures: [] },
 };
 
@@ -86,8 +88,10 @@ function updateWithLiveData(data) {
     console.log(JSON.stringify(data, null, 2));
     state.tick = data.tick;
     state.simTime = new Date(data.isoTime);
-    state.balance = data.balance;
-    state.tickHours = data.tickIntervalHours;
+    state.balance = Number(data.balance);
+    state.tickHours = Number(data.tickIntervalHours);
+    state.dailyEnergyKWh = Number(data.dailyEnergyKWh);
+    state.dailyWaterL = Number(data.dailyWaterL);
 
     // Update live data in the structure data
     if (data.zoneSummaries) {
@@ -268,9 +272,9 @@ function renderStructureContent(root) {
         const consumptionGrid = document.createElement('div');
         consumptionGrid.className = 'grid';
         consumptionGrid.style.marginBottom = '12px';
-        consumptionGrid.appendChild(card('Costs (Tick)', fmtEUR.format(r.totalExpensesEUR || 0)));
-        consumptionGrid.appendChild(card('Energy (Tick)', formatUnits(r.energyKWh || 0, 'kWh')));
-        consumptionGrid.appendChild(card('Water (Tick)', formatUnits(r.waterL || 0, 'liters')));
+        consumptionGrid.appendChild(card('Costs (Tick)', fmtEUR.format(Number(r.totalExpensesEUR) || 0)));
+        consumptionGrid.appendChild(card('Energy (Tick)', formatUnits(Number(r.energyKWh) || 0, 'kWh')));
+        consumptionGrid.appendChild(card('Water (Tick)', formatUnits(Number(r.waterL) || 0, 'liters')));
         // Insert after the header, before other content
         header.insertAdjacentElement('afterend', consumptionGrid);
     }
@@ -427,6 +431,8 @@ function renderTop() {
     txt("#time", state.simTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }));
     txt("#balance-top", fmtEUR.format(state.balance));
     txt("#tick-hours", state.tickHours);
+    txt("#daily-energy", formatUnits(state.dailyEnergyKWh, 'kWh'));
+    txt("#daily-water", formatUnits(state.dailyWaterL, 'liters'));
     const clock = $("#clock");
     if (clock) clock.classList.toggle("running", state.running);
 }

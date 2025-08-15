@@ -47,7 +47,7 @@ export function createZoneOverviewDTO(zone, costEngine) {
         },
         predictions: {
             harvestEtaDays,
-            yieldForecastGrams: yieldForecastGrams.toFixed(1),
+            yieldForecastGrams,
         },
         environment: {
             temperature: { set: 24, actual: zone.status.temperatureC, delta: 0, stability: 0 }, // TODO
@@ -108,7 +108,7 @@ export function createZoneOverviewDTO(zone, costEngine) {
             const biomassIndex = Math.round((avgBiomass / (pkg.plants[0].strain.maxBiomass || 500)) * 100);
 
             delete pkg.plants; // Don't need to send the full plant objects
-            return { ...pkg, avgAgeDays: avgAgeDays.toFixed(1), avgHealth: (avgHealth * 100).toFixed(0), biomassIndex };
+            return { ...pkg, avgAgeDays, avgHealth: avgHealth * 100, biomassIndex };
         }),
         alerts: [], // TODO
         actions: [], // TODO

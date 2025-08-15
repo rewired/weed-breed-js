@@ -1,13 +1,16 @@
 /**
  * Formats a number into a more readable string with appropriate units.
- * @param {number} value The number to format.
+ * @param {number|string} value The number to format.
  * @param {'grams' | 'kWh' | 'liters'} type The type of unit.
  * @returns {string} The formatted string with units.
  */
 export default function formatUnits(value, type) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
     return '-';
   }
+
+  value = num;
 
   const scales = {
     grams: [
