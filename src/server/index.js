@@ -60,7 +60,7 @@ async function _runSimulationTick() {
   }
 
   // --- Rent Calculation ---
-  const structureRent = structure.area * costEngine.rentPerSqmStructurePerTick;
+  const structureRent = structure.usableArea * costEngine.rentPerSqmStructurePerTick;
   if (structureRent > 0) {
     costEngine.bookExpense(`Rent (Structure: ${structure.id})`, structureRent);
   }
