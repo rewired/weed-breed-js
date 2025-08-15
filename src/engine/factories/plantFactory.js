@@ -1,9 +1,9 @@
-// src/engine/plantFactory.js
+// src/engine/factories/plantFactory.js
 // ESM - creates Plant states (or instances) from strain blueprints.
 // Prices (seed/harvest) are optionally mixed in from /data/config/strainPrices.json.
 
 import { randomUUID } from 'crypto';
-import { loadStrainBySlug, loadStrainById } from './strainLoader.js';
+import { loadStrainBySlug, loadStrainById } from '../loaders/strainLoader.js';
 
 /**
  * Creates an initial plant state from a strain object.

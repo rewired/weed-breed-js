@@ -1,4 +1,4 @@
-// src/engine/cultivationMethodLoader.js
+// src/engine/loaders/cultivationMethodLoader.js
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Datenordner: <root>/data/cultivationMethods/*.json
-const METHODS_DIR = path.resolve(__dirname, '../../data/cultivationMethods');
+const METHODS_DIR = path.resolve(__dirname, '../../../data/cultivationMethods');
 
 async function readJson(fp) {
   const raw = await fs.readFile(fp, 'utf-8');

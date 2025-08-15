@@ -2,7 +2,7 @@
 import { ensureEnv, resetEnvAggregates, getZoneVolume, clamp } from './deviceUtils.js';
 import { env, AIR_DENSITY, AIR_CP, TICK_HOURS_DEFAULT } from '../config/env.js';
 import { Plant } from './Plant.js';
-import { createDevice } from './deviceFactory.js';
+import { createDevice } from './factories/deviceFactory.js';
 
 /**
  * Zone

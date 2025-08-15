@@ -1,4 +1,4 @@
-// src/engine/cultivationMethodFactory.js
+// src/engine/factories/cultivationMethodFactory.js
 // Baut ein Zonen-taugliches Objekt und kann die Kompatibilität mit einem Strain bewerten.
 
 function getByPath(obj, dotPath) {

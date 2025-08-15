@@ -1,12 +1,12 @@
-// src/engine/deviceFactory.js
+// src/engine/factories/deviceFactory.js
 // Factory-Registry für eingebaute Geräte
 
-import { BaseDevice } from './BaseDevice.js';
-import { Lamp } from './devices/Lamp.js';
-import { ClimateUnit } from './devices/ClimateUnit.js';
-import { Dehumidifier } from './devices/Dehumidifier.js';
-import { CO2Injector } from './devices/CO2Injector.js';
-import { HumidityControlUnit } from './devices/HumidityControlUnit.js';
+import { BaseDevice } from '../BaseDevice.js';
+import { Lamp } from '../devices/Lamp.js';
+import { ClimateUnit } from '../devices/ClimateUnit.js';
+import { Dehumidifier } from '../devices/Dehumidifier.js';
+import { CO2Injector } from '../devices/CO2Injector.js';
+import { HumidityControlUnit } from '../devices/HumidityControlUnit.js';
 
 const REGISTRY = {
   Lamp,
