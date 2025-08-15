@@ -285,8 +285,15 @@ function renderStructureContent(root) {
     }
     if (level === 'room' && r) {
         root.appendChild(section('Zones in Room', table([
-            ['Zone', 'Plants', 'Devices', 'Alerts'],
-            ...r.zones.map(z => [link(`zone:${z.id}`, z.name), z.plants?.length || 0, z.devices?.length || 0, z.alerts ? `⚠ ${z.alerts}` : '—'])
+            ['Zone', 'Plants', 'Harvest in (d)', 'Yield (g)', 'Devices', 'Alerts'],
+            ...r.zones.map(z => [
+                link(`zone:${z.id}`, z.name),
+                z.plants?.length || 0,
+                z.timeToHarvest ?? 'N/A',
+                z.expectedYield ?? 'N/A',
+                z.devices?.length || 0,
+                z.alerts ? `⚠ ${z.alerts}` : '—'
+            ])
         ])));
     }
     if (level === 'zone' && z) {
