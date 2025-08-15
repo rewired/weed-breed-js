@@ -383,6 +383,7 @@ app.get('/simulation/status', (req, res) => {
 
 import { createZoneOverviewDTO } from './services/zoneOverviewService.js';
 import { createPlantDetailDTO } from './services/plantDetailService.js';
+import { createZoneDetailDTO } from './services/zoneDetailService.js';
 
 app.get('/api/zones/:zoneId/overview', (req, res) => {
   const { zoneId } = req.params;
@@ -411,7 +412,7 @@ app.get('/api/zones/:zoneId/overview', (req, res) => {
 
 app.get('/api/zones/:zoneId/details', (req, res) => {
   const { zoneId } = req.params;
-  const { structure, costEngine } = simulationState;
+  const { structure } = simulationState;
 
   if (simulationState.status === 'stopped' || !structure) {
     return res.status(404).send({ message: 'Simulation not running.' });
@@ -431,33 +432,8 @@ app.get('/api/zones/:zoneId/details', (req, res) => {
     return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
   }
 
-  const devices = zone.devices.map(d => {
-    const maintenanceCost = costEngine.devicePriceMap.get(d.blueprintId)?.baseMaintenanceCostPerTick ?? 0;
-    return {
-      id: d.id,
-      name: d.name,
-      kind: d.kind,
-      status: d.status,
-      powerConsumptionKW: d.settings.power,
-      maintenanceCostPerTick: maintenanceCost,
-    };
-  });
-
-  const plants = zone.plants.map(p => ({
-    id: p.id.slice(0, 8),
-    stage: p.stage,
-    health: (p.health * 100).toFixed(1),
-    stress: (p.stress * 100).toFixed(1),
-    stressors: p.stressors,
-    waterConsumptionL: p.lastWaterConsumptionL.toFixed(4),
-    nutrientConsumption: p.lastNutrientConsumption,
-  }));
-
-  res.status(200).send({
-    environment: zone.status,
-    devices,
-    plants,
-  });
+  const dto = createZoneDetailDTO(zone);
+  res.status(200).send(dto);
 });
 
 app.get('/api/zones/:zoneId/plants/:plantId', (req, res) => {

@@ -411,17 +411,18 @@ function renderStructureContent(root) {
         ])));
     }
     if (level === 'plants' && z) {
-        root.appendChild(section('Plants', table([
-            ['Plant', 'Strain', 'Age (d)', 'Biomass (g)', 'Health', 'Stress'],
-            ...(z.plants || []).map(p => [
-                p.name,
-                p.strain?.name || 'N/A',
-                (p.ageHours / 24).toFixed(1),
-                p.biomass.toFixed(2),
-                p.health.toFixed(2),
-                p.stress.toFixed(2)
-            ])
-        ])));
+        fetch(`/api/zones/${z.id}/details`)
+            .then(res => res.json())
+            .then(dto => {
+                if (dto.error) {
+                    root.appendChild(section('Plants', `<p style="color:var(--danger)">Error: ${dto.error}</p>`));
+                    return;
+                }
+                renderZonePlantsDetails(root, dto);
+            })
+            .catch(err => {
+                root.appendChild(section('Plants', `<p style="color:var(--danger)">Error fetching zone details: ${err.message}</p>`));
+            });
     }
 
     // Delegate jumps
@@ -566,6 +567,39 @@ function renderPlantDetail(root, dto, zone) {
         const a = e.target.closest('a[data-jump]'); if (!a) return; e.preventDefault();
         const [kind, id] = a.getAttribute('data-jump').split(':'); selectNode(kind, id);
     }, { once: true });
+}
+
+function renderZonePlantsDetails(root, dto) {
+    const env = dto.environment;
+    const headerGrid = document.createElement('div');
+    headerGrid.className = 'grid';
+    headerGrid.appendChild(card('Temperature', `${env.temperature.actual.toFixed(1)}°C`,
+        env.temperature.target.length ? `Target: ${env.temperature.target[0].toFixed(1)}-${env.temperature.target[1].toFixed(1)}°C` : 'Target: N/A'));
+    headerGrid.appendChild(card('Humidity', `${(env.humidity.actual * 100).toFixed(0)}%`,
+        env.humidity.target.length ? `Target: ${(env.humidity.target[0]*100).toFixed(0)}-${(env.humidity.target[1]*100).toFixed(0)}%` : 'Target: N/A'));
+    headerGrid.appendChild(card('CO₂', `${env.co2.actual.toFixed(0)}ppm`, `Target: ${env.co2.target.toFixed(0)}ppm`));
+    headerGrid.appendChild(card('Light', `${env.light.actual.toFixed(0)}`,
+        env.light.target.length ? `Target: ${env.light.target[0].toFixed(0)}-${env.light.target[1].toFixed(0)}` : 'Target: N/A'));
+    root.appendChild(headerGrid);
+
+    const stressEntries = Object.entries(dto.stress.breakdown).filter(([,v]) => v.count > 0);
+    if (stressEntries.length) {
+        const rows = [['Stressor', 'Plants', 'Avg Stress'],
+            ...stressEntries.map(([k,v]) => [k, v.count, v.avg.toFixed(2)])];
+        root.appendChild(section('Stress Breakdown', table(rows)));
+    }
+
+    const plantRows = [['ID', 'Strain', 'Stage', 'Age (d)', 'Health', 'Stress', 'Stressors'],
+        ...dto.plants.map(p => [
+            p.id,
+            p.strain,
+            p.stage,
+            (p.ageHours/24).toFixed(1),
+            p.health.toFixed(1),
+            p.stress.toFixed(1),
+            Object.keys(p.stressors || {}).join(', ') || '—'
+        ])];
+    root.appendChild(section('Plants', table(plantRows)));
 }
 
 function renderCompanyContent(root) {
