@@ -38,6 +38,73 @@ let simulationState = {
   tickCounter: 0,
 };
 
+// Keep a rolling history of tick totals for aggregation
+const tickHistory = [];
+
+function aggregateLastTicks(n) {
+  const slice = tickHistory.slice(-n);
+  if (slice.length === 0) {
+    return {
+      openingBalanceEUR: 0,
+      closingBalanceEUR: 0,
+      revenueEUR: 0,
+      energyEUR: 0,
+      waterEUR: 0,
+      fertilizerEUR: 0,
+      rentEUR: 0,
+      maintenanceEUR: 0,
+      capexEUR: 0,
+      otherExpenseEUR: 0,
+      totalExpensesEUR: 0,
+      netEUR: 0,
+      energyKWh: 0,
+      waterL: 0,
+    };
+  }
+
+  const agg = {
+    openingBalanceEUR: slice[0].openingBalanceEUR,
+    closingBalanceEUR: slice[slice.length - 1].closingBalanceEUR,
+    revenueEUR: 0,
+    energyEUR: 0,
+    waterEUR: 0,
+    fertilizerEUR: 0,
+    rentEUR: 0,
+    maintenanceEUR: 0,
+    capexEUR: 0,
+    otherExpenseEUR: 0,
+    totalExpensesEUR: 0,
+    netEUR: 0,
+    energyKWh: 0,
+    waterL: 0,
+  };
+
+  for (const t of slice) {
+    agg.revenueEUR += t.revenueEUR;
+    agg.energyEUR += t.energyEUR;
+    agg.waterEUR += t.waterEUR;
+    agg.fertilizerEUR += t.fertilizerEUR;
+    agg.rentEUR += t.rentEUR;
+    agg.maintenanceEUR += t.maintenanceEUR;
+    agg.capexEUR += t.capexEUR;
+    agg.otherExpenseEUR += t.otherExpenseEUR;
+    agg.energyKWh += t.energyKWh;
+    agg.waterL += t.waterL;
+  }
+
+  agg.totalExpensesEUR =
+    agg.energyEUR +
+    agg.waterEUR +
+    agg.fertilizerEUR +
+    agg.rentEUR +
+    agg.maintenanceEUR +
+    agg.capexEUR +
+    agg.otherExpenseEUR;
+  agg.netEUR = agg.revenueEUR - agg.totalExpensesEUR;
+
+  return agg;
+}
+
 const speedPresets = {
   slow: 30,   // 30 seconds per sim-day
   normal: 22, // 22 seconds per sim-day
@@ -109,6 +176,21 @@ function _broadcastStatusUpdate() {
   const tickLengthInHours = representativeZone.tickLengthInHours;
   const ticksPerDay = 24 / tickLengthInHours;
 
+  // store history and compute aggregates
+  tickHistory.push(tickTotals);
+  if (typeof costEngine.recordTickTotals === 'function') {
+    costEngine.recordTickTotals(tickTotals);
+  }
+  const maxHistory = Math.ceil(ticksPerDay * 30);
+  if (tickHistory.length > maxHistory) {
+    tickHistory.splice(0, tickHistory.length - maxHistory);
+  }
+  const aggregates = {
+    '24h': aggregateLastTicks(Math.ceil(ticksPerDay)),
+    '7d': aggregateLastTicks(Math.ceil(ticksPerDay * 7)),
+    '1m': aggregateLastTicks(Math.ceil(ticksPerDay * 30))
+  };
+
   const dailyEnergyKWh = tickTotals.energyKWh * ticksPerDay;
   const dailyWaterL = tickTotals.waterL * ticksPerDay;
 
@@ -164,6 +246,7 @@ function _broadcastStatusUpdate() {
     dailyEnergyKWh,
     dailyWaterL,
     ...tickTotals,
+    aggregates,
     grandTotals: costEngine.getGrandTotals()
   };
 

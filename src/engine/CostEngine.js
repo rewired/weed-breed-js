@@ -60,6 +60,8 @@ export class CostEngine {
 
     this._tickCounter = 0;
     this._initEmptyLedger();
+    // Store snapshots of each tick's totals (for higher level aggregation)
+    this.tickHistory = [];
   }
 
   /** internal reset of the tick ledger */
@@ -292,6 +294,15 @@ export class CostEngine {
     this.grandTotalOtherExpenseEUR += this.ledger.otherExpenseEUR;
 
     return { ...totals, totalExpensesEUR: totals.totalExpensesEUR };
+  }
+
+  /**
+   * Store an external snapshot of tick totals for later aggregation.
+   * @param {object} totals
+   */
+  recordTickTotals(totals) {
+    if (!totals) return;
+    this.tickHistory.push({ ...totals });
   }
 
   /**
