@@ -102,6 +102,16 @@ function updateWithLiveData(data) {
             }
         });
     }
+    if (data.roomSummaries) {
+        data.roomSummaries.forEach(summary => {
+            for (const structure of state.structureData.structures) {
+                const room = structure.rooms.find(r => r.id === summary.id);
+                if (room) {
+                    Object.assign(room, summary);
+                }
+            }
+        });
+    }
     renderTop();
     renderContent();
 }
@@ -254,6 +264,15 @@ function renderStructureContent(root) {
         kpis.appendChild(card('Zones', r.zones.length, 'im Room'));
         kpis.appendChild(card('Plants', plants, 'gesamt'));
         kpis.appendChild(card('Devices', devices, 'gesamt'));
+
+        const consumptionGrid = document.createElement('div');
+        consumptionGrid.className = 'grid';
+        consumptionGrid.style.marginBottom = '12px';
+        consumptionGrid.appendChild(card('Costs (Tick)', fmtEUR.format(r.totalExpensesEUR || 0)));
+        consumptionGrid.appendChild(card('Energy (Tick)', formatUnits(r.energyKWh || 0, 'kWh')));
+        consumptionGrid.appendChild(card('Water (Tick)', formatUnits(r.waterL || 0, 'liters')));
+        // Insert after the header, before other content
+        header.insertAdjacentElement('afterend', consumptionGrid);
     }
     if (level === 'zone' && z) {
         kpis.appendChild(card('Temp', `${z.temperatureC ? z.temperatureC.toFixed(1) : 'N/A'} °C`, 'Soll 24'));

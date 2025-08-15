@@ -102,30 +102,30 @@ export class CostEngine {
   }
 
   /** Book energy consumption of a device (kWh in the current tick) */
-  bookEnergy(deviceId, kWh) {
+  bookEnergy(deviceId, kWh, meta = {}) {
     const amountKWh = Number(kWh) || 0;
     if (amountKWh <= 0) return;
 
     this.ledger.energyKWh += amountKWh;
     const price = this.getEnergyPriceForDevice(deviceId);
     const eur = amountKWh * price;
-    this._add('energy', eur, this.keepEntries ? { deviceId, kWh: amountKWh, pricePerKWh: price } : undefined);
+    this._add('energy', eur, this.keepEntries ? { ...meta, deviceId, kWh: amountKWh, pricePerKWh: price } : undefined);
   }
 
   /** Book water consumption (liters in the current tick) */
-  bookWater(liters) {
+  bookWater(liters, meta = {}) {
     const amountL = Number(liters) || 0;
     if (amountL <= 0) return;
 
     this.ledger.waterL += amountL;
     const eur = amountL * this.waterPricePerLiter;
     if (eur > 0) {
-      this._add('water', eur, this.keepEntries ? { liters: amountL, pricePerLiter: this.waterPricePerLiter } : undefined);
+      this._add('water', eur, this.keepEntries ? { ...meta, liters: amountL, pricePerLiter: this.waterPricePerLiter } : undefined);
     }
   }
 
   /** Book fertilizer consumption (in mg N, P, K) */
-  bookFertilizer(npkDemand) {
+  bookFertilizer(npkDemand, meta = {}) {
     const demandN = Number(npkDemand?.N) || 0;
     const demandP = Number(npkDemand?.P) || 0;
     const demandK = Number(npkDemand?.K) || 0;
@@ -138,7 +138,7 @@ export class CostEngine {
     const totalCost = costN + costP + costK;
 
     if (totalCost > 0) {
-      this._add('fertilizer', totalCost, this.keepEntries ? { demand: { N: demandN, P: demandP, K: demandK } } : undefined);
+      this._add('fertilizer', totalCost, this.keepEntries ? { ...meta, demand: { N: demandN, P: demandP, K: demandK } } : undefined);
     }
   }
 
@@ -151,7 +151,7 @@ export class CostEngine {
   }
 
   /** Book maintenance costs of a device for the current tick (with escalation per 1000 ticks) */
-  bookDeviceMaintenance(deviceId, tick = this._tickCounter) {
+  bookDeviceMaintenance(deviceId, tick = this._tickCounter, meta = {}) {
     const cfg = this.devicePriceMap.get(deviceId);
     if (!cfg) return;
 
@@ -162,12 +162,12 @@ export class CostEngine {
     const factor = 1 + inc * Math.floor(tick / 1000);
     const eur = base * factor;
     if (eur > 0) {
-      this._add('maintenance', eur, this.keepEntries ? { deviceId, factor } : undefined);
+      this._add('maintenance', eur, this.keepEntries ? { ...meta, deviceId, factor } : undefined);
     }
   }
 
   /** Book device purchase (CapEx) explicitly */
-  bookCapex(deviceId, qty = 1) {
+  bookCapex(deviceId, qty = 1, meta = {}) {
     const cfg = this.devicePriceMap.get(deviceId);
     if (!cfg) return;
 
@@ -175,25 +175,25 @@ export class CostEngine {
     const count = Number(qty) || 0;
     const eur = unit * count;
     if (eur > 0) {
-      this._add('capex', eur, this.keepEntries ? { deviceId, qty: count, unitPrice: unit } : undefined);
+      this._add('capex', eur, this.keepEntries ? { ...meta, deviceId, qty: count, unitPrice: unit } : undefined);
     }
   }
 
   /** General capital expenditures (CapEx) not tied to a device (e.g., renovation) */
-  bookGeneralCapex(label, eur) {
+  bookGeneralCapex(label, eur, meta = {}) {
     const val = Number(eur) || 0;
     if (val > 0) {
-      this._add('capex', val, this.keepEntries ? { label } : undefined);
+      this._add('capex', val, this.keepEntries ? { ...meta, label } : undefined);
     }
   }
 
   /** General expenses (not maintenance/energy/CapEx), e.g., substrate, rent, personnel etc. */
-  bookExpense(label, eur) {
+  bookExpense(label, eur, meta = {}) {
     const val = Number(eur) || 0;
     if (val <= 0) return;
 
     const type = String(label).startsWith('Rent') ? 'rent' : 'expense';
-    this._add(type, val, this.keepEntries ? { label } : undefined);
+    this._add(type, val, this.keepEntries ? { ...meta, label } : undefined);
   }
 
   /** Seed purchase as a convenience */
@@ -308,8 +308,31 @@ export class CostEngine {
     };
   }
 
+  getTickTotalsForRoom(roomId) {
+    if (!this.keepEntries || !this.ledger.entries) return { energyKWh: 0, waterL: 0, totalExpensesEUR: 0 };
+    const records = this.ledger.entries.filter(r => r.meta?.roomId === roomId);
+    const totals = {
+      energyKWh: 0,
+      waterL: 0,
+      totalExpensesEUR: 0,
+    };
+
+    for (const record of records) {
+        if (record.meta?.kWh) {
+            totals.energyKWh += record.meta.kWh;
+        }
+        if (record.meta?.liters) {
+            totals.waterL += record.meta.liters;
+        }
+        if (record.type !== 'revenue') {
+            totals.totalExpensesEUR += record.eur;
+        }
+    }
+    return totals;
+  }
+
   /** internal summation + optional entries tracking */
-  _add(type, eur, extra) {
+  _add(type, eur, meta) {
     const val = Number(eur) || 0;
     if (val <= 0) return;
 
@@ -323,8 +346,7 @@ export class CostEngine {
     else if (type === 'revenue') this.ledger.revenueEUR += val;
 
     if (this.keepEntries && this.ledger.entries) {
-      const entry = { type, eur: val };
-      if (extra && typeof extra === 'object') Object.assign(entry, extra);
+      const entry = { type, eur: val, meta: meta || {} };
       this.ledger.entries.push(entry);
     }
   }

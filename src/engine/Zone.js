@@ -88,12 +88,14 @@ export class Zone {
       plant.payload.nutrientStress = nutrientStress;
     }
 
+    const meta = { roomId: this.roomId, zoneId: this.id };
+
     // 2. Book costs for consumed resources
     if (totalWaterL > 0) {
-      this.costEngine.bookWater(totalWaterL);
+      this.costEngine.bookWater(totalWaterL, meta);
     }
     if (consumedNutrients.N > 0 || consumedNutrients.P > 0 || consumedNutrients.K > 0) {
-      this.costEngine.bookFertilizer(consumedNutrients);
+      this.costEngine.bookFertilizer(consumedNutrients, meta);
     }
 
     // 3. Replenish the reservoir with the consumed amount (simulates fertigation)
@@ -255,11 +257,12 @@ export class Zone {
 
   #bookDeviceCosts(tickIndex) {
     if (!this.costEngine) return;
+    const meta = { roomId: this.roomId, zoneId: this.id };
     for (const d of (this.devices ?? [])) {
       const kWh = d.estimateEnergyKWh?.(this.tickLengthInHours) ?? 0;
       const priceKey = d.blueprintId ?? d.id;
-      if (kWh > 0) this.costEngine.bookDeviceEnergy(priceKey, kWh);
-      this.costEngine.bookDeviceMaintenance(priceKey, tickIndex);
+      if (kWh > 0) this.costEngine.bookDeviceEnergy(priceKey, kWh, meta);
+      this.costEngine.bookDeviceMaintenance(priceKey, tickIndex, meta);
     }
   }
 

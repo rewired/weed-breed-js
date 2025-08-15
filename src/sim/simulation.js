@@ -77,6 +77,7 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
       strainPriceMap,
       ...costEngineConfig,
       ...difficultyModifiers.economics,
+      keepEntries: true, // Ensure ledger entries are kept for per-room calculations
     });
 
     const globalRuntime = { logger, costEngine, rng, strainPriceMap, devicePriceMap, blueprints, difficulty: difficultyModifiers };

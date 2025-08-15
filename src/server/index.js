@@ -63,7 +63,7 @@ async function _runSimulationTick() {
   for (const room of structure.rooms) {
     const roomRent = room.area * costEngine.rentPerSqmRoomPerTick;
     if (roomRent > 0) {
-      costEngine.bookExpense(`Rent (Room: ${room.id})`, roomRent);
+      costEngine.bookExpense(`Rent (Room: ${room.id})`, roomRent, { roomId: room.id });
     }
 
     for (const zone of room.zones) {
@@ -137,6 +137,14 @@ function _broadcastStatusUpdate() {
     };
   });
 
+  const roomSummaries = structure.rooms.map(room => {
+      const roomTotals = costEngine.getTickTotalsForRoom(room.id);
+      return {
+          id: room.id,
+          ...roomTotals
+      };
+  });
+
   // Broadcast update to all connected clients
   const statusUpdate = {
     tick: absoluteTick,
@@ -144,6 +152,7 @@ function _broadcastStatusUpdate() {
     day: Math.floor((simulationState.tickCounter * tickLengthInHours) / 24) + 1,
     balance: (costEngine.getGrandTotals().finalBalanceEUR ?? 0).toFixed(2),
     zoneSummaries, // Changed from zoneSummary
+    roomSummaries,
     dailyEnergyKWh: dailyEnergyKWh.toFixed(2),
     dailyWaterL: dailyWaterL.toFixed(2),
     ...tickTotals
