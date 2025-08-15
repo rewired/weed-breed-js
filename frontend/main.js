@@ -340,11 +340,9 @@ function renderStructureContent(root) {
         header.insertAdjacentElement('afterend', consumptionGrid);
     }
     if (level === 'zone' && z) {
-        // The `kpis` div is not used for the zone overview, so we can remove it from the DOM if it's empty.
         if (kpis.children.length === 0) {
             kpis.remove();
         }
-        // In zone view, we fetch the detailed overview DTO
         fetch(`/api/zones/${z.id}/overview`)
             .then(res => res.json())
             .then(dto => {
@@ -357,8 +355,26 @@ function renderStructureContent(root) {
             .catch(err => {
                 root.innerHTML += `<p style="color:var(--danger)">Error fetching zone overview: ${err.message}</p>`;
             });
+    } else if (level === 'plant' && p && z) {
+        kpis.appendChild(card('Age', (p.ageHours / 24).toFixed(1) + ' d'));
+        kpis.appendChild(card('Health', (p.health * 100).toFixed(1) + '%'));
+        kpis.appendChild(card('Stress', (p.stress * 100).toFixed(1) + '%'));
+        root.appendChild(kpis);
+        fetch(`/api/zones/${z.id}/plants/${p.id}`)
+            .then(res => res.json())
+            .then(dto => {
+                if (dto.error) {
+                    root.innerHTML += `<p style="color:var(--danger)">Error: ${dto.error}</p>`;
+                    return;
+                }
+                renderPlantDetail(root, dto, z);
+            })
+            .catch(err => {
+                root.innerHTML += `<p style="color:var(--danger)">Error fetching plant detail: ${err.message}</p>`;
+            });
+        return;
     } else {
-         if (level !== 'none') root.appendChild(kpis);
+        if (level !== 'none') root.appendChild(kpis);
     }
 
     // Context detail blocks
@@ -423,7 +439,12 @@ function renderBreadcrumbs() {
         if (state.roomId) { const s = findStructureOfRoom(state.roomId); const r = s?.rooms.find(r => r.id === state.roomId); if (r) parts.push({ label: r.name, kind: 'room', id: r.id }); }
         if (state.zoneId) { const p = findParentsOfZone(state.zoneId); const z = p?.z; if (z) parts.push({ label: z.name, kind: 'zone', id: z.id }); }
         if (state.level === 'devices') { parts.push({ label: 'Devices', kind: 'devices', id: state.zoneId }); }
-        if (state.level === 'plants') { parts.push({ label: 'Plants', kind: 'plants', id: state.zoneId }); }
+        if (state.level === 'plants' || state.level === 'plant') { parts.push({ label: 'Plants', kind: 'plants', id: state.zoneId }); }
+        if (state.level === 'plant' && state.plantId) {
+            const info = findParentsOfPlant(state.plantId);
+            const label = info?.p?.name || info?.p?.id.slice(0,8) || 'Plant';
+            parts.push({ label, kind: 'plant', id: state.plantId });
+        }
         if (!parts.length) { c.innerHTML = '<span style="color:var(--muted)">Bitte links ein Element wählen…</span>'; return; }
         parts.forEach((p, i) => { const a = document.createElement('a'); a.href = 'javascript:void(0)'; a.textContent = p.label; a.addEventListener('click', () => selectNode(p.kind, p.id)); c.appendChild(a); if (i < parts.length - 1) { const s = document.createElement('span'); s.textContent = '›'; s.style.color = 'var(--muted)'; s.style.margin = '0 4px'; c.appendChild(s); } });
     } else {
@@ -500,6 +521,47 @@ function renderZoneOverview(root, dto, zone) {
     root.appendChild(section('Devices', devicesGrid.outerHTML + cta));
 
     // Delegate jumps
+    root.addEventListener('click', (e) => {
+        const a = e.target.closest('a[data-jump]'); if (!a) return; e.preventDefault();
+        const [kind, id] = a.getAttribute('data-jump').split(':'); selectNode(kind, id);
+    }, { once: true });
+}
+
+function renderPlantDetail(root, dto, zone) {
+    const envRows = [
+        ['Temperature (°C)',
+            dto.environment.temperature.set.length ? `${dto.environment.temperature.set[0]}-${dto.environment.temperature.set[1]}` : 'N/A',
+            dto.environment.temperature.actual.toFixed(1)],
+        ['Humidity (%)',
+            dto.environment.humidity.set.length ? `${(dto.environment.humidity.set[0]*100).toFixed(0)}-${(dto.environment.humidity.set[1]*100).toFixed(0)}` : 'N/A',
+            (dto.environment.humidity.actual*100).toFixed(0)],
+        ['CO2 (ppm)', dto.environment.co2.set, dto.environment.co2.actual.toFixed(0)],
+        ['PPFD',
+            dto.environment.light.set.length ? `${dto.environment.light.set[0]}-${dto.environment.light.set[1]}` : 'N/A',
+            dto.environment.light.actual.toFixed(0)]
+    ];
+    root.appendChild(section('Environment vs. Required', table([['Factor','Required','Actual'], ...envRows])));
+
+    const labels = { temperature: 'Temperature', humidity: 'Humidity', light: 'Light', nutrients: 'Nutrients' };
+    const entries = Object.entries(dto.stressFactors.breakdown)
+        .filter(([, v]) => v.count > 0)
+        .sort((a, b) => b[1].count - a[1].count);
+    if (entries.length) {
+        const rows = [['Factor', 'Count', 'Avg Stress'], ...entries.map(([k, v]) => [labels[k] || k, v.count, v.avg.toFixed(2)])];
+        const stressHtml = `<p>Avg Stress: ${dto.stressFactors.avgStress.toFixed(2)}</p>` + table(rows);
+        root.appendChild(section('Stress Factors', stressHtml));
+    }
+
+    const plantRows = [['ID', 'Strain', 'Age (d)', 'Health', 'Stress'],
+        ...dto.plants.map(p => [
+            `<a href="#" data-jump="plant:${p.id}">${p.shortId}</a>`,
+            p.strain,
+            p.ageDays,
+            p.health,
+            p.stress
+        ])];
+    root.appendChild(section('Plants in Zone', table(plantRows)));
+
     root.addEventListener('click', (e) => {
         const a = e.target.closest('a[data-jump]'); if (!a) return; e.preventDefault();
         const [kind, id] = a.getAttribute('data-jump').split(':'); selectNode(kind, id);

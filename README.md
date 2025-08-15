@@ -41,6 +41,10 @@ npm run dev
 ```
 This runs the server with `node --watch src/server/index.js`.
 
+### Plant Detail View
+
+The frontend includes a plant detail view reachable via the structure tree. Navigate to a zone, open its plant list and select a plant to inspect. The view compares current environmental readings with the strain's preferred ranges, highlights stress factors across plants in the zone and lists all plants for quick navigation.
+
 ## Documentation
 
 For more detailed information about the project, please refer to the documentation in the `docs` directory:
