@@ -466,7 +466,21 @@ function renderZoneOverview(root, dto, zone) {
     envGrid.appendChild(card('PPFD', `${env.ppfd.actual.toFixed(0)}`, ppfdSub));
     root.appendChild(section('Environment', envGrid.outerHTML));
 
-    // 3. Plant Packages
+    // 3. Stress Section
+    if (dto.plantStress) {
+        const labels = { temperature: 'Temperature', humidity: 'Humidity', light: 'Light', nutrients: 'Nutrients' };
+        const entries = Object.entries(dto.plantStress.breakdown)
+            .filter(([, v]) => v.count > 0)
+            .sort((a, b) => b[1].count - a[1].count);
+        if (entries.length > 0) {
+            const rows = [ ['Stressor', 'Plants', 'Avg Stress'],
+                ...entries.map(([k, v]) => [labels[k] || k, v.count, v.avgStress.toFixed(2)]) ];
+            const stressHtml = `<p>Avg Stress: ${dto.plantStress.avgStress.toFixed(2)}</p>` + table(rows);
+            root.appendChild(section('Stress', stressHtml));
+        }
+    }
+
+    // 4. Plant Packages
     if (dto.plantPackages && dto.plantPackages.length > 0) {
         const pkgTable = table([
             ['Package', 'Count', 'Avg Age (d)', 'Avg Health', 'Biomass Idx'],
@@ -475,8 +489,7 @@ function renderZoneOverview(root, dto, zone) {
         root.appendChild(section('Plant Packages', pkgTable));
     }
 
-
-    // 4. Devices Section
+    // 5. Devices Section
     const dev = dto.devices;
     const devicesGrid = document.createElement('div');
     devicesGrid.className = 'grid';
