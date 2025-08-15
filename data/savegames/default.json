@@ -32,6 +32,7 @@
             "devices": [
               { "kind": "Lamp", "count": 8 },
               { "kind": "ClimateUnit", "count": 2, "overrides": { "targetTemperature": 24 } },
+              { "kind": "HumidityControlUnit", "count": 2, "overrides": { "targetHumidity": 0.6 } },
               { "kind": "CO2Injector", "count": 1 }
             ]
           },
@@ -46,7 +47,7 @@
             "devices": [
               { "kind": "Lamp", "count": 12 },
               { "kind": "ClimateUnit", "count": 3, "overrides": { "targetTemperature": 22 } },
-              { "kind": "Dehumidifier", "count": 2 },
+              { "kind": "HumidityControlUnit", "count": 2, "overrides": { "targetHumidity": 0.6 } },
               { "kind": "CO2Injector", "count": 2 }
             ]
           }
