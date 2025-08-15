@@ -162,7 +162,8 @@ function _broadcastStatusUpdate() {
     roomSummaries,
     dailyEnergyKWh,
     dailyWaterL,
-    ...tickTotals
+    ...tickTotals,
+    grandTotals: costEngine.getGrandTotals()
   };
 
   logger.info({ tick: absoluteTick, zones: zoneSummaries.length }, 'Broadcasting update to clients');
@@ -291,7 +292,8 @@ app.get('/simulation/status', (req, res) => {
     tickIntervalHours: tickLengthInHours,
     day: Math.floor((tickCounter * tickLengthInHours) / 24) + 1,
     balance: costEngine.getGrandTotals().finalBalanceEUR ?? 0,
-    structure: structure
+    structure: structure,
+    grandTotals: costEngine.getGrandTotals()
   });
 });
 
