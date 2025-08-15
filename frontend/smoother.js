@@ -43,3 +43,19 @@ export function makeSmoother({
     return null; // -> nichts ändern (UI bleibt ruhig)
   };
 }
+
+// Rolling average over a time window (default 24h)
+export function makeSmooth({ windowHours = 24 } = {}) {
+  const windowMs = windowHours * 3600 * 1000;
+  const samples = [];
+  let sum = 0;
+
+  return function next(value, now = Date.now()) {
+    samples.push({ t: now, v: value });
+    sum += value;
+    while (samples.length && now - samples[0].t > windowMs) {
+      sum -= samples.shift().v;
+    }
+    return samples.length ? sum / samples.length : 0;
+  };
+}

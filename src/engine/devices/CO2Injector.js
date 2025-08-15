@@ -11,19 +11,29 @@ export class CO2Injector extends BaseDevice {
 
   applyEffect(zone) {
     const s = ensureEnv(zone);
-    const setpoint = Number(this.settings?.setpoint ?? 1100);     // ppm
-    const hyster   = Number(this.settings?.hysteresis ?? 50);     // ppm
-    const pulse    = Number(this.settings?.pulsePpmPerTick ?? 150); // ppm/Tick
+    const target   = Number(this.settings?.targetCO2 ?? this.settings?.setpoint ?? 1100); // ppm
+    const hyster   = Number(this.settings?.hysteresis ?? 50);                             // ppm
+    const pulse    = Number(this.settings?.pulsePpmPerTick ?? 150);                       // ppm/Tick
+    const mode     = this.settings?.mode ?? 'auto';
 
-    const onLow   = setpoint - hyster * 0.5;
-    const offHigh = setpoint + hyster * 0.5;
+    if (mode === 'off') {
+      this._lastOn = false;
+      return;
+    }
 
-    if (!this._lastOn && s.co2ppm < onLow) this._lastOn = true;
-    if ( this._lastOn && s.co2ppm > offHigh) this._lastOn = false;
+    const onLow   = target - hyster * 0.5;
+    const offHigh = target + hyster * 0.5;
+
+    if (s.co2ppm >= onLow && s.co2ppm <= offHigh) {
+      this._lastOn = false;
+      return;
+    }
+
+    if (s.co2ppm < onLow) this._lastOn = true;
+    if (s.co2ppm > offHigh) this._lastOn = false;
 
     if (this._lastOn && pulse > 0) {
       addCO2Delta(s, pulse);
-      // book CO2 consumption via cost engine
       this.runtimeCtx?.zone?.costEngine?.bookCO2(pulse, { zoneId: this.runtimeCtx?.zone?.id, deviceId: this.id });
     }
   }

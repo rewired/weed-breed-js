@@ -139,6 +139,7 @@ function _broadcastStatusUpdate() {
       temperatureC: zone.status.temperatureC,
       humidity: zone.status.humidity,
       co2ppm: zone.status.co2ppm,
+      ppfd: zone.status.ppfd,
     };
   });
 
