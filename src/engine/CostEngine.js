@@ -16,6 +16,7 @@ export class CostEngine {
     strainPriceMap = new Map(),
     energyPricePerKWh = 0.35,
     waterPricePerLiter = 0.002, // 2 EUR/m³
+    pricePerPpmCO2 = 0,
     pricePerMgN = 0.001,
     pricePerMgP = 0.002,
     pricePerMgK = 0.0015,
@@ -30,6 +31,7 @@ export class CostEngine {
     this.strainPriceMap = strainPriceMap;
     this.energyPricePerKWh = Number(energyPricePerKWh) || 0;
     this.waterPricePerLiter = Number(waterPricePerLiter) || 0;
+    this.pricePerPpmCO2 = Number(pricePerPpmCO2) || 0;
     this.pricePerMgN = Number(pricePerMgN) || 0;
     this.pricePerMgP = Number(pricePerMgP) || 0;
     this.pricePerMgK = Number(pricePerMgK) || 0;
@@ -63,6 +65,7 @@ export class CostEngine {
       energyEUR: 0,
       energyKWh: 0,
       waterL: 0,
+      co2ppm: 0,
       maintenanceEUR: 0,
       capexEUR: 0,
       otherExpenseEUR: 0,
@@ -111,6 +114,16 @@ export class CostEngine {
     this.ledger.waterL += amountL;
     const eur = amountL * this.waterPricePerLiter;
     this._add('expense', eur, this.keepEntries ? { subType: 'water', liters: amountL, pricePerLiter: this.waterPricePerLiter } : undefined);
+  }
+
+  /** Book CO2 injection (ppm in the current tick) */
+  bookCO2(ppm) {
+    const amount = Number(ppm) || 0;
+    if (amount <= 0) return;
+
+    this.ledger.co2ppm += amount;
+    const eur = amount * this.pricePerPpmCO2;
+    this._add('expense', eur, this.keepEntries ? { subType: 'co2', ppm: amount, pricePerPpm: this.pricePerPpmCO2 } : undefined);
   }
 
   /** Book fertilizer consumption (in mg N, P, K) */
@@ -225,6 +238,7 @@ export class CostEngine {
       energyEUR: this.ledger.energyEUR,
       energyKWh: this.ledger.energyKWh,
       waterL: this.ledger.waterL,
+      co2ppm: this.ledger.co2ppm,
       maintenanceEUR: this.ledger.maintenanceEUR,
       capexEUR: this.ledger.capexEUR,
       otherExpenseEUR: this.ledger.otherExpenseEUR,
@@ -263,6 +277,7 @@ export class CostEngine {
       energyEUR: this.ledger.energyEUR,
       energyKWh: this.ledger.energyKWh,
       waterL: this.ledger.waterL,
+      co2ppm: this.ledger.co2ppm,
       maintenanceEUR: this.ledger.maintenanceEUR,
       capexEUR: this.ledger.capexEUR,
       otherExpenseEUR: this.ledger.otherExpenseEUR,
