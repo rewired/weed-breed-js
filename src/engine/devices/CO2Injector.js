@@ -21,11 +21,7 @@ export class CO2Injector extends BaseDevice {
     if (!this._lastOn && s.co2ppm < onLow) this._lastOn = true;
     if ( this._lastOn && s.co2ppm > offHigh) this._lastOn = false;
 
-    if (this._lastOn && pulse > 0) {
-      addCO2Delta(s, pulse);
-      const costEngine = zone?.costEngine ?? this.runtimeCtx?.zone?.costEngine;
-      costEngine?.bookCO2?.(pulse);
-    }
+    if (this._lastOn && pulse > 0) addCO2Delta(s, pulse);
   }
 
   estimateEnergyKWh(_tickHours) {

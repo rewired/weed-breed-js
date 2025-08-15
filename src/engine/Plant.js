@@ -104,12 +104,8 @@ export class Plant {
     const rhStress = Math.abs(RH - rhOpt) / (env.plant.rhWidth * optimalRangeMultiplier);
     if (rhStress > 0.1) this.stressors.humidity = { actual: RH, target: rhOpt };
 
-    const lightsOn = zone?.runtime?.lightsOn !== false;
-    let lStress = 0;
-    if (lightsOn) {
-      lStress = (L < lightPreferences[0] || L > lightPreferences[1]) ? 0.2 : 0;
-      if (lStress > 0) this.stressors.light = { actual: L, target: lightPreferences };
-    }
+    const lStress = (L < lightPreferences[0] || L > lightPreferences[1]) ? 0.2 : 0;
+    if (lStress > 0) this.stressors.light = { actual: L, target: lightPreferences };
 
     const envStress = Math.min(1, (tStress + rhStress + lStress) / 3);
 

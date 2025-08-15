@@ -164,7 +164,6 @@ export class Zone {
     const currentSimHour = (tickIndex * this.tickLengthInHours) % 24;
 
     const lightsOn = currentSimHour < lightHours;
-    this.runtime.lightsOn = lightsOn;
 
     for (const device of this.devices) {
       if (device.kind === 'Lamp') {
@@ -225,9 +224,6 @@ export class Zone {
           rng: this.rng
         });
         this.plants[i] = newPlant;
-        if (this.costEngine && strainId) {
-          this.costEngine.bookSeeds(strainId, 1);
-        }
         this.logger.info({ oldPlantId: plant.id.slice(0,8), newPlantId: newPlant.id.slice(0,8) }, 'REPLANT');
       }
     }
