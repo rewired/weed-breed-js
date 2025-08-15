@@ -148,7 +148,7 @@ function buildStructureTree(root) {
             const rLi = nodeLi("room", r.id, "🚪", r.name, r.alerts, r.zones.length);
             const rCh = rLi.querySelector(".children");
             r.zones.forEach((z) => {
-                const zCount = (z.plants?.length || 0) + (z.devices?.length || 0);
+                const zCount = z.plants?.length || 0;
                 const zLi = nodeLi("zone", z.id, "🧩", z.name, z.alerts, zCount);
                 const zCh = zLi.querySelector(".children");
                 // Devices
@@ -158,9 +158,8 @@ function buildStructureTree(root) {
                 }
                 // Plants
                 if (z.plants && z.plants.length > 0) {
-                    z.plants.forEach((p) => {
-                        zCh.appendChild(nodeLi("plant", p.id, "🌿", p.name, 0, 0));
-                    });
+                    const plantLi = nodeLi('plants', z.id, '🌿', `Plants (${z.plants.length})`, 0, z.plants.length);
+                    zCh.appendChild(plantLi);
                 }
                 rCh.appendChild(zLi);
             });
@@ -174,27 +173,23 @@ function buildStructureTree(root) {
 function selectNode(kind, id) {
     if (state.treeMode === "structure") {
         state.level = kind;
+        state.plantId = null; // Reset plantId on any new selection
+
         if (kind === "structure") {
             state.structureId = id;
             state.roomId = null;
             state.zoneId = null;
-            state.plantId = null;
-        }
-        if (kind === "room") {
+        } else if (kind === "room") {
             state.roomId = id;
             state.zoneId = null;
-            state.plantId = null;
             const s = findStructureOfRoom(id);
             state.structureId = s?.id || null;
-        }
-        if (kind === "zone" || kind === "devices") {
+        } else if (kind === "zone" || kind === "devices" || kind === "plants") {
             state.zoneId = id;
-            state.plantId = null;
             const { s, r } = findParentsOfZone(id) || {};
             state.structureId = s?.id || null;
             state.roomId = r?.id || null;
-        }
-        if (kind === "plant") {
+        } else if (kind === "plant") {
             state.plantId = id;
             const p = findParentsOfPlant(id);
             state.structureId = p?.s?.id || null;
@@ -295,10 +290,9 @@ function renderStructureContent(root) {
         ])));
     }
     if (level === 'zone' && z) {
-        const plantLinks = z.plants ? z.plants.map(pl => `<li>${link(`plant:${pl.id}`, pl.name)}</li>`).join('') : '';
         root.appendChild(section('Navigiere zu…', `<ul style="margin:0;padding-left:16px">
             <li>${link(`devices:${z.id}`, 'Devices')}</li>
-            ${plantLinks}
+            <li>${link(`plants:${z.id}`, 'Plants')}</li>
         </ul>`));
     }
     if (level === 'devices' && z) {
@@ -307,15 +301,17 @@ function renderStructureContent(root) {
             ...(z.devices || []).map(d => [d.name, d.type, d.health ? d.health.toFixed(2) : 'N/A', fmtEUR.format(d.maintenanceCostPerTick || 0)])
         ])));
     }
-    if (level === 'plant' && p) {
-        root.appendChild(section('Plant Details', table([
-            ['Feld', 'Wert'],
-            ['Name', p?.name || '—'],
-            ['Strain', p?.strain || '—'],
-            ['Phase', p?.phase || '—'],
-            ['Alter', p ? `${p.age} d` : '—'],
-            ['Biomasse', p ? `${p.biomass.toFixed(2)} g` : '—'],
-            ['Stress', p?.stress ?? '—']
+    if (level === 'plants' && z) {
+        root.appendChild(section('Plants', table([
+            ['Plant', 'Strain', 'Age (d)', 'Biomass (g)', 'Health', 'Stress'],
+            ...(z.plants || []).map(p => [
+                p.name,
+                p.strain?.name || 'N/A',
+                (p.ageHours / 24).toFixed(1),
+                p.biomass.toFixed(2),
+                p.health.toFixed(2),
+                p.stress.toFixed(2)
+            ])
         ])));
     }
 
@@ -334,7 +330,7 @@ function renderBreadcrumbs() {
         if (state.roomId) { const s = findStructureOfRoom(state.roomId); const r = s?.rooms.find(r => r.id === state.roomId); if (r) parts.push({ label: r.name, kind: 'room', id: r.id }); }
         if (state.zoneId) { const p = findParentsOfZone(state.zoneId); const z = p?.z; if (z) parts.push({ label: z.name, kind: 'zone', id: z.id }); }
         if (state.level === 'devices') { parts.push({ label: 'Devices', kind: 'devices', id: state.zoneId }); }
-        if (state.plantId) { const p = findParentsOfPlant(state.plantId); if (p?.p) parts.push({ label: p.p.name, kind: 'plant', id: p.p.id }); }
+        if (state.level === 'plants') { parts.push({ label: 'Plants', kind: 'plants', id: state.zoneId }); }
         if (!parts.length) { c.innerHTML = '<span style="color:var(--muted)">Bitte links ein Element wählen…</span>'; return; }
         parts.forEach((p, i) => { const a = document.createElement('a'); a.href = 'javascript:void(0)'; a.textContent = p.label; a.addEventListener('click', () => selectNode(p.kind, p.id)); c.appendChild(a); if (i < parts.length - 1) { const s = document.createElement('span'); s.textContent = '›'; s.style.color = 'var(--muted)'; s.style.margin = '0 4px'; c.appendChild(s); } });
     } else {
@@ -451,20 +447,6 @@ function init() {
         })
     );
 
-    $("#search").addEventListener("input", (e) => {
-        const q = e.target.value.toLowerCase();
-        $$("#tree .node .title").forEach((t) => {
-            const hit = t.textContent.toLowerCase().includes(q);
-            t.closest("li").style.display = hit ? "" : "none";
-        });
-    });
-
-    $$(".chip").forEach((ch) =>
-        ch.addEventListener("click", () => {
-            const on = ch.getAttribute("aria-pressed") === "true";
-            ch.setAttribute("aria-pressed", String(!on));
-        })
-    );
 
     $("#btn-pause").disabled = true;
     renderTop();
