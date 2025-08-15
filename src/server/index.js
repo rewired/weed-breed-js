@@ -382,6 +382,7 @@ app.get('/simulation/status', (req, res) => {
 });
 
 import { createZoneOverviewDTO } from './services/zoneOverviewService.js';
+import { createPlantDetailDTO } from './services/plantDetailService.js';
 
 app.get('/api/zones/:zoneId/overview', (req, res) => {
   const { zoneId } = req.params;
@@ -457,6 +458,35 @@ app.get('/api/zones/:zoneId/details', (req, res) => {
     devices,
     plants,
   });
+});
+
+app.get('/api/zones/:zoneId/plants/:plantId', (req, res) => {
+  const { zoneId, plantId } = req.params;
+  const { structure } = simulationState;
+
+  if (simulationState.status === 'stopped' || !structure) {
+    return res.status(404).send({ message: 'Simulation not running.' });
+  }
+
+  let zone = null;
+  for (const room of structure.rooms) {
+    const foundZone = room.zones.find(z => z.id === zoneId);
+    if (foundZone) {
+      zone = foundZone;
+      break;
+    }
+  }
+  if (!zone) {
+    return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
+  }
+
+  const plant = zone.plants.find(p => p.id === plantId);
+  if (!plant) {
+    return res.status(404).send({ message: `Plant with id ${plantId} not found in zone ${zoneId}.` });
+  }
+
+  const dto = createPlantDetailDTO(zone, plant);
+  res.status(200).send(dto);
 });
 
 
