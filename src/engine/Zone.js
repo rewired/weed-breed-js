@@ -146,6 +146,9 @@ export class Zone {
   addPlant(plant) {
     if (!plant) return;
     this.plants.push(plant);
+    if (this.costEngine && plant?.strain?.id) {
+      this.costEngine.bookSeeds(plant.strain.id, 1);
+    }
   }
 
   // --- Private Tick-Phase Implementations ---------------------------------
@@ -219,6 +222,7 @@ export class Zone {
           this.costEngine.bookRevenue('Harvest', revenue);
           this.logger.info({ plantId: plant.id.slice(0,8), yieldGrams: yieldGrams.toFixed(2), revenue: revenue.toFixed(2) }, 'HARVEST');
         }
+        this.costEngine.bookSeeds(strainId, 1);
 
         const newPlant = new Plant({
           strain: plant.strain,
