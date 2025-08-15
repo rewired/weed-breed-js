@@ -34,6 +34,12 @@ export function createZoneOverviewDTO(zone, costEngine) {
     const harvestEtaDays = zone.plants.length > 0 ? Math.round(zone.plants.reduce((sum, p) => sum + (p.strain.photoperiod.vegetationDays + p.strain.photoperiod.floweringDays - p.ageHours / 24), 0) / zone.plants.length) : 0;
     const yieldForecastGrams = zone.plants.reduce((sum, p) => sum + p.calculateYield(), 0);
 
+    const co2Device = zone.devices.find(d => d.kind === 'CO2Injector');
+    const co2Target = co2Device?.settings?.targetCO2 ?? 800;
+    const co2Hyster = co2Device?.settings?.hysteresis ?? 50;
+    const co2Mode = co2Device?.settings?.mode ?? 'auto';
+    const co2Status = co2Mode === 'off' ? 'off' : (co2Device?._lastOn ? 'on' : 'idle');
+    const co2Range = [co2Target - co2Hyster * 0.5, co2Target + co2Hyster * 0.5];
 
     // Placeholder for the DTO
     const dto = {
@@ -52,13 +58,13 @@ export function createZoneOverviewDTO(zone, costEngine) {
         environment: {
             temperature: { set: 24, actual: zone.status.temperatureC, delta: 0, stability: 0 }, // TODO
             humidity: { set: 0.60, actual: zone.status.humidity, delta: 0, stability: 0 }, // TODO
-            co2: { set: 800, actual: zone.status.co2ppm, delta: 0, stability: 0 }, // TODO
+            co2: { set: co2Target, actual: zone.status.co2ppm, delta: 0, stability: 0 }, // TODO
             ppfd: { set: 700, actual: zone.status.ppfd, delta: 0, stability: 0 }, // TODO
         },
         controllers: {
             hvac: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
             dehumidifier: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
-            co2Injector: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
+            co2Injector: { status: co2Status, dutyCyclePct24h: 0, targetRange: co2Range, mode: co2Mode },
             lights: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
         },
         resourcesDaily: {

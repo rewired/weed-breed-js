@@ -1,4 +1,4 @@
-import { makeSmoother } from "./smoother.js";
+import { makeSmooth } from "./smoother.js";
 import formatUnits from "./format.js";
 
 // --- Helpers -------------------------------------------------------------
@@ -35,7 +35,24 @@ const state = {
     tickCostEUR: 0,
     grandTotals: {},
     structureData: { structures: [] },
+    // per-zone smoothing helpers
+    zoneSmoothers: {},
 };
+
+function ensureZoneSmoothers(zone) {
+    if (!zone) return null;
+    if (!state.zoneSmoothers[zone.id]) {
+        state.zoneSmoothers[zone.id] = {
+            humidity: makeSmooth({ windowHours: 24 }),
+            ppfd: makeSmooth({ windowHours: 24 }),
+            avgHumidity: null,
+            avgPPFD: null,
+            rawHumidity: null,
+            rawPPFD: null,
+        };
+    }
+    return state.zoneSmoothers[zone.id];
+}
 
 // --- WebSocket connection -------------------------------------------------
 const socket = new WebSocket(`ws://${window.location.host}`);
@@ -74,6 +91,9 @@ async function fetchInitialData() {
             if (data.structure) {
                 // The backend returns a single structure, but the frontend expects an array of structures.
                 state.structureData = { structures: [data.structure] };
+                state.structureData.structures.forEach(s =>
+                    s.rooms.forEach(r => r.zones.forEach(z => ensureZoneSmoothers(z)))
+                );
                 buildTree();
                 // By default, select the first structure
                 if (state.structureData.structures.length > 0) {
@@ -110,6 +130,11 @@ function updateWithLiveData(data) {
                 for (const room of structure.rooms) {
                     const zone = room.zones.find(z => z.id === summary.id);
                     if (zone) {
+                        const smoother = ensureZoneSmoothers(zone);
+                        smoother.rawHumidity = summary.humidity;
+                        smoother.rawPPFD = summary.ppfd;
+                        smoother.avgHumidity = smoother.humidity(summary.humidity, state.simTime.getTime());
+                        smoother.avgPPFD = smoother.ppfd(summary.ppfd, state.simTime.getTime());
                         Object.assign(zone, summary);
                     }
                 }
@@ -425,10 +450,17 @@ function renderZoneOverview(root, dto, zone) {
     const envGrid = document.createElement('div');
     envGrid.className = 'grid';
     const env = dto.environment;
+    const smoother = ensureZoneSmoothers(zone);
+    if (smoother) {
+        env.humidity.actual = smoother.avgHumidity ?? env.humidity.actual;
+        env.ppfd.actual = smoother.avgPPFD ?? env.ppfd.actual;
+    }
     envGrid.appendChild(card('Temperature', `${env.temperature.actual.toFixed(1)}°C`, `Set: ${env.temperature.set}°C`));
-    envGrid.appendChild(card('Humidity', `${(env.humidity.actual * 100).toFixed(0)}%`, `Set: ${(env.humidity.set * 100).toFixed(0)}%`));
+    const humiditySub = `Raw: ${((smoother?.rawHumidity ?? env.humidity.actual) * 100).toFixed(0)}% • Set: ${(env.humidity.set * 100).toFixed(0)}%`;
+    envGrid.appendChild(card('Humidity', `${(env.humidity.actual * 100).toFixed(0)}%`, humiditySub));
     envGrid.appendChild(card('CO2', `${env.co2.actual.toFixed(0)}ppm`, `Set: ${env.co2.set}ppm`));
-    envGrid.appendChild(card('PPFD', `${env.ppfd.actual.toFixed(0)}`, `Set: ${env.ppfd.set}`));
+    const ppfdSub = `Raw: ${(smoother?.rawPPFD ?? env.ppfd.actual).toFixed(0)} • Set: ${env.ppfd.set}`;
+    envGrid.appendChild(card('PPFD', `${env.ppfd.actual.toFixed(0)}`, ppfdSub));
     root.appendChild(section('Environment', envGrid.outerHTML));
 
     // 3. Plant Packages
