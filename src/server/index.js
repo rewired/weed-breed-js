@@ -274,25 +274,7 @@ app.get('/simulation/status', (req, res) => {
     time: new Date(tickCounter * tickLengthInHours * 60 * 60 * 1000).toISOString().substr(11, 8),
     day: Math.floor((tickCounter * tickLengthInHours) / 24) + 1,
     balance: (costEngine.getGrandTotals().finalBalanceEUR ?? 0).toFixed(2),
-    structure: {
-      id: structure.id,
-      name: structure.name,
-      usableArea: structure.usableArea,
-      height: structure.height,
-      rooms: structure.rooms.map(r => ({
-        id: r.id,
-        name: r.name,
-        type: r.type,
-        area: r.area,
-        height: r.height,
-        rentPerTick: r.rentPerTick,
-        zones: r.zones.map(z => ({
-          id: z.id,
-          name: z.name,
-          deviceCount: z.devices.length
-        }))
-      }))
-    }
+    structure: structure
   });
 });
 
