@@ -135,10 +135,10 @@
           <button class="btn primary" id="btn-play" title="Start">▶ Start</button>
           <button class="btn" id="btn-pause" title="Pause" disabled>⏸ Pause</button>
           <span style="width:10px"></span>
-          <button class="btn ghost speed" data-speed="0.5" aria-pressed="false">0.5×</button>
-          <button class="btn ghost speed" data-speed="1" aria-pressed="true">1×</button>
-          <button class="btn ghost speed" data-speed="2" aria-pressed="false">2×</button>
-          <button class="btn ghost speed" data-speed="5" aria-pressed="false">5×</button>
+          <button class="btn ghost speed" data-speed="normal" aria-pressed="true">Normal</button>
+          <button class="btn ghost speed" data-speed="mittel" aria-pressed="false">Mittel</button>
+          <button class="btn ghost speed" data-speed="schnell" aria-pressed="false">Schnell</button>
+          <button class="btn ghost speed" data-speed="extrem" aria-pressed="false">Extrem</button>
         </div>
         <div id="clock" class="clock" aria-live="polite">
           <div class="dot" aria-hidden="true"></div>
@@ -244,7 +244,7 @@
     // --- UI State (mocked to demonstrate) ------------------------------------
     const state = {
       running: false,
-      speed: 1,
+      speed: 'normal',
       baseMs: 1000, // 1s per tick @1x for demo; plug real sim later
       tick: 0,
       tickHours: 3,
@@ -327,10 +327,11 @@
     }
 
     // --- Timer control -------------------------------------------------------
+    const speedMap = { normal: 1, mittel: 2, schnell: 5, extrem: 10 };
     let handle = null;
     function start() {
       if (handle) return; state.running = true; render();
-      handle = setInterval(mockTick, state.baseMs / state.speed);
+      handle = setInterval(mockTick, state.baseMs / speedMap[state.speed]);
       $('#btn-play').disabled = true; $('#btn-pause').disabled = false;
     }
     function pause() {
@@ -339,17 +340,17 @@
       $('#btn-play').disabled = false; $('#btn-pause').disabled = true;
     }
     function step() { if (!state.running) { mockTick(); } }
-    function setSpeed(mult) {
-      state.speed = mult;
-      document.querySelectorAll('.speed').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.speed == mult)));
-      if (state.running) { clearInterval(handle); handle = setInterval(mockTick, state.baseMs / state.speed); }
+    function setSpeed(preset) {
+      state.speed = preset;
+      document.querySelectorAll('.speed').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.speed === preset)));
+      if (state.running) { clearInterval(handle); handle = setInterval(mockTick, state.baseMs / speedMap[state.speed]); }
     }
 
     // --- Wire up controls ----------------------------------------------------
     $('#btn-play').addEventListener('click', start);
     $('#btn-pause').addEventListener('click', pause);
     $('#btn-step').addEventListener('click', step);
-    document.querySelectorAll('.speed').forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
+    document.querySelectorAll('.speed').forEach(b => b.addEventListener('click', () => setSpeed(b.dataset.speed)));
 
     // --- Public adapter API (for later integration) --------------------------
     // window.simAdapter.applySnapshot(snapshot) expects an object like:

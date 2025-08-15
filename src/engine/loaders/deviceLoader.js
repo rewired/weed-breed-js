@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // <root>/data/devices/*.json
-const DEVICES_DIR = path.resolve(__dirname, '../../data/devices');
+const DEVICES_DIR = path.resolve(__dirname, '../../../data/devices');
 
 async function readJson(fp) {
   const raw = await fs.readFile(fp, 'utf-8');

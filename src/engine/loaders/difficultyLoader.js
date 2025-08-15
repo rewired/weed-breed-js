@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const difficultyConfigPath = path.join(__dirname, '..', '..', 'data', 'config', 'difficulty.json');
+const difficultyConfigPath = path.join(__dirname, '..', '..', '..', 'data', 'config', 'difficulty.json');
 
 /**
  * Loads the difficulty settings from the configuration file.
