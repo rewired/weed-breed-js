@@ -135,11 +135,10 @@
           <button class="btn primary" id="btn-play" title="Start">▶ Start</button>
           <button class="btn" id="btn-pause" title="Pause" disabled>⏸ Pause</button>
           <span style="width:10px"></span>
-          <button class="btn ghost speed" data-speed="slow" aria-pressed="false">Slow</button>
           <button class="btn ghost speed" data-speed="normal" aria-pressed="true">Normal</button>
-          <button class="btn ghost speed" data-speed="fast" aria-pressed="false">Fast</button>
-          <button class="btn ghost speed" data-speed="turbo" aria-pressed="false">Turbo</button>
-          <button class="btn ghost speed" data-speed="insane" aria-pressed="false">Insane</button>
+          <button class="btn ghost speed" data-speed="mittel" aria-pressed="false">Mittel</button>
+          <button class="btn ghost speed" data-speed="schnell" aria-pressed="false">Schnell</button>
+          <button class="btn ghost speed" data-speed="extrem" aria-pressed="false">Extrem</button>
         </div>
         <div id="clock" class="clock" aria-live="polite">
           <div class="dot" aria-hidden="true"></div>
@@ -219,6 +218,8 @@
               <th>Sorte</th>
               <th>Pflanzen</th>
               <th>Ø Gesundheit</th>
+              <th>Stress</th>
+              <th>Gründe</th>
               <th>Erwart. Ertrag</th>
               <th>Tage z. Ernte</th>
               <th>Temp.</th>
@@ -227,7 +228,7 @@
             </tr>
           </thead>
           <tbody id="zones-tbody">
-            <tr><td colspan="9" style="color:var(--muted)">Noch keine Daten. Simulation starten.</td></tr>
+            <tr><td colspan="11" style="color:var(--muted)">Noch keine Daten. Simulation starten.</td></tr>
           </tbody>
         </table>
       </section>

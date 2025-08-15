@@ -109,11 +109,14 @@ function render(data) {
     data.zoneSummaries.forEach(zone => {
       plantCount += zone.plantCount;
       const tr = document.createElement('tr');
+      const reasons = zone.stressReasons ? Object.entries(zone.stressReasons).map(([r,c]) => `${r} (${c})`).join(', ') : '–';
       tr.innerHTML = `
         <td>${zone.name}</td>
         <td>${zone.strainName || 'N/A'}</td>
         <td>${zone.plantCount}</td>
         <td>${zone.avgHealth ? zone.avgHealth + '%' : 'N/A'}</td>
+        <td>${zone.avgStress ? zone.avgStress + '%' : 'N/A'}</td>
+        <td>${reasons}</td>
         <td>${zone.expectedYield ? formatUnits(zone.expectedYield, 'grams') : 'N/A'}</td>
         <td>${zone.timeToHarvest === undefined ? 'N/A' : zone.timeToHarvest}</td>
         <td>${zone.temperatureC ? parseFloat(zone.temperatureC).toFixed(1) + '°C' : 'N/A'}</td>
@@ -128,7 +131,7 @@ function render(data) {
     $('#plants-kpi').textContent = plantCount;
 
   } else {
-    zonesTbody.innerHTML = '<tr><td colspan="9" style="color:var(--muted)">Noch keine Zonen-Daten. Simulation starten.</td></tr>';
+    zonesTbody.innerHTML = '<tr><td colspan="11" style="color:var(--muted)">Noch keine Zonen-Daten. Simulation starten.</td></tr>';
   }
 
   const clock = $('#clock');
@@ -208,12 +211,15 @@ $('#btn-step').addEventListener('click', async () => {
 });
 
 document.querySelectorAll('.speed').forEach(b => {
-  b.addEventListener('click', () => {
+  b.addEventListener('click', async () => {
     uiState.speed = b.dataset.speed;
     document.querySelectorAll('.speed').forEach(btn => btn.setAttribute('aria-pressed', 'false'));
     b.setAttribute('aria-pressed', 'true');
     if (uiState.running) {
-        postToServer('/simulation/resume', { preset: uiState.speed });
+        const result = await postToServer('/simulation/speed', { preset: uiState.speed });
+        if (!result) {
+          alert('Geschwindigkeit konnte nicht geändert werden.');
+        }
     }
   });
 });

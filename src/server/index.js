@@ -39,11 +39,10 @@ let simulationState = {
 };
 
 const speedPresets = {
-  slow: 30,   // 30 seconds per sim-day
-  normal: 22, // 22 seconds per sim-day
-  fast: 12,   // 12 seconds per sim-day
-  turbo: 4,   // 4 seconds per sim-day
-  insane: 0.1, // for testing
+  normal: 30,   // 30 seconds per sim-day
+  mittel: 15,   // 15 seconds per sim-day
+  schnell: 7,   // 7 seconds per sim-day
+  extrem: 2.3,  // ~2.3 seconds per sim-day
 };
 
 // --- Simulation Tick Runner ----------------------------------------------
@@ -91,6 +90,22 @@ async function _runSimulationTick() {
   simulationState.tickCounter = absoluteTick;
 }
 
+function _setSimulationSpeed(preset) {
+  const realSecondsPerSimDay = speedPresets[preset] || speedPresets.normal;
+  const ticksPerSimDay = 24 / simulationState.structure.rooms[0].zones[0].tickLengthInHours;
+  const tickIntervalMs = (realSecondsPerSimDay / ticksPerSimDay) * 1000;
+
+  const run = () => {
+    if (simulationState.status !== 'running') return;
+    runTick().then(() => {
+      simulationState.intervalId = setTimeout(run, tickIntervalMs);
+    });
+  };
+
+  clearTimeout(simulationState.intervalId);
+  simulationState.intervalId = setTimeout(run, tickIntervalMs);
+}
+
 function _broadcastStatusUpdate() {
   const { structure, costEngine } = simulationState;
   if (!structure) return;
@@ -110,7 +125,7 @@ function _broadcastStatusUpdate() {
   // --- Zone Summary Calculation ---
   const zoneSummaries = allZones.map(zone => {
     if (zone.plants.length === 0) {
-      return { id: zone.id, name: zone.name, plantCount: 0 };
+      return { id: zone.id, name: zone.name, plantCount: 0, avgStress: '0', stressReasons: {} };
     }
     const p0 = zone.plants[0];
     const vegDays = p0.strain?.photoperiod?.vegetationDays ?? 21;
@@ -118,6 +133,13 @@ function _broadcastStatusUpdate() {
     const HARVEST_READY_HOURS = 24 * (vegDays + flowerDays);
 
     const avgHealth = zone.plants.reduce((sum, p) => sum + p.health, 0) / zone.plants.length;
+    const avgStress = zone.plants.reduce((sum, p) => sum + p.stress, 0) / zone.plants.length;
+    const stressReasons = {};
+    zone.plants.forEach(p => {
+      (p.stressors || []).forEach(r => {
+        stressReasons[r] = (stressReasons[r] || 0) + 1;
+      });
+    });
     const expectedYield = zone.plants.reduce((sum, p) => sum + p.calculateYield(), 0);
     const remainingHours = zone.plants.map(p => Math.max(0, HARVEST_READY_HOURS - p.ageHours));
     const avgRemainingHours = remainingHours.reduce((sum, h) => sum + h, 0) / remainingHours.length;
@@ -129,6 +151,8 @@ function _broadcastStatusUpdate() {
       strainName: p0.strain?.name,
       plantCount: zone.plants.length,
       avgHealth: (avgHealth * 100).toFixed(0),
+      avgStress: (avgStress * 100).toFixed(0),
+      stressReasons,
       expectedYield: expectedYield.toFixed(2),
       timeToHarvest: timeToHarvest,
       temperatureC: zone.status.temperatureC,
@@ -199,25 +223,7 @@ app.post('/simulation/start', async (req, res) => {
       tickCounter: 0,
     };
 
-    const ticksPerSimDay = 24 / structure.rooms[0].zones[0].tickLengthInHours;
-    let tickIntervalMs;
-    let tickHandler;
-
-    if (preset === 'insane') {
-      tickIntervalMs = speedPresets.insane * 1000;
-      tickHandler = runDayAsBatch;
-    } else {
-      tickIntervalMs = (realSecondsPerSimDay / ticksPerSimDay) * 1000;
-      tickHandler = runTick;
-    }
-
-    const run = () => {
-      if (simulationState.status !== 'running') return;
-      tickHandler().then(() => {
-        simulationState.intervalId = setTimeout(run, tickIntervalMs);
-      });
-    };
-    run();
+    _setSimulationSpeed(preset);
 
     const allZones = structure.rooms.flatMap(r => r.zones);
     res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${allZones.length} zones.` });
@@ -241,23 +247,18 @@ app.post('/simulation/resume', (req, res) => {
     return res.status(400).send({ message: 'Simulation is not paused.' });
   }
   const { preset = 'normal' } = req.body;
-  const realSecondsPerSimDay = speedPresets[preset] || speedPresets.normal;
-  const ticksPerSimDay = 24 / simulationState.structure.rooms[0].zones[0].tickLengthInHours;
-
-  let tickIntervalMs;
-  let tickHandler;
-
-  if (preset === 'insane') {
-    tickIntervalMs = speedPresets.insane * 1000;
-    tickHandler = runDayAsBatch;
-  } else {
-    tickIntervalMs = (realSecondsPerSimDay / ticksPerSimDay) * 1000;
-    tickHandler = runTick;
-  }
-
-  simulationState.intervalId = setInterval(tickHandler, tickIntervalMs);
+  _setSimulationSpeed(preset);
   simulationState.status = 'running';
   res.status(200).send({ message: 'Simulation resumed.' });
+});
+
+app.post('/simulation/speed', (req, res) => {
+  if (simulationState.status !== 'running') {
+    return res.status(400).send({ message: 'Simulation is not running.' });
+  }
+  const { preset = 'normal' } = req.body;
+  _setSimulationSpeed(preset);
+  res.status(200).send({ message: `Speed updated to ${preset}.` });
 });
 
 app.get('/simulation/status', (req, res) => {
@@ -364,7 +365,9 @@ wss.on('connection', (ws) => {
     try {
       const { event, payload } = JSON.parse(message);
       if (event === 'changeSpeed') {
-        // ... logic to change speed ...
+        if (simulationState.status === 'running') {
+          _setSimulationSpeed(payload?.preset ?? 'normal');
+        }
       }
     } catch (e) {
       console.error('Failed to parse message', e);

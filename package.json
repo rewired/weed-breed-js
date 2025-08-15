@@ -9,8 +9,7 @@
   "scripts": {
     "start": "node src/server/index.js",
     "dev": "node --watch src/server/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "sim": "node src/demos/structure_rooms_zones_demo.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "dotenv": "^17.2.1",

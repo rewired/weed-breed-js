@@ -3,6 +3,7 @@
     "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b": { "capitalExpenditure": 1200, "baseMaintenanceCostPerTick": 0.004, "costIncreasePer1000Ticks": 0.001 },
     "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e": { "capitalExpenditure": 600,  "baseMaintenanceCostPerTick": 0.002, "costIncreasePer1000Ticks": 0.0008 },
     "dh-01":                              { "capitalExpenditure": 350,  "baseMaintenanceCostPerTick": 0.0015, "costIncreasePer1000Ticks": 0.0006 },
-    "co2-01":                             { "capitalExpenditure": 220,  "baseMaintenanceCostPerTick": 0.0008, "costIncreasePer1000Ticks": 0.0004 }
+    "co2-01":                             { "capitalExpenditure": 220,  "baseMaintenanceCostPerTick": 0.0008, "costIncreasePer1000Ticks": 0.0004 },
+    "hcu-01":                            { "capitalExpenditure": 250,  "baseMaintenanceCostPerTick": 0.002,  "costIncreasePer1000Ticks": 0.1 }
   }
 }
