@@ -278,9 +278,15 @@ function renderStructureContent(root) {
     // Context detail blocks
     if (level === 'structure' && s) {
         root.appendChild(section('Rooms in Structure', table([
-            ['Room', 'Zones', 'Plants', 'Devices', 'Alerts'],
-            ...s.rooms.map(r => [link(`room:${r.id}`, r.name), r.zones.length,
-            r.zones.reduce((p, z) => p + (z.plants?.length || 0), 0), r.zones.reduce((d, z) => d + (z.devices?.length || 0), 0), r.alerts ? `⚠ ${r.alerts}` : '—'])
+            ['Room', 'Zones', 'Plants', 'Yield (g)', 'Devices', 'Alerts'],
+            ...s.rooms.map(r => [
+                link(`room:${r.id}`, r.name),
+                r.zones.length,
+                r.zones.reduce((p, z) => p + (z.plants?.length || 0), 0),
+                r.zones.reduce((sum, z) => sum + (parseFloat(z.expectedYield) || 0), 0).toFixed(2),
+                r.zones.reduce((d, z) => d + (z.devices?.length || 0), 0),
+                r.alerts ? `⚠ ${r.alerts}` : '—'
+            ])
         ])));
     }
     if (level === 'room' && r) {
