@@ -29,7 +29,7 @@ function findBlueprint(blueprints, query = {}) {
     return candidates[0] ?? null;
 }
 
-function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
+export function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
     if (!blueprint) {
       logger.warn({ overrides }, 'addDeviceN: blueprint not found');
       return [];
@@ -46,6 +46,11 @@ function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
       inst.blueprintId = inst.blueprintId ?? clone.blueprintId;
       zone.addDevice?.(inst);
       out.push(inst);
+    }
+
+    const costEngine = zone?.costEngine ?? runtimeCtx?.costEngine;
+    if (costEngine) {
+      costEngine.bookCapex(blueprint.id, n, { zoneId: zone.id });
     }
     return out;
 }
