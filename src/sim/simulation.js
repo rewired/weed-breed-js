@@ -2,16 +2,16 @@ import { TICK_HOURS_DEFAULT } from '../config/env.js';
 import { Zone } from '../engine/Zone.js';
 import { Plant } from '../engine/Plant.js';
 import { logger } from '../lib/logger.js';
-import { createDevice } from '../engine/deviceFactory.js';
-import * as DeviceLoader from '../engine/deviceLoader.js';
-import { loadStrainBySlug } from '../engine/strainLoader.js';
-import { loadCultivationMethod } from '../engine/cultivationMethodLoader.js';
-import { loadDevicePriceMap, loadStrainPriceMap } from '../engine/priceLoader.js';
+import { createDevice } from '../engine/factories/deviceFactory.js';
+import * as DeviceLoader from '../engine/loaders/deviceLoader.js';
+import { loadStrainBySlug } from '../engine/loaders/strainLoader.js';
+import { loadCultivationMethod } from '../engine/loaders/cultivationMethodLoader.js';
+import { loadDevicePriceMap, loadStrainPriceMap } from '../engine/loaders/priceLoader.js';
 import { CostEngine } from '../engine/CostEngine.js';
 import { createRng } from '../lib/rng.js';
 import { createTickMachine }from './tickMachine.js';
-import { loadSavegame } from '../server/savegameLoader.js';
-import { loadDifficultyConfig } from '../engine/difficultyLoader.js';
+import { loadSavegame } from '../server/services/savegameLoader.js';
+import { loadDifficultyConfig } from '../engine/loaders/difficultyLoader.js';
 
 // --- Loader-Wrapper ---------------------------------------------------------
 async function getDeviceBlueprints() {
