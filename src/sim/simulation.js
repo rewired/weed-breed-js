@@ -10,7 +10,7 @@ import { loadDevicePriceMap, loadStrainPriceMap } from '../engine/loaders/priceL
 import { CostEngine } from '../engine/CostEngine.js';
 import { createRng } from '../lib/rng.js';
 import { createTickMachine }from './tickMachine.js';
-import { loadSavegame } from '../server/savegameLoader.js';
+import { loadSavegame } from '../engine/loaders/savegameLoader.js';
 import { loadDifficultyConfig } from '../engine/loaders/difficultyLoader.js';
 
 // --- Loader-Wrapper ---------------------------------------------------------
