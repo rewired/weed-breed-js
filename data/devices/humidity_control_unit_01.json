@@ -1,15 +1,27 @@
 {
-  "id": "hcu-01",
-  "name": "Humidity Control Unit L1",
+  "id": "3d762260-88a5-4104-b03c-9860bbac34b6",
   "kind": "HumidityControlUnit",
-  "power": 0.35,
-  "description": "A standard unit to control humidity.",
-  "lifespanInHours": 8760,
-  "baseMaintenanceCostPerTick": 0.002,
-  "costIncreasePer1000Ticks": 0.1,
-  "capitalExpenditure": 250,
-  "attributes": {
+  "name": "Humidity Control Unit L1",
+  "quality": 0.8,
+  "complexity": 0.3,
+  "mtbf_hours": 8760,
+  "settings": {
+    "power": 0.35,
     "humidifyRateKgPerTick": 0.1,
-    "dehumidifyRateKgPerTick": 0.1
+    "dehumidifyRateKgPerTick": 0.1,
+    "targetHumidity": 0.6,
+    "hysteresis": 0.05
+  },
+  "meta": {
+    "description": "A standard unit to control humidity.",
+    "advantages": [
+      "Handles both humidification and dehumidification",
+      "Simple to operate"
+    ],
+    "disadvantages": [
+      "Limited capacity for large rooms",
+      "Requires regular maintenance"
+    ]
   }
 }
+
