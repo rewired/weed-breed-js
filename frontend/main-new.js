@@ -308,7 +308,7 @@ function renderStructureContent(root) {
                 link(`room:${r.id}`, r.name),
                 r.zones.length,
                 r.zones.reduce((p, z) => p + (z.plants?.length || 0), 0),
-                r.zones.reduce((sum, z) => sum + (parseFloat(z.expectedYield) || 0), 0).toFixed(2),
+                formatUnits(r.zones.reduce((sum, z) => sum + (parseFloat(z.expectedYield) || 0), 0), 'grams'),
                 r.zones.reduce((d, z) => d + (z.devices?.length || 0), 0),
                 r.alerts ? `⚠ ${r.alerts}` : '—'
             ])
@@ -321,7 +321,7 @@ function renderStructureContent(root) {
                 link(`zone:${z.id}`, z.name),
                 z.plants?.length || 0,
                 z.timeToHarvest ?? 'N/A',
-                z.expectedYield ?? 'N/A',
+                z.expectedYield != null ? formatUnits(z.expectedYield, 'grams') : 'N/A',
                 z.devices?.length || 0,
                 z.alerts ? `⚠ ${z.alerts}` : '—'
             ])
@@ -385,7 +385,7 @@ function renderZoneOverview(root, dto, zone) {
     headerGrid.appendChild(card('Occupancy', `${cap.plantsCount} / ${cap.capacitySlots} (${cap.occupancyPct}%)`));
     headerGrid.appendChild(card('Dominant Stage', `${cap.dominantStage}`, stageMix));
     headerGrid.appendChild(card('ETA', `${dto.predictions.harvestEtaDays} days`));
-    headerGrid.appendChild(card('Yield Forecast', `${dto.predictions.yieldForecastGrams} g`));
+    headerGrid.appendChild(card('Yield Forecast', formatUnits(dto.predictions.yieldForecastGrams, 'grams')));
     root.appendChild(headerGrid);
 
     // 2. Environment Section
