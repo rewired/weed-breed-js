@@ -275,24 +275,26 @@ function renderStructureContent(root) {
         header.insertAdjacentElement('afterend', consumptionGrid);
     }
     if (level === 'zone' && z) {
-        kpis.appendChild(card('Temp', `${z.temperatureC ? z.temperatureC.toFixed(1) : 'N/A'} °C`, 'Soll 24'));
-        kpis.appendChild(card('RH', `${z.humidity ? (z.humidity * 100).toFixed(1) : 'N/A'} %`, 'Soll 55–65'));
-        kpis.appendChild(card('CO₂', `${z.co2ppm ? z.co2ppm.toFixed(0) : 'N/A'} ppm`, 'Soll 800-1200'));
+        // The `kpis` div is not used for the zone overview, so we can remove it from the DOM if it's empty.
+        if (kpis.children.length === 0) {
+            kpis.remove();
+        }
+        // In zone view, we fetch the detailed overview DTO
+        fetch(`/api/zones/${z.id}/overview`)
+            .then(res => res.json())
+            .then(dto => {
+                if (dto.error) {
+                    root.innerHTML += `<p style="color:var(--danger)">Error: ${dto.error}</p>`;
+                    return;
+                }
+                renderZoneOverview(root, dto, z);
+            })
+            .catch(err => {
+                root.innerHTML += `<p style="color:var(--danger)">Error fetching zone overview: ${err.message}</p>`;
+            });
+    } else {
+         if (level !== 'none') root.appendChild(kpis);
     }
-    if (level === 'devices' && z) {
-        const list = z.devices || [];
-        const avgHealth = list.length ? (list.reduce((a, d) => a + (d.health || 0), 0) / list.length) : 0;
-        const maint = list.reduce((a, d) => a + (d.maintenanceEUR_tick || 0), 0);
-        kpis.appendChild(card('Geräte gesamt', list.length, 'in Zone'));
-        kpis.appendChild(card('Ø Health', fmtNUM.format(avgHealth), '0–1'));
-        kpis.appendChild(card('Wartung/Tick', fmtEUR.format(maint), 'Summe'));
-    }
-    if (level === 'plant' && p) {
-        kpis.appendChild(card('Age', p ? `${p.age} d` : '—', 'Tage'));
-        kpis.appendChild(card('Biomasse', p ? `${p.biomass.toFixed(2)} g` : '—', 'geschätzt'));
-        kpis.appendChild(card('Stress', p?.stress ?? '—', '0–1'));
-    }
-    if (level !== 'none') root.appendChild(kpis);
 
     // Context detail blocks
     if (level === 'structure' && s) {
@@ -320,12 +322,6 @@ function renderStructureContent(root) {
                 z.alerts ? `⚠ ${z.alerts}` : '—'
             ])
         ])));
-    }
-    if (level === 'zone' && z) {
-        root.appendChild(section('Navigiere zu…', `<ul style="margin:0;padding-left:16px">
-            <li>${link(`devices:${z.id}`, 'Devices')}</li>
-            <li>${link(`plants:${z.id}`, 'Plants')}</li>
-        </ul>`));
     }
     if (level === 'devices' && z) {
         root.appendChild(section('Devices', table([
@@ -376,6 +372,54 @@ function table(rows) { return `<table>${rows.map((row, i) => i ? `<tr>${row.map(
 function card(title, value, sub = '') { const el = document.createElement('div'); el.className = 'card'; el.innerHTML = `<h3>${title}</h3><div class="metric"><div class="v">${value}</div><div class="sub">${sub}</div></div>`; return el; }
 function link(target, label) { return `<a href="#" data-jump="${target}">${label}</a>`; }
 
+function renderZoneOverview(root, dto, zone) {
+    // 1. Header
+    const headerGrid = document.createElement('div');
+    headerGrid.className = 'grid';
+    const cap = dto.capacity;
+    const stageMix = cap.stageMix.map(s => `${s.stage} ${s.pct}%`).join(', ');
+    headerGrid.appendChild(card('Occupancy', `${cap.plantsCount} / ${cap.capacitySlots} (${cap.occupancyPct}%)`));
+    headerGrid.appendChild(card('Dominant Stage', `${cap.dominantStage}`, stageMix));
+    headerGrid.appendChild(card('ETA', `${dto.predictions.harvestEtaDays} days`));
+    headerGrid.appendChild(card('Yield Forecast', `${dto.predictions.yieldForecastGrams} g`));
+    root.appendChild(headerGrid);
+
+    // 2. Environment Section
+    const envGrid = document.createElement('div');
+    envGrid.className = 'grid';
+    const env = dto.environment;
+    envGrid.appendChild(card('Temperature', `${env.temperature.actual.toFixed(1)}°C`, `Set: ${env.temperature.set}°C`));
+    envGrid.appendChild(card('Humidity', `${(env.humidity.actual * 100).toFixed(0)}%`, `Set: ${(env.humidity.set * 100).toFixed(0)}%`));
+    envGrid.appendChild(card('CO2', `${env.co2.actual.toFixed(0)}ppm`, `Set: ${env.co2.set}ppm`));
+    envGrid.appendChild(card('PPFD', `${env.ppfd.actual.toFixed(0)}`, `Set: ${env.ppfd.set}`));
+    root.appendChild(section('Environment', envGrid.outerHTML));
+
+    // 3. Plant Packages
+    if (dto.plantPackages && dto.plantPackages.length > 0) {
+        const pkgTable = table([
+            ['Package', 'Count', 'Avg Age (d)', 'Avg Health', 'Biomass Idx'],
+            ...dto.plantPackages.map(p => [p.label, p.count, p.avgAgeDays, `${p.avgHealth}%`, p.biomassIndex])
+        ]);
+        root.appendChild(section('Plant Packages', pkgTable));
+    }
+
+
+    // 4. Devices Section
+    const dev = dto.devices;
+    const devicesGrid = document.createElement('div');
+    devicesGrid.className = 'grid';
+    devicesGrid.appendChild(card('Devices', `${dev.active} / ${dev.total} active`));
+    devicesGrid.appendChild(card('Avg. Health', `${dev.avgHealth}%`));
+    devicesGrid.appendChild(card('Maintenance Due', `in ${dev.maintenanceDueInTicks} ticks`));
+    const cta = `<p><a href="#" data-jump="devices:${zone.id}">View All Devices</a></p>`;
+    root.appendChild(section('Devices', devicesGrid.outerHTML + cta));
+
+    // Delegate jumps
+    root.addEventListener('click', (e) => {
+        const a = e.target.closest('a[data-jump]'); if (!a) return; e.preventDefault();
+        const [kind, id] = a.getAttribute('data-jump').split(':'); selectNode(kind, id);
+    }, { once: true });
+}
 
 function renderTop() {
     txt("#tick", state.tick);

@@ -287,6 +287,33 @@ app.get('/simulation/status', (req, res) => {
   });
 });
 
+import { createZoneOverviewDTO } from './services/zoneOverviewService.js';
+
+app.get('/api/zones/:zoneId/overview', (req, res) => {
+  const { zoneId } = req.params;
+  const { structure, costEngine } = simulationState;
+
+  if (simulationState.status === 'stopped' || !structure) {
+    return res.status(404).send({ message: 'Simulation not running.' });
+  }
+
+  let zone = null;
+  for (const room of structure.rooms) {
+    const foundZone = room.zones.find(z => z.id === zoneId);
+    if (foundZone) {
+      zone = foundZone;
+      break;
+    }
+  }
+
+  if (!zone) {
+    return res.status(404).send({ message: `Zone with id ${zoneId} not found.` });
+  }
+
+  const dto = createZoneOverviewDTO(zone, costEngine);
+  res.status(200).send(dto);
+});
+
 app.get('/api/zones/:zoneId/details', (req, res) => {
   const { zoneId } = req.params;
   const { structure, costEngine } = simulationState;
