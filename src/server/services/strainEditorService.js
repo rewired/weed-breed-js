@@ -11,7 +11,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const strainsDir = path.join(__dirname, '..', '..', '..', 'data', 'strains');
-const backupDir = path.join(__dirname, '..', '..', '..', 'data', 'strain', 'backup');
+const backupDir = path.join(__dirname, '..', '..', '..', 'data', 'strains', 'backup');
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

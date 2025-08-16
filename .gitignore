@@ -46,4 +46,4 @@ out/
 # Projekt-spezifisch: Keine generierten JSON-Instanzen im Repo
 data/generated/
 data/cache/
-data/strain/backup/
+data/strains/backup/
