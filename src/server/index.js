@@ -10,6 +10,7 @@ import { createActor } from 'xstate';
 import fs from 'fs';
 import { uiStream$ } from '../sim/eventBus.js';
 import { initializeSimulation } from '../sim/simulation.js';
+import strainEditorService from './services/strainEditorService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,8 @@ app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
 // Serve static files from the frontend directory
 const frontendPath = path.join(__dirname, '..', '..', 'frontend');
 app.use(express.static(frontendPath));
+
+app.use('/api', strainEditorService);
 
 // --- Simulation State ---
 let simulationState = {
