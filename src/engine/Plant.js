@@ -4,6 +4,7 @@
 
 import { ensureEnv, addLatentWater, addCO2Delta } from './deviceUtils.js';
 import { env } from '../config/env.js';
+import { resolveTickHours } from '../lib/time.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createRng } from '../lib/rng.js';
 
@@ -56,6 +57,7 @@ export class Plant {
     const L = Number(s.ppfd ?? 0);           // µmol/m²·s
     const T = Number(s.temperature ?? 24);   // °C
     const RH = Number(s.humidity ?? 0.6);    // 0..1
+    const tickH = resolveTickHours({ tickLengthInHours: zone?.tickLengthInHours ?? tickLengthInHours });
 
     const difficulty = zone.runtime?.difficulty?.plantStress ?? {};
     const optimalRangeMultiplier = difficulty.optimalRangeMultiplier ?? 1.0;
@@ -68,7 +70,6 @@ export class Plant {
       if (lightCycle) {
         const cycle = lightCycle[this.stage] ?? lightCycle.default ?? [18, 6];
         const lightHours = cycle[0];
-        const tickH = Number(zone.tickLengthInHours ?? tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
         const currentSimHour = (tickIndex * tickH) % 24;
         lightsOn = currentSimHour < lightHours;
       } else {
@@ -156,7 +157,7 @@ export class Plant {
 
 
     // ---- Age & simple stage logic (optional/placeholder) ----
-    this.ageHours += Number(tickLengthInHours || env.time.tickLengthInHoursDefault || 3);
+    this.ageHours += tickH;
 
     const vegDays = this.strain?.photoperiod?.vegetationDays ?? 21;
     const flowerDays = this.strain?.photoperiod?.floweringDays ?? 56;

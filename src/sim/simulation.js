@@ -1,4 +1,3 @@
-import { TICK_HOURS_DEFAULT } from '../config/env.js';
 import { Zone } from '../engine/Zone.js';
 import { Plant } from '../engine/Plant.js';
 import { logger } from '../lib/logger.js';

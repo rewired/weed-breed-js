@@ -2,6 +2,7 @@
 // Prices/maintenance are separate (devicePrices.json).
 import _ from 'lodash';
 import { env } from '../config/env.js';
+import { resolveTickHours } from '../lib/time.js';
 
 const { pick } = _;
 
@@ -47,7 +48,7 @@ export class BaseDevice {
     this.ageTicks = 0;
 
     this.zoneRef = runtime?.zone ?? null;
-    this.tickLengthInHours = runtime?.tickLengthInHours ?? (env.time.tickLengthInHoursDefault ?? 3);
+    this.tickLengthInHours = resolveTickHours(runtime);
   }
 
   /**

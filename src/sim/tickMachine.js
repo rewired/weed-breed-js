@@ -3,6 +3,7 @@
 
 import { createMachine, assign, setup, fromPromise } from 'xstate';
 import { emit } from './eventBus.js';
+import { resolveTickHours } from '../lib/time.js';
 
 /**
  * Creates the tick state machine logic.
@@ -82,7 +83,7 @@ export function createTickMachine() {
       context: ({ input }) => ({
         zone: input.zone ?? null,
         tick: input.tick ?? 0,
-        tickLengthInHours: input.tickLengthInHours ?? 3,
+        tickLengthInHours: resolveTickHours(input.zone || { tickLengthInHours: input.tickLengthInHours }),
         logger: input.logger ?? console,
       }),
       states: {

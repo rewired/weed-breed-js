@@ -2,6 +2,7 @@
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, readPowerKw, readPPFD } from '../deviceUtils.js';
 import { env } from '../../config/env.js';
+import { resolveTickHours } from '../../lib/time.js';
 
 export class Lamp extends BaseDevice {
   constructor(json, runtimeCtx) {
@@ -55,7 +56,7 @@ export class Lamp extends BaseDevice {
     if (this.state === 'off') {
       return 0;
     }
-    const h = Number(tickHours ?? this.runtimeCtx?.tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
+    const h = resolveTickHours({ tickLengthInHours: tickHours ?? this.runtimeCtx?.tickLengthInHours });
     const powerKW = readPowerKw(this.settings ?? {});
     return Math.max(0, powerKW * h);
   }

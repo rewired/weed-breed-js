@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { logger } from '../lib/logger.js';
+import { resolveTickHours } from '../lib/time.js';
 import { createActor } from 'xstate';
 import fs from 'fs';
 import { uiStream$ } from '../sim/eventBus.js';
@@ -367,7 +368,7 @@ app.get('/simulation/status', (req, res) => {
     return res.status(404).send({ message: 'Simulation not started.' });
   }
 
-  const tickLengthInHours = structure.rooms[0]?.zones[0]?.tickLengthInHours ?? 3;
+  const tickLengthInHours = resolveTickHours(structure.rooms[0]?.zones[0]);
 
   res.status(200).send({
     status,

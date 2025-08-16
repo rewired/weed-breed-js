@@ -3,6 +3,7 @@
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, addLatentWater } from '../deviceUtils.js';
 import { env } from '../../config/env.js';
+import { resolveTickHours } from '../../lib/time.js';
 
 export class Dehumidifier extends BaseDevice {
   constructor(json, runtimeCtx) {
@@ -17,7 +18,7 @@ export class Dehumidifier extends BaseDevice {
   }
 
   estimateEnergyKWh(tickHours) {
-    const h = Number(tickHours ?? this.runtimeCtx?.tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
+    const h = resolveTickHours({ tickLengthInHours: tickHours ?? this.runtimeCtx?.tickLengthInHours });
     const p = Number(this.settings?.power ?? 0); // kW(el)
     return Math.max(0, p * h);
   }
