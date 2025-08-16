@@ -4,7 +4,7 @@ import { addDeviceN } from '../src/sim/simulation.js';
 
 describe('Device CapEx booking', () => {
   it('books capex once per device batch and updates opening balance', () => {
-    const deviceId = 'co2-01';
+    const deviceId = 'c701efa6-1e90-4f28-8934-ea9c584596e4';
     const price = 220;
     const initialCapital = 1000;
     const costEngine = new CostEngine({
