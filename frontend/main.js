@@ -13,7 +13,7 @@ const fmtEUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EU
 
 // --- State ---------------------------------------------------------------
 const state = {
-    treeMode: "structure", // 'structure' | 'company' | 'shop'
+    treeMode: "structure", // 'structure' | 'company' | 'shop' | 'editor'
     level: "none",
     structureId: null,
     roomId: null,
@@ -21,6 +21,7 @@ const state = {
     plantId: null,
     companySel: null,
     shopSel: null,
+    strainId: null,
     running: false,
     speed: "normal",
     tick: 0,
@@ -165,6 +166,7 @@ function buildTree() {
     if (state.treeMode === "structure") buildStructureTree(tree);
     if (state.treeMode === "company") buildCompanyTree(tree);
     if (state.treeMode === "shop") buildShopTree(tree);
+    if (state.treeMode === "editor") buildEditorTree(tree);
 }
 
 function nodeLi(kind, id, icon, title, alerts = 0, count = 0) {
@@ -229,6 +231,11 @@ function buildShopTree(root) {
     // Placeholder for future shop tree
 }
 
+function buildEditorTree(root) {
+    const li = nodeLi("strains", "strains", "🧬", "Strains");
+    root.appendChild(li);
+}
+
 // --- Selection & Rendering -----------------------------------------------
 function selectNode(kind, id) {
     if (state.treeMode === "structure") {
@@ -258,6 +265,9 @@ function selectNode(kind, id) {
         }
     } else if (state.treeMode === "company") {
         state.companySel = id;
+    } else if (state.treeMode === "editor") {
+        state.level = kind;
+        state.strainId = id;
     }
     // ... other tree modes
 
@@ -276,6 +286,7 @@ function renderContent() {
     root.innerHTML = "";
     if (state.treeMode === "structure") renderStructureContent(root);
     else if (state.treeMode === "company") renderCompanyContent(root);
+    else if (state.treeMode === "editor") renderEditorContent(root);
     // ... other tree modes
     root.scrollTop = scrollPos;
 }
@@ -451,6 +462,9 @@ function renderBreadcrumbs() {
         }
         if (!parts.length) { c.innerHTML = '<span style="color:var(--muted)">Bitte links ein Element wählen…</span>'; return; }
         parts.forEach((p, i) => { const a = document.createElement('a'); a.href = 'javascript:void(0)'; a.textContent = p.label; a.addEventListener('click', () => selectNode(p.kind, p.id)); c.appendChild(a); if (i < parts.length - 1) { const s = document.createElement('span'); s.textContent = '›'; s.style.color = 'var(--muted)'; s.style.margin = '0 4px'; c.appendChild(s); } });
+    } else if (state.treeMode === 'editor') {
+        const label = state.level === 'strains' ? 'Strains' : 'Editor';
+        c.innerHTML = `<strong>${label}</strong>`;
     } else {
         const label = state.treeMode === 'company' ? 'Company Overview' : 'Shop Explorer';
         c.innerHTML = `<strong>${label}</strong>`;
@@ -669,6 +683,15 @@ function renderCompanyContent(root) {
     finGrid.appendChild(card('Net', fmtEUR.format(agg.netEUR || 0)));
     finSection.appendChild(finGrid);
     root.appendChild(finSection);
+}
+
+async function renderEditorContent(root) {
+    if (state.level === 'strains') {
+        const mod = await import('./editor/strainEditor.js');
+        await mod.default(root);
+    } else {
+        root.innerHTML = '<p style="color:var(--muted)">Bitte links ein Element wählen…</p>';
+    }
 }
 
 function renderTop() {
