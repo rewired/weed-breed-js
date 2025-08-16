@@ -13,7 +13,7 @@ These are the fields defined in the JSON configuration.
 | `area`     | `number` | The floor area of the zone in square meters (m²).                                                       | Yes      |                    |
 | `height`   | `number` | The ceiling height in meters (m). If not provided, it is inherited from the parent `Room`.                | No       | Inherited          |
 | `devices`  | `Array`  | An array of device configurations to be created within this zone.                                       | No       | `[]` (empty array) |
-| `simulation`| `object`| Configuration for the plants to be grown in this zone, including `strainSlug` and `methodId`.          | No       |                    |
+| `simulation`| `object`| Configuration for the plants to be grown in this zone, including `strainId` and `methodId`.          | No       |                    |
 
 ## Runtime-Injected Fields
 
@@ -33,12 +33,12 @@ These fields are added to the `Zone` instance at runtime by the simulation engin
   "area": 20,
   "height": 2.8,
   "simulation": {
-    "strainSlug": "ak-47",
+    "strainId": "550e8400-e29b-41d4-a716-446655440000",
     "methodId": "sog"
   },
   "devices": [
-    { "kind": "Lamp", "count": 8 },
-    { "kind": "ClimateUnit", "count": 2 }
+    { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 8 },
+    { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 2 }
   ]
 }
 ```
