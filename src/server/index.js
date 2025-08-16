@@ -436,6 +436,7 @@ app.get('/api/zones/:zoneId/details', (req, res) => {
     return res.status(404).send({ error: `Zone with id ${zoneId} not found.` });
   }
 
+  // Build and return the zone detail DTO via the service layer
   const dto = createZoneDetailDTO(zone);
   res.status(200).send(dto);
 });
@@ -465,6 +466,7 @@ app.get('/api/zones/:zoneId/plants/:plantId', (req, res) => {
     return res.status(404).send({ error: `Plant with id ${plantId} not found in zone ${zoneId}.` });
   }
 
+  // Build and return the plant detail DTO
   const dto = createPlantDetailDTO(zone, plant);
   res.status(200).send(dto);
 });
