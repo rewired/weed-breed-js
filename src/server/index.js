@@ -11,6 +11,7 @@ import fs from 'fs';
 import { uiStream$ } from '../sim/eventBus.js';
 import { initializeSimulation } from '../sim/simulation.js';
 import strainEditorService from './services/strainEditorService.js';
+import createSimControlRoutes from './simControlRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +59,7 @@ let simulationState = {
   intervalId: null,
   status: 'stopped', // 'running', 'paused'
   tickCounter: 0,
+  speed: 1,
 };
 
 // Keep a rolling history of tick totals for aggregation
@@ -300,6 +302,104 @@ async function runDayAsBatch() {
 }
 
 
+function createSimulationController() {
+  const BASE_SECONDS_PER_DAY = 22; // seconds per sim-day at speed 1
+
+  async function ensureInitialized() {
+    if (!simulationState.structure) {
+      const { structure, costEngine, rng, tickMachineLogic } = await initializeSimulation();
+      simulationState.structure = structure;
+      simulationState.costEngine = costEngine;
+      simulationState.rng = rng;
+      simulationState.tickMachineLogic = tickMachineLogic;
+      simulationState.tickCounter = 0;
+    }
+  }
+
+  function getTickIntervalMs() {
+    const zone = simulationState.structure?.rooms?.[0]?.zones?.[0];
+    const tickLengthInHours = resolveTickHours(zone);
+    if (!tickLengthInHours) return 1000;
+    const ticksPerDay = 24 / tickLengthInHours;
+    const baseMs = (BASE_SECONDS_PER_DAY / ticksPerDay) * 1000;
+    return baseMs / simulationState.speed;
+  }
+
+  function schedule() {
+    const intervalMs = getTickIntervalMs();
+    const run = () => {
+      if (simulationState.status !== 'running') return;
+      runTick().then(() => {
+        simulationState.intervalId = setTimeout(run, intervalMs);
+      });
+    };
+    simulationState.intervalId = setTimeout(run, intervalMs);
+  }
+
+  async function play() {
+    await ensureInitialized();
+    if (simulationState.status === 'running') return;
+    simulationState.status = 'running';
+    schedule();
+  }
+
+  function pause() {
+    if (simulationState.status !== 'running') return;
+    clearTimeout(simulationState.intervalId);
+    simulationState.intervalId = null;
+    simulationState.status = 'paused';
+  }
+
+  async function step(steps = 1) {
+    await ensureInitialized();
+    const n = Math.max(1, Math.floor(Number(steps) || 1));
+    for (let i = 0; i < n; i++) {
+      await runTick();
+    }
+  }
+
+  async function reset() {
+    clearTimeout(simulationState.intervalId);
+    simulationState.intervalId = null;
+    simulationState.status = 'stopped';
+    simulationState.speed = 1;
+    tickHistory.length = 0;
+    const { structure, costEngine, rng, tickMachineLogic } = await initializeSimulation();
+    simulationState.structure = structure;
+    simulationState.costEngine = costEngine;
+    simulationState.rng = rng;
+    simulationState.tickMachineLogic = tickMachineLogic;
+    simulationState.tickCounter = 0;
+  }
+
+  function setSpeed(speed) {
+    const s = Number(speed);
+    if (!(s > 0)) {
+      throw new Error('speed must be > 0');
+    }
+    simulationState.speed = s;
+    if (simulationState.status === 'running') {
+      clearTimeout(simulationState.intervalId);
+      schedule();
+    }
+  }
+
+  function getState() {
+    return {
+      running: simulationState.status === 'running',
+      tick: simulationState.tickCounter,
+      speed: simulationState.speed,
+    };
+  }
+
+  return { play, pause, step, reset, setSpeed, getState };
+}
+
+const simController = createSimulationController();
+await simController.reset();
+
+app.use('/api/sim', createSimControlRoutes(simController));
+
 // --- API Endpoints ----------------------------------------------------------
 app.post('/simulation/start', async (req, res) => {
   if (simulationState.status === 'running') {
@@ -535,6 +635,7 @@ uiStream$.subscribe(batch => {
 
 server.on('close', () => {
   uiStreamSubscription.unsubscribe();
+  clearTimeout(simulationState.intervalId);
 });
 
 server.listen(PORT, () => {
