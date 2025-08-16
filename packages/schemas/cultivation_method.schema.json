@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weed-breed.dev/schemas/cultivation_method.schema.json",
+  "title": "Weed Breed – Cultivation Method",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "name",
+    "setupCost",
+    "laborIntensity",
+    "areaPerPlant",
+    "minimumSpacing",
+    "maxCycles",
+    "substrate",
+    "containerSpec",
+    "strainTraitCompatibility",
+    "idealConditions",
+    "meta"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "kind": { "const": "CultivationMethod" },
+    "name": { "type": "string", "minLength": 1 },
+    "setupCost": { "type": "number", "minimum": 0 },
+    "laborIntensity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "areaPerPlant": { "type": "number", "minimum": 0 },
+    "minimumSpacing": { "type": "number", "minimum": 0 },
+    "maxCycles": { "type": "integer", "minimum": 0 },
+    "substrate": {
+      "type": "object",
+      "required": ["type", "costPerSquareMeter", "maxCycles"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "costPerSquareMeter": { "type": "number", "minimum": 0 },
+        "maxCycles": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "containerSpec": {
+      "type": "object",
+      "required": ["type", "volumeInLiters", "footprintArea", "reusableCycles", "costPerUnit", "packingDensity"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "volumeInLiters": { "type": "number", "minimum": 0 },
+        "footprintArea": { "type": "number", "minimum": 0 },
+        "reusableCycles": { "type": "integer", "minimum": 0 },
+        "costPerUnit": { "type": "number", "minimum": 0 },
+        "packingDensity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "strainTraitCompatibility": {
+      "type": "object",
+      "required": ["preferred", "conflicting"],
+      "additionalProperties": false,
+      "properties": {
+        "preferred": {
+          "type": "object",
+          "patternProperties": {
+            "^.+$": { "$ref": "#/$defs/traitBound" }
+          },
+          "additionalProperties": false
+        },
+        "conflicting": {
+          "type": "object",
+          "patternProperties": {
+            "^.+$": { "$ref": "#/$defs/traitBound" }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "idealConditions": {
+      "type": "object",
+      "required": ["idealTemperature", "idealHumidity"],
+      "additionalProperties": false,
+      "properties": {
+        "idealTemperature": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number" }
+        },
+        "idealHumidity": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["description", "advantages", "disadvantages"],
+      "additionalProperties": false,
+      "properties": {
+        "description":   { "type": "string" },
+        "advantages":    { "type": "array", "items": { "type": "string" } },
+        "disadvantages": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "traitBound": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" }
+      }
+    }
+  }
+}

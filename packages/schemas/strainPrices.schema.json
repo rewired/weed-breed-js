@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weed-breed.dev/schemas/strainPrices.schema.json",
+  "title": "Weed Breed – Strain Prices",
+  "type": "object",
+  "required": ["strainPrices"],
+  "additionalProperties": false,
+  "properties": {
+    "strainPrices": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$": {
+          "type": "object",
+          "required": ["seedPrice", "harvestPricePerGram"],
+          "additionalProperties": false,
+          "properties": {
+            "seedPrice": { "type": "number", "minimum": 0 },
+            "harvestPricePerGram": { "type": "number", "minimum": 0 }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

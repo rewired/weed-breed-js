@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weed-breed.dev/schemas/device.schema.json",
+  "title": "Weed Breed – Device",
+  "type": "object",
+  "required": ["id", "kind", "name", "quality", "complexity", "settings"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "kind": {
+      "type": "string",
+      "enum": ["Lamp", "ClimateUnit", "CO2Injector", "Dehumidifier", "HumidityControlUnit"]
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "quality": { "type": "number", "minimum": 0, "maximum": 1 },
+    "complexity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "mtbf_hours": { "type": "integer", "minimum": 0 },
+    "maintenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseCost": { "type": "number", "minimum": 0 },
+        "costIncreasePer1000": { "type": "number", "minimum": 0 }
+      }
+    },
+    "settings": { "type": "object" },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "advantages": { "type": "array", "items": { "type": "string" } },
+        "disadvantages": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/ClimateUnit" },
+    { "$ref": "#/$defs/Lamp" },
+    { "$ref": "#/$defs/CO2Injector" },
+    { "$ref": "#/$defs/Dehumidifier" },
+    { "$ref": "#/$defs/HumidityControlUnit" }
+  ],
+  "$defs": {
+    "ClimateUnit": {
+      "properties": { "kind": { "const": "ClimateUnit" } },
+      "required": ["settings"],
+      "allOf": [{
+        "properties": {
+          "settings": {
+            "type": "object",
+            "required": ["power", "coolingCapacity", "airflow", "targetTemperature", "targetTemperatureRange", "coolingEfficiency", "maxCooling", "hysteresisK", "fullPowerAtDeltaK"],
+            "additionalProperties": false,
+            "properties": {
+              "power": { "type": "number", "minimum": 0 },
+              "coolingCapacity": { "type": "number", "minimum": 0 },
+              "airflow": { "type": "number", "minimum": 0 },
+              "targetTemperature": { "type": "number" },
+              "targetTemperatureRange": { "$ref": "#/$defs/numRange2" },
+              "coolingEfficiency": { "type": "number", "minimum": 0 },
+              "maxCooling": { "type": "number", "minimum": 0, "maximum": 1 },
+              "hysteresisK": { "type": "number", "minimum": 0 },
+              "fullPowerAtDeltaK": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }]
+    },
+    "Lamp": {
+      "properties": { "kind": { "const": "Lamp" } },
+      "required": ["settings"],
+      "allOf": [{
+        "properties": {
+          "settings": {
+            "type": "object",
+            "required": ["power", "ppfd", "coverageArea", "spectralRange", "heatFraction"],
+            "additionalProperties": false,
+            "properties": {
+              "power": { "type": "number", "minimum": 0 },
+              "ppfd": { "type": "number", "minimum": 0 },
+              "coverageArea": { "type": "number", "minimum": 0 },
+              "spectralRange": { "$ref": "#/$defs/numRange2" },
+              "heatFraction": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }]
+    },
+    "CO2Injector": {
+      "properties": { "kind": { "const": "CO2Injector" } },
+      "required": ["settings"],
+      "allOf": [{
+        "properties": {
+          "settings": {
+            "type": "object",
+            "required": ["power", "targetCO2", "hysteresis", "pulsePpmPerTick"],
+            "additionalProperties": false,
+            "properties": {
+              "power": { "type": "number", "minimum": 0 },
+              "targetCO2": { "type": "number", "minimum": 0 },
+              "hysteresis": { "type": "number", "minimum": 0 },
+              "pulsePpmPerTick": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }]
+    },
+    "Dehumidifier": {
+      "properties": { "kind": { "const": "Dehumidifier" } },
+      "required": ["settings"],
+      "allOf": [{
+        "properties": {
+          "settings": {
+            "type": "object",
+            "required": ["latentRemovalKgPerTick", "power"],
+            "additionalProperties": false,
+            "properties": {
+              "latentRemovalKgPerTick": { "type": "number", "minimum": 0 },
+              "power": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }]
+    },
+    "HumidityControlUnit": {
+      "properties": { "kind": { "const": "HumidityControlUnit" } },
+      "required": ["settings"],
+      "allOf": [{
+        "properties": {
+          "settings": {
+            "type": "object",
+            "required": ["power", "humidifyRateKgPerTick", "dehumidifyRateKgPerTick", "targetHumidity", "hysteresis"],
+            "additionalProperties": false,
+            "properties": {
+              "power": { "type": "number", "minimum": 0 },
+              "humidifyRateKgPerTick": { "type": "number", "minimum": 0 },
+              "dehumidifyRateKgPerTick": { "type": "number", "minimum": 0 },
+              "targetHumidity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "hysteresis": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }]
+    },
+    "numRange2": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" }
+    }
+  }
+}

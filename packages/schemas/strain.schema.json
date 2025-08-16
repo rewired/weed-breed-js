@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weed-breed.dev/schemas/strain.schema.json",
+  "title": "Weed Breed – Strain",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "lineage",
+    "genotype",
+    "generalResilience",
+    "chemotype",
+    "morphology",
+    "growthModel",
+    "noise",
+    "environmentalPreferences",
+    "nutrientDemand",
+    "waterDemand",
+    "diseaseResistance",
+    "photoperiod",
+    "floweringTime",
+    "harvestProperties",
+    "meta"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "description": "UUID", "format": "uuid" },
+    "name": { "type": "string", "minLength": 1 },
+    "lineage": {
+      "type": "object",
+      "required": ["parents"],
+      "additionalProperties": false,
+      "properties": {
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "anyOf": [
+              { "format": "uuid" },
+              { "minLength": 1 }
+            ],
+            "description": "Bevorzugt UUIDs; Namen werden toleriert."
+          }
+        }
+      }
+    },
+    "genotype": {
+      "type": "object",
+      "required": ["sativa", "indica", "ruderalis"],
+      "additionalProperties": false,
+      "properties": {
+        "sativa":   { "type": "number", "minimum": 0, "maximum": 1 },
+        "indica":   { "type": "number", "minimum": 0, "maximum": 1 },
+        "ruderalis":{ "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "generalResilience": { "type": "number", "minimum": 0, "maximum": 1 },
+    "chemotype": {
+      "type": "object",
+      "required": ["thcContent", "cbdContent"],
+      "additionalProperties": false,
+      "properties": {
+        "thcContent": { "type": "number", "minimum": 0, "maximum": 1 },
+        "cbdContent": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "morphology": {
+      "type": "object",
+      "required": ["growthRate", "yieldFactor", "leafAreaIndex"],
+      "additionalProperties": false,
+      "properties": {
+        "growthRate":    { "type": "number" },
+        "yieldFactor":   { "type": "number" },
+        "leafAreaIndex": { "type": "number", "minimum": 0 }
+      }
+    },
+    "growthModel": {
+      "type": "object",
+      "required": ["maxBiomassDry_g", "baseLUE_gPerMol", "maintenanceFracPerDay", "dryMatterFraction", "harvestIndex", "phaseCapMultiplier", "temperature"],
+      "additionalProperties": false,
+      "properties": {
+        "maxBiomassDry_g":       { "type": "number", "minimum": 0 },
+        "baseLUE_gPerMol":       { "type": "number", "minimum": 0 },
+        "maintenanceFracPerDay": { "type": "number", "minimum": 0, "maximum": 1 },
+        "dryMatterFraction": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "type": "number", "minimum": 0, "maximum": 1 },
+            "flowering":  { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "harvestIndex": {
+          "type": "object",
+          "required": ["targetFlowering"],
+          "additionalProperties": false,
+          "properties": {
+            "targetFlowering": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "phaseCapMultiplier": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "type": "number", "minimum": 0 },
+            "flowering":  { "type": "number", "minimum": 0 }
+          }
+        },
+        "temperature": {
+          "type": "object",
+          "required": ["Q10", "T_ref_C"],
+          "additionalProperties": false,
+          "properties": {
+            "Q10":    { "type": "number", "minimum": 0 },
+            "T_ref_C":{ "type": "number" }
+          }
+        }
+      }
+    },
+    "noise": {
+      "type": "object",
+      "required": ["enabled", "pct"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "pct":     { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "environmentalPreferences": {
+      "type": "object",
+      "required": ["lightSpectrum", "lightIntensity", "lightCycle", "idealTemperature", "idealHumidity", "phRange"],
+      "additionalProperties": false,
+      "properties": {
+        "lightSpectrum": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "$ref": "#/$defs/numRange2" },
+            "flowering":  { "$ref": "#/$defs/numRange2" }
+          }
+        },
+        "lightIntensity": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "$ref": "#/$defs/numRange2" },
+            "flowering":  { "$ref": "#/$defs/numRange2" }
+          }
+        },
+        "lightCycle": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "$ref": "#/$defs/intRange2" },
+            "flowering":  { "$ref": "#/$defs/intRange2" }
+          }
+        },
+        "idealTemperature": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "$ref": "#/$defs/numRange2" },
+            "flowering":  { "$ref": "#/$defs/numRange2" }
+          }
+        },
+        "idealHumidity": {
+          "type": "object",
+          "required": ["vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "vegetation": { "$ref": "#/$defs/fractionRange2" },
+            "flowering":  { "$ref": "#/$defs/fractionRange2" }
+          }
+        },
+        "phRange": { "$ref": "#/$defs/numRange2" }
+      }
+    },
+    "nutrientDemand": {
+      "type": "object",
+      "required": ["dailyNutrientDemand", "npkTolerance", "npkStressIncrement"],
+      "additionalProperties": false,
+      "properties": {
+        "dailyNutrientDemand": {
+          "type": "object",
+          "required": ["seedling", "vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "seedling":   { "$ref": "#/$defs/npk" },
+            "vegetation": { "$ref": "#/$defs/npk" },
+            "flowering":  { "$ref": "#/$defs/npk" }
+          }
+        },
+        "npkTolerance":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "npkStressIncrement": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "waterDemand": {
+      "type": "object",
+      "required": ["dailyWaterUsagePerSquareMeter", "minimumFractionRequired"],
+      "additionalProperties": false,
+      "properties": {
+        "dailyWaterUsagePerSquareMeter": {
+          "type": "object",
+          "required": ["seedling", "vegetation", "flowering"],
+          "additionalProperties": false,
+          "properties": {
+            "seedling":   { "type": "number", "minimum": 0 },
+            "vegetation": { "type": "number", "minimum": 0 },
+            "flowering":  { "type": "number", "minimum": 0 }
+          }
+        },
+        "minimumFractionRequired": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "diseaseResistance": {
+      "type": "object",
+      "required": ["dailyInfectionIncrement", "infectionThreshold", "recoveryRate", "degenerationRate", "regenerationRate", "fatalityThreshold"],
+      "additionalProperties": false,
+      "properties": {
+        "dailyInfectionIncrement": { "type": "number", "minimum": 0, "maximum": 1 },
+        "infectionThreshold":      { "type": "number", "minimum": 0, "maximum": 1 },
+        "recoveryRate":            { "type": "number", "minimum": 0, "maximum": 1 },
+        "degenerationRate":        { "type": "number", "minimum": 0, "maximum": 1 },
+        "regenerationRate":        { "type": "number", "minimum": 0, "maximum": 1 },
+        "fatalityThreshold":       { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "photoperiod": {
+      "type": "object",
+      "required": ["vegetationDays", "floweringDays", "transitionTriggerHours"],
+      "additionalProperties": false,
+      "properties": {
+        "vegetationDays":         { "type": "integer", "minimum": 0 },
+        "floweringDays":          { "type": "integer", "minimum": 0 },
+        "transitionTriggerHours": { "type": "number",  "minimum": 0 }
+      }
+    },
+    "floweringTime": {
+      "type": "object",
+      "required": ["shortestDurationInDays", "longestDurationInDays"],
+      "additionalProperties": false,
+      "properties": {
+        "shortestDurationInDays": { "type": "integer", "minimum": 0 },
+        "longestDurationInDays":  { "type": "integer", "minimum": 0 }
+      }
+    },
+    "harvestProperties": {
+      "type": "object",
+      "required": ["ripeningTimeInHours", "maxStorageTimeInHours", "qualityDecayPerHour"],
+      "additionalProperties": false,
+      "properties": {
+        "ripeningTimeInHours":  { "type": "number", "minimum": 0 },
+        "maxStorageTimeInHours":{ "type": "number", "minimum": 0 },
+        "qualityDecayPerHour":  { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["description", "advantages", "disadvantages"],
+      "additionalProperties": false,
+      "properties": {
+        "description":   { "type": "string" },
+        "advantages":    { "type": "array", "items": { "type": "string" } },
+        "disadvantages": { "type": "array", "items": { "type": "string" } },
+        "notes":         { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "numRange2": {
+      "type": "array",
+      "minItems": 2, "maxItems": 2,
+      "items": { "type": "number" }
+    },
+    "intRange2": {
+      "type": "array",
+      "minItems": 2, "maxItems": 2,
+      "items": { "type": "integer" }
+    },
+    "fractionRange2": {
+      "type": "array",
+      "minItems": 2, "maxItems": 2,
+      "items": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "npk": {
+      "type": "object",
+      "required": ["nitrogen", "phosphorus", "potassium"],
+      "additionalProperties": false,
+      "properties": {
+        "nitrogen":   { "type": "number", "minimum": 0 },
+        "phosphorus": { "type": "number", "minimum": 0 },
+        "potassium":  { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}
