@@ -26,14 +26,14 @@
             "area": 20,
             "height": 2.8,
             "simulation": {
-              "strainSlug": "ak-47",
+              "strainId": "550e8400-e29b-41d4-a716-446655440000",
               "methodId": "sog"
             },
             "devices": [
-              { "kind": "Lamp", "count": 16 },
-              { "kind": "ClimateUnit", "count": 1, "overrides": { "targetTemperature": 24 } },
-              { "kind": "HumidityControlUnit", "count": 1, "overrides": { "targetHumidity": 0.6 } },
-              { "kind": "CO2Injector", "count": 1 }
+              { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 16 },
+              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1, "overrides": { "targetTemperature": 24 } },
+              { "blueprintId": "3d762260-88a5-4104-b03c-9860bbac34b6", "count": 1, "overrides": { "targetHumidity": 0.6 } },
+              { "blueprintId": "c701efa6-1e90-4f28-8934-ea9c584596e4", "count": 1 }
             ]
           },
           {
@@ -41,14 +41,14 @@
             "name": "Zone A2 (White Widow)",
             "area": 30,
             "simulation": {
-              "strainSlug": "white-widow",
+              "strainId": "550e8400-e29b-41d4-a716-446655440001",
               "methodId": "scrog"
             },
             "devices": [
-              { "kind": "Lamp", "count": 25 },
-              { "kind": "ClimateUnit", "count": 1, "overrides": { "targetTemperature": 22 } },
-              { "kind": "HumidityControlUnit", "count": 2, "overrides": { "targetHumidity": 0.6 } },
-              { "kind": "CO2Injector", "count": 1 }
+              { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 25 },
+              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1, "overrides": { "targetTemperature": 22 } },
+              { "blueprintId": "3d762260-88a5-4104-b03c-9860bbac34b6", "count": 2, "overrides": { "targetHumidity": 0.6 } },
+              { "blueprintId": "c701efa6-1e90-4f28-8934-ea9c584596e4", "count": 1 }
             ]
           }
         ]
@@ -64,9 +64,9 @@
             "name": "Breeding Zone",
             "area": 35,
             "devices": [
-              { "kind": "Lamp", "count": 2, "overrides": { "power": 0.250 } },
-              { "kind": "ClimateUnit", "count": 1, "overrides": { "targetTemperature": 21 } },
-              { "kind": "HumidityControlUnit", "count": 1, "overrides": { "targetHumidity": 0.55 } }
+              { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 2, "overrides": { "power": 0.250 } },
+              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1, "overrides": { "targetTemperature": 21 } },
+              { "blueprintId": "3d762260-88a5-4104-b03c-9860bbac34b6", "count": 1, "overrides": { "targetHumidity": 0.55 } }
             ]
           }
         ]

@@ -3,7 +3,7 @@ import { Plant } from '../engine/Plant.js';
 import { logger } from '../lib/logger.js';
 import { createDevice } from '../engine/factories/deviceFactory.js';
 import * as DeviceLoader from '../engine/loaders/deviceLoader.js';
-import { loadStrainBySlug } from '../engine/loaders/strainLoader.js';
+import { loadStrainById } from '../engine/loaders/strainLoader.js';
 import { loadCultivationMethod } from '../engine/loaders/cultivationMethodLoader.js';
 import { loadDevicePriceMap, loadStrainPriceMap } from '../engine/loaders/priceLoader.js';
 import { CostEngine } from '../engine/CostEngine.js';
@@ -101,7 +101,7 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
             const deviceRuntimeCtx = { zone, tickLengthInHours: zone.tickLengthInHours, devicePriceMap, logger: zone.logger, rng };
             if (zoneConfig.devices) {
                 for (const device of zoneConfig.devices) {
-                    const blueprint = findBlueprint(blueprints, { kind: device.kind });
+                    const blueprint = findBlueprint(blueprints, { id: device.blueprintId });
                     addDeviceN(zone, blueprint, device.count, deviceRuntimeCtx, device.overrides);
                 }
             }
@@ -110,7 +110,7 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
             const { simulation: simConfig } = zoneConfig;
             if (simConfig) {
                 const method = await loadCultivationMethod(simConfig.methodId);
-                const strain = await loadStrainBySlug(simConfig.strainSlug);
+                const strain = await loadStrainById(simConfig.strainId);
                 const numPlants = Math.floor(zone.area / method.areaPerPlant);
                 for (let i = 0; i < numPlants; i++) {
                     const area_m2 = method?.areaPerPlant ?? 0.25;
