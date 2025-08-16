@@ -4,7 +4,7 @@
 export const env = {
   time: {
     // Global default tick length in hours (can be overridden per simulation/zone)
-    tickLengthInHoursDefault: 3
+    tickLengthInHoursDefault: 1
   },
   physics: {
     // Air (at approx. 20–25°C)
