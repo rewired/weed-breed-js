@@ -34,7 +34,33 @@ export function createTickMachine() {
           context.logger?.warn?.('⚠️ Zone missing in onDeriveEnvironment');
           return;
         }
+        // Update environmental values for the zone
         context.zone.deriveEnvironment?.();
+
+        // Telemetry snapshot after deriving environment
+        try {
+          const status = context.zone.status ?? {};
+          const tempC = status.temperatureC;
+          const { humidity, co2ppm } = status;
+          let netEUR = 0;
+
+          const ce = context.zone.costEngine;
+          if (ce) {
+            if (typeof ce.getTotals === 'function') {
+              netEUR = ce.getTotals().netEUR ?? 0;
+            } else if (ce.ledger) {
+              netEUR = ce.ledger.netEUR ?? 0;
+            }
+          }
+
+          emit(
+            'zone.telemetry',
+            { zoneId: context.zone.id, tempC, humidity, co2ppm, netEUR },
+            context.tick
+          );
+        } catch (err) {
+          context.logger?.error?.({ err }, 'Failed to emit zone.telemetry');
+        }
       },
       onIrrigationAndNutrients: ({ context }) => {
         if (!context.zone) {
