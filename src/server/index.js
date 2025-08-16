@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, path: '/ws' });
 
 const PORT = process.env.PORT || 3000;
 
@@ -494,6 +494,16 @@ wss.on('connection', (ws) => {
   });
 });
 
+// Broadcast UI batches to connected WebSocket clients
+const uiStreamSubscription = uiStream$.subscribe(batch => {
+  const message = JSON.stringify({ type: 'ui.batch', batch });
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(message);
+    }
+  });
+});
+
 // --- Telemetry Logger ---
 // Ensure log directory exists
 const logDir = path.join(__dirname, '..', '..', 'logs');
@@ -503,6 +513,10 @@ if (!fs.existsSync(logDir)) {
 const telemetryLogStream = fs.createWriteStream(path.join(logDir, 'telemetry.ndjson'), { flags: 'a' });
 uiStream$.subscribe(batch => {
   batch.forEach(e => telemetryLogStream.write(JSON.stringify(e) + '\n'));
+});
+
+server.on('close', () => {
+  uiStreamSubscription.unsubscribe();
 });
 
 server.listen(PORT, () => {
