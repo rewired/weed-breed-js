@@ -20,6 +20,7 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 const PORT = process.env.PORT || 3000;
+const SSE_ALLOW_ORIGIN = process.env.SSE_ALLOW_ORIGIN || 'http://localhost:5173';
 
 app.use(express.json());
 // Serve static files from the frontend directory
@@ -30,6 +31,23 @@ const frontendPath = path.join(__dirname, '..', '..', 'frontend');
 app.use(express.static(frontendPath));
 
 app.use('/api', strainEditorService);
+
+app.get('/sse', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': SSE_ALLOW_ORIGIN,
+  });
+
+  const sub = uiStream$.subscribe(batch => {
+    res.write(`event: ui.batch\ndata:${JSON.stringify(batch)}\n\n`);
+  });
+
+  req.on('close', () => {
+    sub.unsubscribe();
+  });
+});
 
 // --- Simulation State ---
 let simulationState = {
