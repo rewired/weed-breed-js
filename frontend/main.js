@@ -435,6 +435,7 @@ function renderStructureContent(root) {
         kpis.appendChild(card('Health', (p.health * 100).toFixed(1) + '%'));
         kpis.appendChild(card('Stress', (p.stress * 100).toFixed(1) + '%'));
         root.appendChild(kpis);
+        // Fetch full detail for the selected plant to show environment and stress data
         fetch(`/api/zones/${z.id}/plants/${p.id}`)
             .then(res => res.json().then(dto => ({ ok: res.ok, dto })))
             .then(({ ok, dto }) => {
@@ -487,6 +488,7 @@ function renderStructureContent(root) {
         ])));
     }
     if (level === 'plants' && z) {
+        // Load detailed zone information including environment and stress breakdown
         fetch(`/api/zones/${z.id}/details`)
             .then(res => res.json().then(dto => ({ ok: res.ok, dto })))
             .then(({ ok, dto }) => {
