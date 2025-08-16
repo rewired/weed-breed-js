@@ -21,7 +21,9 @@ export class Plant {
     rng = createRng(),
     strain = null,
     method = null,
-    payload = {}
+    payload = {},
+    onBiomassUpdate = null,
+    noiseSeed = null
   } = {}) {
     this.id = id;
     this.label = label;
@@ -35,6 +37,29 @@ export class Plant {
     this.strain = strain;
     this.method = method;
     this.payload = payload;
+
+    this.onBiomassUpdate = onBiomassUpdate;
+
+    // Biomass state
+    this.state = {
+      biomassDry_g: 0,
+      biomassFresh_g: 0,
+      biomassPartition: {
+        leaves_g: 0,
+        stems_g: 0,
+        roots_g: 0,
+        buds_g: 0,
+      },
+    };
+
+    // Deterministic noise configuration
+    const noiseCfg = strain?.noise ?? {};
+    this.noise = {
+      enabled: noiseCfg.enabled !== undefined ? noiseCfg.enabled : true,
+      pct: Math.max(0, noiseCfg.pct ?? 0.02),
+    };
+    this.noiseSeed = noiseSeed ?? hashToSeed(this.id);
+    this._rng = mulberry32(this.noiseSeed);
 
     // Apply genetic variance
     const variance = env.plant.geneticVariance ?? 0;
@@ -170,6 +195,88 @@ export class Plant {
     }
   }
 
+  getPhase() {
+    return this.stage || 'vegetation';
+  }
+
+  /**
+   * Daily Light Integral for a tick.
+   * @param {number} ppfd - Photosynthetic photon flux density [µmol/m²/s]
+   * @param {number} hours - Tick duration in hours
+   * @returns {number} DLI [mol/m²/tick]
+   */
+  getDailyLightIntegral(ppfd, hours) {
+    return Number(ppfd) * 1e-6 * 3600 * Number(hours);
+  }
+
+  /**
+   * Biomass growth model based on light and stress factors.
+   * @param {object} ctx - Simulation context { zone }
+   */
+  updateBiomass(ctx = {}) {
+    const zone = ctx.zone ?? {};
+    const h = Number(zone.tickLengthInHours ?? ctx.tickLengthInHours ?? 1);
+
+    // -- Light driven potential growth --
+    const DLI = this.getDailyLightIntegral(zone.ppfd ?? 0, h); // mol/m²/tick
+
+    const strain = this.strain ?? {};
+    const phase = this.getPhase();
+    const growthModel = strain.growthModel ?? {};
+
+    const LUE = growthModel.baseLUE_gPerMol ?? 0.9; // g/mol
+    const LAI = clamp(0.5, strain.morphology?.leafAreaIndex ?? 3.0, 3.5);
+    const dW_light = LUE * DLI * LAI; // g/tick potential dry mass
+
+    // -- Stress factors --
+    const Tref = growthModel.temperature?.T_ref_C ?? 25;
+    const Q10 = growthModel.temperature?.Q10 ?? 2.0;
+    const f_T = tempFactorQ10(zone.temperatureC ?? 25, Tref, Q10);
+    const f_CO2 = co2Factor(zone.co2ppm ?? 400);
+    const f_H2O = waterFactor(zone.water);
+    const f_NPK = npkFactor(zone.npk);
+    const f_RH = rhFactor(zone.humidity);
+    const f_stress = clamp01(f_T * f_CO2 * f_H2O * f_NPK * f_RH);
+
+    // -- Maintenance respiration --
+    const maintFrac = growthModel.maintenanceFracPerDay ?? 0.01; // g/g/d
+    const maintenance = maintFrac * this.state.biomassDry_g * (h / 24);
+
+    // -- Logistic cap per phase --
+    const maxDry = growthModel.maxBiomassDry_g ?? 180;
+    const capMul = growthModel.phaseCapMultiplier?.[phase] ?? 1.0;
+    const cap = maxDry * capMul;
+
+    const growthRaw = dW_light * f_stress;
+    const growthCapped = Math.max(0, growthRaw * (1 - (this.state.biomassDry_g / cap)));
+    let dW_net = Math.max(0, growthCapped - maintenance);
+
+    // -- Optional deterministic noise --
+    if (this.noise.enabled && this.noise.pct > 0) {
+      dW_net = applyNoise(this, dW_net, this.noise.pct);
+    }
+
+    // -- Accumulate biomass --
+    if (Number.isFinite(dW_net) && dW_net > 0) {
+      this.state.biomassDry_g += dW_net;
+    }
+    this.state.biomassDry_g = Math.max(0, this.state.biomassDry_g);
+
+    const dmFrac = growthModel.dryMatterFraction?.[phase] ?? 0.22;
+    this.state.biomassFresh_g = this.state.biomassDry_g / dmFrac;
+
+    partitionBiomass(this.state, dW_net, phase, growthModel.harvestIndex, cap);
+
+    // Telemetry hook
+    this.onBiomassUpdate?.(this, {
+      dW_net,
+      growthRaw,
+      maintenance,
+      factors: { f_T, f_CO2, f_H2O, f_NPK, f_RH },
+      phase,
+    });
+  }
+
   /**
    * Calculates the yield of this plant in grams.
    * @returns {number} - Yield in grams
@@ -178,5 +285,83 @@ export class Plant {
     const baseYield = env.plant.baseYieldGramsPerM2 ?? 400;
     const yieldGrams = baseYield * this.area_m2 * this.health * this.geneticFactor;
     return Math.max(0, yieldGrams);
+  }
+}
+
+// ---- Helper functions ----
+function tempFactorQ10(T, Tref, Q10) {
+  // Q10 temperature response model
+  const f = Math.pow(Q10, (Number(T) - Tref) / 10);
+  return clamp(0, f, 1.2);
+}
+
+function co2Factor(ppm) {
+  const f = 0.8 + ((Number(ppm) - 400) * 0.00025); // linear 400→0.8, 1200→1.0
+  return clamp(0.6, f, 1.05);
+}
+
+function waterFactor(coverage = 1) {
+  return clamp(0.3, Number(coverage), 1.0);
+}
+
+function npkFactor(coverage = 1) {
+  return clamp(0.5, 0.5 + 0.5 * Number(coverage), 1.0);
+}
+
+function rhFactor(rh = 0.6) {
+  if (!Number.isFinite(rh)) return 1.0;
+  return (rh >= 0.4 && rh <= 0.7) ? 1.0 : 0.8;
+}
+
+function clamp(min, x, max) {
+  return Math.min(max, Math.max(min, x));
+}
+
+function clamp01(x) {
+  return clamp(0, x, 1);
+}
+
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function hashToSeed(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < String(str).length; i++) {
+    h ^= String(str).charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function applyNoise(self, x, pct) {
+  const u = self._rng(); // deterministic [0,1)
+  return x * (1 + pct * (2 * u - 1));
+}
+
+function partitionBiomass(state, dW, phase, harvestIndex, cap) {
+  if (!Number.isFinite(dW) || dW <= 0) return;
+  const p = state.biomassPartition;
+  if (phase === 'flowering') {
+    const target = harvestIndex?.targetFlowering ?? 0.7;
+    const progress = clamp01(state.biomassDry_g / (cap || state.biomassDry_g));
+    const budFrac = target * progress;
+    const rootFrac = 0.10;
+    const rest = 1 - budFrac - rootFrac;
+    const leafFrac = rest * 0.6;
+    const stemFrac = rest * 0.4;
+    p.leaves_g += dW * leafFrac;
+    p.stems_g += dW * stemFrac;
+    p.roots_g += dW * rootFrac;
+    p.buds_g += dW * budFrac;
+  } else {
+    p.leaves_g += dW * 0.55;
+    p.stems_g += dW * 0.35;
+    p.roots_g += dW * 0.10;
   }
 }
