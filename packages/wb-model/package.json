@@ -1,0 +1,11 @@
+{
+  "name": "@weed-breed/model",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./schemas/*": "./schemas/*.json"
+  },
+  "files": ["index.js", "schemas", "contracts", "constants", "runtime"]
+}
