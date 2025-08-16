@@ -1,2 +1,28 @@
-{ "id": "dh-01", "kind": "Dehumidifier", "name": "DryBox 200",
-  "settings": { "latentRemovalKgPerTick": 0.05, "power": 0.3 } }
+{
+  "id": "7a639d3d-4750-440a-a200-f90d11dc3c62",
+  "kind": "Dehumidifier",
+  "name": "DryBox 200",
+  "quality": 0.8,
+  "complexity": 0.25,
+  "mtbf_hours": 26280,
+  "maintenance": {
+    "baseCost": 0.0015,
+    "costIncreasePer1000": 0.0006
+  },
+  "settings": {
+    "latentRemovalKgPerTick": 0.05,
+    "power": 0.3
+  },
+  "meta": {
+    "description": "Compact unit for reducing ambient humidity.",
+    "advantages": [
+      "Efficient moisture removal",
+      "Low energy consumption"
+    ],
+    "disadvantages": [
+      "Limited capacity for large rooms",
+      "Generates heat"
+    ]
+  }
+}
+
