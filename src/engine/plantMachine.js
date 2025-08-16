@@ -6,9 +6,9 @@ export const plantMachine = createMachine({
   context: { ageHours: 0, biomass: 0, stress: 0 },
   states: {
     seed: {
-      on: { GERMINATE: 'vegetative' }
+      on: { GERMINATE: 'vegetation' }
     },
-    vegetative: {
+    vegetation: {
       on: { BLOOM_TRIGGER: 'flowering' }
     },
     flowering: {
