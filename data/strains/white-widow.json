@@ -19,6 +19,16 @@
     "yieldFactor": 1.1,
     "leafAreaIndex": 3.0
   },
+  "growthModel": {
+    "maxBiomassDry_g": 180.0,
+    "baseLUE_gPerMol": 0.9,
+    "maintenanceFracPerDay": 0.01,
+    "dryMatterFraction": { "vegetation": 0.25, "flowering": 0.20 },
+    "harvestIndex": { "targetFlowering": 0.70 },
+    "phaseCapMultiplier": { "vegetation": 0.5, "flowering": 1.0 },
+    "temperature": { "Q10": 2.0, "T_ref_C": 25 }
+  },
+  "noise": { "enabled": true, "pct": 0.02 },
   "environmentalPreferences": {
     "lightSpectrum": {
       "vegetation": [
