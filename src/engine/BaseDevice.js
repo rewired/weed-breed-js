@@ -49,6 +49,7 @@ export class BaseDevice {
 
     this.zoneRef = runtime?.zone ?? null;
     this.tickLengthInHours = resolveTickHours(runtime);
+    this.runtimeCtx = runtime;
   }
 
   /**
