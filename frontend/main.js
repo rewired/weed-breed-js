@@ -11,6 +11,50 @@ const txt = (s, v) => {
 const fmtNUM = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
 const fmtEUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
 
+// Minimal DOM diff helpers to avoid re-rendering interactive elements
+function updateAttributes(target, source) {
+    for (const { name } of Array.from(target.attributes)) {
+        if (!source.hasAttribute(name)) target.removeAttribute(name);
+    }
+    for (const { name, value } of Array.from(source.attributes)) {
+        if (target.getAttribute(name) !== value) target.setAttribute(name, value);
+    }
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        // keep user input if element has focus
+        if (document.activeElement !== target && target.value !== source.value) {
+            target.value = source.value;
+        }
+    }
+}
+
+function diffChildren(target, source) {
+    const oldChildren = Array.from(target.childNodes);
+    const newChildren = Array.from(source.childNodes);
+    const max = Math.max(oldChildren.length, newChildren.length);
+    for (let i = 0; i < max; i++) {
+        const oldChild = oldChildren[i];
+        const newChild = newChildren[i];
+        if (!newChild) {
+            target.removeChild(oldChild);
+            continue;
+        }
+        if (!oldChild) {
+            target.appendChild(newChild);
+            continue;
+        }
+        if (oldChild.nodeType === Node.TEXT_NODE && newChild.nodeType === Node.TEXT_NODE) {
+            if (oldChild.textContent !== newChild.textContent) oldChild.textContent = newChild.textContent;
+            continue;
+        }
+        if (oldChild.nodeName !== newChild.nodeName) {
+            target.replaceChild(newChild, oldChild);
+            continue;
+        }
+        updateAttributes(oldChild, newChild);
+        diffChildren(oldChild, newChild);
+    }
+}
+
 // --- State ---------------------------------------------------------------
 const state = {
     treeMode: "structure", // 'structure' | 'company' | 'shop' | 'editor'
@@ -283,11 +327,30 @@ function selectNode(kind, id) {
 function renderContent() {
     const root = $("#content");
     const scrollPos = root.scrollTop;
-    root.innerHTML = "";
-    if (state.treeMode === "structure") renderStructureContent(root);
-    else if (state.treeMode === "company") renderCompanyContent(root);
-    else if (state.treeMode === "editor") renderEditorContent(root);
+
+    // editor content manages its own DOM – render once and skip further updates
+    if (state.treeMode === "editor") {
+        if (root.dataset.mode !== "editor") {
+            root.innerHTML = "";
+            renderEditorContent(root);
+            root.dataset.mode = "editor";
+        }
+        root.scrollTop = scrollPos;
+        return;
+    }
+
+    const temp = document.createElement("div");
+    if (state.treeMode === "structure") renderStructureContent(temp);
+    else if (state.treeMode === "company") renderCompanyContent(temp);
     // ... other tree modes
+
+    if (root.dataset.mode !== state.treeMode) {
+        root.innerHTML = "";
+        root.append(...Array.from(temp.childNodes));
+    } else {
+        diffChildren(root, temp);
+    }
+    root.dataset.mode = state.treeMode;
     root.scrollTop = scrollPos;
 }
 
