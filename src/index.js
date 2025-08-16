@@ -1,9 +1,9 @@
 // src/index.js
-import { TICK_HOURS_DEFAULT } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { emit } from './sim/eventBus.js';
 import { createActor } from 'xstate';
 import { initializeSimulation } from './sim/simulation.js';
+import { resolveTickHours } from './lib/time.js';
 
 // --- Main -------------------------------------------------------------------
 async function main() {
@@ -11,9 +11,10 @@ async function main() {
 
   // Simulation run for this zone
   const durationTicks = 840; // 105 days, static for now
-  const ticksPerDay = Math.round(24 / (zones[0]?.tickLengthInHours ?? TICK_HOURS_DEFAULT));
+  const tickLengthInHours = resolveTickHours(zones[0]);
+  const ticksPerDay = Math.round(24 / tickLengthInHours);
 
-  logger.info(`--- STARTING SIMULATION (1 tick = ${zones[0]?.tickLengthInHours}h, 1 day = ${ticksPerDay} ticks) ---`);
+  logger.info(`--- STARTING SIMULATION (1 tick = ${tickLengthInHours}h, 1 day = ${ticksPerDay} ticks) ---`);
 
   for (let i = 1; i <= durationTicks; i++) {
     const absoluteTick = (costEngine._tickCounter || 0) + 1;

@@ -2,6 +2,7 @@
 import { logger } from '../lib/logger.js';
 import { createActor } from 'xstate';
 import { initializeSimulation } from '../sim/simulation.js';
+import { resolveTickHours } from '../lib/time.js';
 import { inspect } from 'util'; // For deep logging
 
 // A helper to log deep objects
@@ -15,7 +16,7 @@ async function main() {
   const { structure, costEngine, tickMachineLogic } = await initializeSimulation();
 
   const durationTicks = 10;
-  const tickLengthInHours = structure.rooms[0]?.zones[0]?.tickLengthInHours ?? 3;
+  const tickLengthInHours = resolveTickHours(structure.rooms[0]?.zones[0]);
   const ticksPerDay = Math.round(24 / tickLengthInHours);
 
   logger.info(`--- STARTING HIERARCHICAL SIMULATION (1 tick = ${tickLengthInHours}h, 1 day = ${ticksPerDay} ticks) ---`);

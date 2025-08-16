@@ -1,6 +1,7 @@
 // src/engine/Zone.js
 import { ensureEnv, resetEnvAggregates, getZoneVolume, clamp } from './deviceUtils.js';
-import { env, AIR_DENSITY, AIR_CP, TICK_HOURS_DEFAULT } from '../config/env.js';
+import { env, AIR_DENSITY, AIR_CP } from '../config/env.js';
+import { resolveTickHours } from '../lib/time.js';
 import { Plant } from './Plant.js';
 import { createDevice } from './factories/deviceFactory.js';
 
@@ -17,7 +18,7 @@ export class Zone {
     name = 'Zone',
     area = 1,
     height, // Inherited from Room/Structure
-    tickLengthInHours = (env?.time?.tickLengthInHoursDefault ?? 3),
+    tickLengthInHours,
     runtime = {},
     roomId = null,
     structureId = null,
@@ -26,7 +27,7 @@ export class Zone {
     this.name = name;
     this.area = Number(area);
     this.height = height; // Let validation/inheritance handle Number() conversion and defaults
-    this.tickLengthInHours = Number(tickLengthInHours);
+    this.tickLengthInHours = resolveTickHours({ tickLengthInHours });
     this.roomId = roomId;
     this.structureId = structureId;
 
@@ -276,7 +277,7 @@ export class Zone {
 
   #applyThermalUpdate() {
     const s = ensureEnv(this);
-    const tickH  = Number(this.tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
+    const tickH  = resolveTickHours(this);
     const dtSec  = Math.max(1, tickH * (env?.factors?.hourToSec ?? 3600));
 
     const rhoAir = Number(env?.physics?.airDensity ?? AIR_DENSITY ?? 1.2);

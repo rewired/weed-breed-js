@@ -3,6 +3,7 @@
 import { env, AIR_DENSITY, AIR_CP } from '../../config/env.js';
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, getZoneVolume, clamp } from '../deviceUtils.js';
+import { resolveTickHours } from '../../lib/time.js';
 
 export class ClimateUnit extends BaseDevice {
   constructor(json, runtimeCtx) {
@@ -14,7 +15,7 @@ export class ClimateUnit extends BaseDevice {
   applyEffect(zone) {
     const s = ensureEnv(zone);
     const settings = this.settings ?? {};
-    const tickH   = Number(this.runtimeCtx?.tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
+    const tickH   = resolveTickHours(this.runtimeCtx);
     const dtSec   = Math.max(1, tickH * (env?.factors?.hourToSec ?? 3600));
 
     // Setpoint & Hysterese
@@ -71,7 +72,7 @@ export class ClimateUnit extends BaseDevice {
   }
 
   estimateEnergyKWh(tickHours) {
-    const tickH = Number(tickHours ?? this.runtimeCtx?.tickLengthInHours ?? env?.time?.tickLengthInHoursDefault ?? 3);
+    const tickH = resolveTickHours({ tickLengthInHours: tickHours ?? this.runtimeCtx?.tickLengthInHours });
     const powerElKW = Number(this.settings?.power ?? this.settings?.powerInKilowatts ?? 0);
     return Math.max(0, powerElKW * clamp(this._lastPowerFrac ?? 0, 0, 1) * tickH);
   }

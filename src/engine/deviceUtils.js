@@ -2,6 +2,7 @@
 // Helper functions for device and environment logic (ESM, Node 23+)
 
 import { env } from '../config/env.js';
+import { resolveTickHours } from '../lib/time.js';
 
 export function toNumber(v, def = 0) {
   const n = Number(v);
@@ -78,7 +79,7 @@ export function getZoneVolume(zone) {
 }
 
 export function getTickHours(runtimeCtx) {
-  return toNumber(runtimeCtx?.tickLengthInHours, env?.time?.tickLengthInHoursDefault ?? 3);
+  return resolveTickHours(runtimeCtx);
 }
 
 export function readPowerKw(settings = {}) {
