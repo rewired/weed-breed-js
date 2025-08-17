@@ -37,6 +37,7 @@ This document describes all backend endpoints provided by the Weed Breed simulat
     "difficulty": "normal"   // optional
   }
   ```
+
   **Response:** `200 OK` with `{ "message": "...", "..." }` or 4xx/5xx on error.
 
 - **POST `/simulation/pause`**
@@ -48,6 +49,7 @@ This document describes all backend endpoints provided by the Weed Breed simulat
   ```json
   { "preset": "normal" }     // optional
   ```
+
   **Response:** `{ "message": "Simulation resumed." }`
 
 - **GET `/simulation/status`**
@@ -251,7 +253,7 @@ Example response (shortened):
 
 The simulation organizes entities hierarchically:
 
-```
+```shell
 Structure → Room → Zone → Plant → Device
 ```
 
