@@ -64,7 +64,8 @@ function ensureZoneSmoothers(zone) {
 }
 
 // --- WebSocket connection -------------------------------------------------
-const socket = new WebSocket(`ws://${window.location.host}`);
+const proto = window.location.protocol === "https:" ? "wss" : "ws";
+const socket = new WebSocket(`${proto}://${window.location.host}`);
 
 socket.onopen = () => {
     console.log("WebSocket connection established");
