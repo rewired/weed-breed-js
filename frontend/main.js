@@ -365,7 +365,10 @@ function renderStructureContent(root) {
                 renderZoneOverview(root, dto, z);
             })
             .catch(err => {
-                root.innerHTML += `<p style="color:var(--danger)">Error fetching zone overview: ${err.message}</p>`;
+                const msg = err.message === 'Simulation not running.'
+                    ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
+                    : err.message;
+                root.innerHTML += `<p style="color:var(--danger)">Error fetching zone overview: ${msg}</p>`;
             });
     } else if (level === 'plant' && p && z) {
         kpis.appendChild(card('Age', (p.ageHours / 24).toFixed(1) + ' d'));
@@ -383,7 +386,10 @@ function renderStructureContent(root) {
                 renderPlantDetail(root, dto, z);
             })
             .catch(err => {
-                root.innerHTML += `<p style="color:var(--danger)">Error fetching plant detail: ${err.message}</p>`;
+                const msg = err.message === 'Simulation not running.'
+                    ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
+                    : err.message;
+                root.innerHTML += `<p style="color:var(--danger)">Error fetching plant detail: ${msg}</p>`;
             });
         return;
     } else {
@@ -435,7 +441,10 @@ function renderStructureContent(root) {
                 renderZonePlantsDetails(root, dto);
             })
             .catch(err => {
-                root.appendChild(section('Plants', `<p style="color:var(--danger)">Error fetching zone details: ${err.message}</p>`));
+                const msg = err.message === 'Simulation not running.'
+                    ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
+                    : err.message;
+                root.appendChild(section('Plants', `<p style="color:var(--danger)">Error fetching zone details: ${msg}</p>`));
             });
     }
 
@@ -608,7 +617,7 @@ function renderZonePlantsDetails(root, dto) {
 
     const plantRows = [['ID', 'Strain', 'Stage', 'Age (d)', 'Health', 'Stress', 'Stressors'],
         ...dto.plants.map(p => [
-            p.id,
+            `<a href="#" data-jump="plant:${p.id}">${p.id}</a>`,
             p.strain,
             p.stage,
             (p.ageHours/24).toFixed(1),
