@@ -154,7 +154,7 @@ function updateWithLiveData(data) {
         simTime: newSimTime,
         balance: Number(data.balance),
         tickHours: Number(data.tickIntervalHours),
-        day: Number(data.day) || state.day,
+        day: Number(data.day ?? state.day),
         dailyEnergyKWh: Number(data.dailyEnergyKWh),
         dailyWaterL: Number(data.dailyWaterL),
         tickEnergyKWh: Number(data.energyKWh) || 0,
