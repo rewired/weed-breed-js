@@ -402,10 +402,10 @@ function renderStructureContent(root) {
             .then(({ ok, dto }) => {
                 if (!ok || dto.error || dto.message) {
                     const msg = dto.error || dto.message || 'Unknown error';
-                    const pErr = document.createElement('p');
-                    pErr.style.color = 'var(--danger)';
-                    pErr.textContent = `Error: ${msg}`;
-                    root.appendChild(pErr);
+                    const err = document.createElement('p');
+                    err.className = 'error';
+                    err.textContent = `Error: ${msg}`;
+                    root.appendChild(err);
                     return;
                 }
                 renderZoneOverview(root, dto, z);
@@ -414,10 +414,10 @@ function renderStructureContent(root) {
                 const msg = err.message === 'Simulation not running.'
                     ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
                     : err.message;
-                const pErr = document.createElement('p');
-                pErr.style.color = 'var(--danger)';
-                pErr.textContent = `Error fetching zone overview: ${msg}`;
-                root.appendChild(pErr);
+                const errEl = document.createElement('p');
+                errEl.className = 'error';
+                errEl.textContent = `Error fetching zone overview: ${msg}`;
+                root.appendChild(errEl);
             });
     } else if (level === 'plant' && p && z) {
         kpis.appendChild(card('Age', (p.ageHours / 24).toFixed(1) + ' d'));
@@ -429,10 +429,10 @@ function renderStructureContent(root) {
             .then(({ ok, dto }) => {
                 if (!ok || dto.error || dto.message) {
                     const msg = dto.error || dto.message || 'Unknown error';
-                    const pErr = document.createElement('p');
-                    pErr.style.color = 'var(--danger)';
-                    pErr.textContent = `Error: ${msg}`;
-                    root.appendChild(pErr);
+                    const err = document.createElement('p');
+                    err.className = 'error';
+                    err.textContent = `Error: ${msg}`;
+                    root.appendChild(err);
                     return;
                 }
                 renderPlantDetail(root, dto, z);
@@ -441,10 +441,10 @@ function renderStructureContent(root) {
                 const msg = err.message === 'Simulation not running.'
                     ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
                     : err.message;
-                const pErr = document.createElement('p');
-                pErr.style.color = 'var(--danger)';
-                pErr.textContent = `Error fetching plant detail: ${msg}`;
-                root.appendChild(pErr);
+                const errEl = document.createElement('p');
+                errEl.className = 'error';
+                errEl.textContent = `Error fetching plant detail: ${msg}`;
+                root.appendChild(errEl);
             });
         return;
     } else {
@@ -490,10 +490,10 @@ function renderStructureContent(root) {
             .then(({ ok, dto }) => {
                 if (!ok || dto.error || dto.message) {
                     const msg = dto.error || dto.message || 'Unknown error';
-                    const pErr = document.createElement('p');
-                    pErr.style.color = 'var(--danger)';
-                    pErr.textContent = `Error: ${msg}`;
-                    root.appendChild(section('Plants', pErr));
+                    const err = document.createElement('p');
+                    err.className = 'error';
+                    err.textContent = `Error: ${msg}`;
+                    root.appendChild(section('Plants', err));
                     return;
                 }
                 renderZonePlantsDetails(root, dto);
@@ -502,10 +502,10 @@ function renderStructureContent(root) {
                 const msg = err.message === 'Simulation not running.'
                     ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
                     : err.message;
-                const pErr = document.createElement('p');
-                pErr.style.color = 'var(--danger)';
-                pErr.textContent = `Error fetching zone details: ${msg}`;
-                root.appendChild(section('Plants', pErr));
+                const errEl = document.createElement('p');
+                errEl.className = 'error';
+                errEl.textContent = `Error fetching zone details: ${msg}`;
+                root.appendChild(section('Plants', errEl));
             });
     }
 
