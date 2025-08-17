@@ -42,6 +42,12 @@ const state = {
     zoneSmoothers: {},
 };
 
+function setState(partial) {
+    Object.assign(state, partial);
+    renderTop();
+    renderContent();
+}
+
 function ensureZoneSmoothers(zone) {
     if (!zone) return null;
     if (!state.zoneSmoothers[zone.id]) {
@@ -85,15 +91,13 @@ async function fetchInitialData() {
         if (response.ok) {
             const data = await response.json();
             if (data.status === "running" || data.status === "paused") {
-                state.running = data.status === "running";
+                setState({ running: data.status === "running" });
                 $("#btn-play").disabled = true;
                 $("#btn-pause").disabled = !state.running;
-                const clock = $("#clock");
-                clock.classList.toggle("running", state.running);
             }
             if (data.structure) {
                 // The backend returns a single structure, but the frontend expects an array of structures.
-                state.structureData = { structures: [data.structure] };
+                setState({ structureData: { structures: [data.structure] } });
                 state.structureData.structures.forEach(s =>
                     s.rooms.forEach(r => r.zones.forEach(z => ensureZoneSmoothers(z)))
                 );
@@ -114,20 +118,9 @@ async function fetchInitialData() {
 
 function updateWithLiveData(data) {
     console.log(JSON.stringify(data, null, 2));
-    state.tick = data.tick;
-    state.simTime = new Date(data.isoTime);
-    state.balance = Number(data.balance);
-    state.tickHours = Number(data.tickIntervalHours);
-    state.day = Number(data.day) || state.day;
-    state.dailyEnergyKWh = Number(data.dailyEnergyKWh);
-    state.dailyWaterL = Number(data.dailyWaterL);
-    state.tickEnergyKWh = Number(data.energyKWh) || 0;
-    state.tickWaterL = Number(data.waterL) || 0;
-    state.tickCostEUR = Number(data.totalExpensesEUR) || 0;
-    if (data.grandTotals) state.grandTotals = data.grandTotals;
-    if (data.aggregates) state.aggregates = data.aggregates;
+    const newSimTime = new Date(data.isoTime);
 
-    // Update live data in the structure data
+    // Update live data in the structure data before state merge
     if (data.zoneSummaries) {
         data.zoneSummaries.forEach(summary => {
             for (const structure of state.structureData.structures) {
@@ -137,8 +130,8 @@ function updateWithLiveData(data) {
                         const smoother = ensureZoneSmoothers(zone);
                         smoother.rawHumidity = summary.humidity;
                         smoother.rawPPFD = summary.ppfd;
-                        smoother.avgHumidity = smoother.humidity(summary.humidity, state.simTime.getTime());
-                        smoother.avgPPFD = smoother.ppfd(summary.ppfd, state.simTime.getTime());
+                        smoother.avgHumidity = smoother.humidity(summary.humidity, newSimTime.getTime());
+                        smoother.avgPPFD = smoother.ppfd(summary.ppfd, newSimTime.getTime());
                         Object.assign(zone, summary);
                     }
                 }
@@ -155,8 +148,23 @@ function updateWithLiveData(data) {
             }
         });
     }
-    renderTop();
-    renderContent();
+
+    const partial = {
+        tick: data.tick,
+        simTime: newSimTime,
+        balance: Number(data.balance),
+        tickHours: Number(data.tickIntervalHours),
+        day: Number(data.day) || state.day,
+        dailyEnergyKWh: Number(data.dailyEnergyKWh),
+        dailyWaterL: Number(data.dailyWaterL),
+        tickEnergyKWh: Number(data.energyKWh) || 0,
+        tickWaterL: Number(data.waterL) || 0,
+        tickCostEUR: Number(data.totalExpensesEUR) || 0,
+    };
+    if (data.grandTotals) partial.grandTotals = data.grandTotals;
+    if (data.aggregates) partial.aggregates = data.aggregates;
+
+    setState(partial);
 }
 
 // --- Tree Building -------------------------------------------------------
@@ -239,35 +247,25 @@ function buildEditorTree(root) {
 // --- Selection & Rendering -----------------------------------------------
 function selectNode(kind, id) {
     if (state.treeMode === "structure") {
-        state.level = kind;
-        state.plantId = null; // Reset plantId on any new selection
+        const partial = { level: kind, plantId: null };
 
         if (kind === "structure") {
-            state.structureId = id;
-            state.roomId = null;
-            state.zoneId = null;
+            Object.assign(partial, { structureId: id, roomId: null, zoneId: null });
         } else if (kind === "room") {
-            state.roomId = id;
-            state.zoneId = null;
             const s = findStructureOfRoom(id);
-            state.structureId = s?.id || null;
+            Object.assign(partial, { roomId: id, zoneId: null, structureId: s?.id || null });
         } else if (kind === "zone" || kind === "devices" || kind === "plants") {
-            state.zoneId = id;
             const { s, r } = findParentsOfZone(id) || {};
-            state.structureId = s?.id || null;
-            state.roomId = r?.id || null;
+            Object.assign(partial, { zoneId: id, structureId: s?.id || null, roomId: r?.id || null });
         } else if (kind === "plant") {
-            state.plantId = id;
             const p = findParentsOfPlant(id);
-            state.structureId = p?.s?.id || null;
-            state.roomId = p?.r?.id || null;
-            state.zoneId = p?.z?.id || null;
+            Object.assign(partial, { plantId: id, structureId: p?.s?.id || null, roomId: p?.r?.id || null, zoneId: p?.z?.id || null });
         }
+        setState(partial);
     } else if (state.treeMode === "company") {
-        state.companySel = id;
+        setState({ companySel: id });
     } else if (state.treeMode === "editor") {
-        state.level = kind;
-        state.strainId = id;
+        setState({ level: kind, strainId: id });
     }
     // ... other tree modes
 
@@ -277,7 +275,6 @@ function selectNode(kind, id) {
     if (current) current.setAttribute("aria-selected", "true");
 
     renderBreadcrumbs();
-    renderContent();
 }
 
 function renderContent() {
@@ -644,8 +641,7 @@ function renderCompanyContent(root) {
         btn.textContent = label;
         if (p === period) btn.classList.add('active');
         btn.addEventListener('click', () => {
-            state.companyPeriod = p;
-            renderContent();
+            setState({ companyPeriod: p });
         });
         tabs.appendChild(btn);
     });
@@ -760,19 +756,17 @@ async function postToServer(url, body) {
 
 $("#btn-play").addEventListener("click", async () => {
     await postToServer("/simulation/start", { preset: state.speed, savegame: "default", difficulty: "normal" });
-    state.running = true;
+    setState({ running: true });
     $("#btn-play").disabled = true;
     $("#btn-pause").disabled = false;
-    renderTop();
     await fetchInitialData();
 });
 
 $("#btn-pause").addEventListener("click", async () => {
     await postToServer("/simulation/pause");
-    state.running = false;
+    setState({ running: false });
     $("#btn-play").disabled = false;
     $("#btn-pause").disabled = true;
-    renderTop();
 });
 
 $("#btn-step").addEventListener("click", async () => {
@@ -783,7 +777,7 @@ $("#btn-step").addEventListener("click", async () => {
 
 $$(".speed").forEach((b) => {
     b.addEventListener("click", () => {
-        state.speed = b.dataset.speed;
+        setState({ speed: b.dataset.speed });
         $$(".speed").forEach((btn) => btn.setAttribute("aria-pressed", "false"));
         b.setAttribute("aria-pressed", "true");
         if (state.running) {
@@ -798,13 +792,18 @@ function init() {
         b.addEventListener("click", () => {
             $$(".rbtn").forEach((x) => x.setAttribute("aria-pressed", "false"));
             b.setAttribute("aria-pressed", "true");
-            state.treeMode = b.dataset.mode;
-            state.level = "none";
-            state.structureId = state.roomId = state.zoneId = state.plantId = null;
-            state.companySel = state.shopSel = null;
+            setState({
+                treeMode: b.dataset.mode,
+                level: "none",
+                structureId: null,
+                roomId: null,
+                zoneId: null,
+                plantId: null,
+                companySel: null,
+                shopSel: null,
+            });
             buildTree();
             renderBreadcrumbs();
-            renderContent();
         })
     );
 
