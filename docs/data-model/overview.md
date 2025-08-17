@@ -2,7 +2,7 @@
 
 The simulation organizes cultivation data in a hierarchy: **Structure → Room → Zone → Plant → Device**.
 
-See [naming rules](naming.md) and [tick/unit conventions](../reference/tick-and-units.md) for shared terminology.
+See [naming rules](naming.md), [bootstrapping examples](bootstrapping.md) and [tick/unit conventions](../reference/tick-and-units.md) for shared terminology.
 
 ## Structure
 
