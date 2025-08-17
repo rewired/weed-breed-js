@@ -2,6 +2,8 @@
 
 This folder provides an overview of the Weed Breed simulation game. The project simulates cannabis cultivation using a tick-based engine.
 
+For setup instructions and running the project, see [Setup](setup.md).
+
 ## Directory Structure
 
 - [Architecture](architecture/overview.md) – high level system design and references to key modules. See also the [ADRs](architecture/adr/) for individual decisions.
