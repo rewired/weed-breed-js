@@ -157,3 +157,16 @@ High-level operational views for **Structure → Rooms → Zones → Plants**.
 * Units follow SI (°C, L, kWh, µmol/m²·s). Percentages are expressed as **0–1** where applicable.
 * “ETA” = estimated time to harvest; “KPI” = key performance indicator; “PPFD” = photosynthetic photon flux density.
 * All timings are expressed in **Ticks** (simulation time), with a globally defined tick length.
+
+## Implementation Files
+
+- [frontend/main.js](../../frontend/main.js)
+- [frontend/editor/strainEditor.js](../../frontend/editor/strainEditor.js)
+
+## Roadmap
+
+Planned views and features:
+
+- Shop mode for purchasing devices and seeds
+- Extended editor modules beyond strains
+- Visualization dashboards for energy and water consumption

@@ -1,6 +1,6 @@
 # 🧾 Naming Conventions – Weed Breed
 
-> This file accompanies the *Weed Breed* architecture guide and serves as a binding reference for all identifiers in JSON files, data models, and code.
+> This file accompanies the project documentation and serves as a binding reference for all identifiers in JSON files, data models, and code.
 
 ---
 
@@ -52,6 +52,8 @@
   "flowering": [300, 650]
 }
 ```
+// data/strains/ak-47.json
+[data/strains/ak-47.json](../../data/strains/ak-47.json)
 
 ### Nutrients
 
@@ -61,6 +63,8 @@
   "flowering": { "nitrogen": 0.7, "phosphorus": 1.4, "potassium": 1.6 }
 }
 ```
+// data/strains/ak-47.json
+[data/strains/ak-47.json](../../data/strains/ak-47.json)
 
 ### Temperature Range
 
@@ -70,49 +74,13 @@
   "flowering": [22, 30]
 }
 ```
+// data/strains/ak-47.json
+[data/strains/ak-47.json](../../data/strains/ak-47.json)
 
 ---
 
 ## 📎 References
 
-This file is referenced by the architecture guide:
-→ [`architectural_guide.md`](./architectural_guide.md)
+Uniform tick duration and unit conventions are documented separately in the [tick and units reference](../reference/tick-and-units.md).
 
----
-
-## 📏 Uniform Tick and Unit Conventions
-
-The following implicit units and time references apply in all JSON structures:
-
-### Time Specifications
-
-| Field                | Unit       | Comment                     |
-|----------------------|------------|-----------------------------|
-| `lifespan`           | Hours      | Lifespan                    |
-| `ripeningTime`       | Hours      | Ripening time               |
-| `floweringDays` etc. | Days       | Phase specifications        |
-| `baseCost`           | EUR / Tick | Maintenance cost per tick   |
-
-→ Tick duration is centrally defined (e.g., `tickLengthInHours = 3`).
-
-### Power and Area
-
-| Field          | Unit                      |
-|----------------|---------------------------|
-| `power`        | Kilowatt (kW)             |
-| `ppfd`         | µmol/m²·s                 |
-| `coverageArea` | Square meter (m²)         |
-| `airflow`      | Cubic meters per hour (m³/h) |
-
-### Economics
-
-| Field                | Unit     |
-|----------------------|----------|
-| `capitalExpenditure` | EUR      |
-| `baseCost`           | EUR/Tick |
-
-### Rules
-
-- No units in field names (no `_eur`, `_kw`, `_celsius`, `_hours`)
-- SI units are implicitly valid project-wide
-- Tick time reference is uniform system-wide
+This document is linked from the [architecture overview](../architecture/overview.md).

@@ -6,23 +6,29 @@ This project is a simulation game for breeding and growing weed. It includes a s
 
 ### Prerequisites
 
-*   Node.js (v23 or higher)
-*   npm
+* Node.js (v23 or higher)
+* npm
 
 ### Installation
 
-1.  Clone the repository:
+1. Clone the repository:
     ```sh
     git clone <repository-url>
     ```
-2.  Navigate to the project directory:
+    // .
+    [.](.)
+2. Navigate to the project directory:
     ```sh
     cd weed-breed-js-zwo
     ```
-3.  Install the dependencies:
+    // .
+    [.](.)
+3. Install the dependencies:
     ```sh
     npm install
     ```
+    // package.json
+    [package.json](package.json)
 
 ### Running the Simulation
 
@@ -31,6 +37,8 @@ To run the main simulation scenario, use the following command:
 ```sh
 npm run sim
 ```
+// src/demos/structure_rooms_zones_demo.js
+[src/demos/structure_rooms_zones_demo.js](src/demos/structure_rooms_zones_demo.js)
 
 This will execute the simulation defined in `src/index.js`.
 
@@ -39,7 +47,8 @@ To start the web server and interact with the simulation through the frontend, u
 ```sh
 npm run dev
 ```
-This runs the server with `node --watch src/server/index.js`.
+// src/server/index.js
+[src/server/index.js](src/server/index.js)
 
 ### Plant Detail View
 
@@ -47,12 +56,4 @@ The frontend includes a plant detail view reachable via the structure tree. Navi
 
 ## Documentation
 
-For more detailed information about the project, please refer to the documentation in the `docs` directory:
-
-*   [Naming Conventions](docs/naming_conventions.md)
-*   [Cultivation Method Schema](docs/cultivation_method_schema.md)
-*   [Device Schema](docs/device_schema.md)
-*   [Strain Prices Schema](docs/strainPrices_schema.md)
-*   [Strain Schema](docs/strain_schema.md)
-*   [Architectural Decisions](docs/architectural_decisions.md)
-*   [Architecture Guide](docs/architectural_guide.md)
+See the consolidated [documentation](docs/README.md) for architecture, data model, frontend and reference guides.
