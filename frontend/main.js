@@ -1,6 +1,8 @@
 import { makeSmooth } from "./smoother.js";
 import formatUnits from "./format.js";
 
+const DEBUG = false;
+
 // --- Helpers -------------------------------------------------------------
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -118,7 +120,7 @@ async function fetchInitialData() {
 }
 
 function updateWithLiveData(data) {
-    console.log(JSON.stringify(data, null, 2));
+    if (DEBUG) console.debug('live', data);
     const newSimTime = new Date(data.isoTime);
 
     // Update live data in the structure data before state merge
