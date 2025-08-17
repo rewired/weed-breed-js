@@ -180,12 +180,37 @@ function buildTree() {
 function nodeLi(kind, id, icon, title, alerts = 0, count = 0) {
     const li = document.createElement("li");
     li.setAttribute("role", "treeitem");
-    li.innerHTML = `<div class="node" tabindex="0" data-kind="${kind}" data-id="${id}">
-        <span class="twisty">▸</span> <span class="title">${icon} ${title}</span>
-        <span class="badge" title="Zähler/Status">${count}${alerts ? ` • ⚠${alerts}` : ""}</span>
-    </div><div class="children" hidden></div>`;
-    const node = li.firstElementChild;
-    const children = li.lastElementChild;
+
+    const node = document.createElement("div");
+    node.className = "node";
+    node.tabIndex = 0;
+    node.dataset.kind = kind;
+    node.dataset.id = id;
+
+    const twisty = document.createElement("span");
+    twisty.className = "twisty";
+    twisty.textContent = "▸";
+    node.appendChild(twisty);
+    node.appendChild(document.createTextNode(" "));
+
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "title";
+    titleSpan.textContent = `${icon} ${title}`;
+    node.appendChild(titleSpan);
+    node.appendChild(document.createTextNode(" "));
+
+    const badge = document.createElement("span");
+    badge.className = "badge";
+    badge.title = "Zähler/Status";
+    badge.textContent = `${count}${alerts ? ` • ⚠${alerts}` : ""}`;
+    node.appendChild(badge);
+
+    const children = document.createElement("div");
+    children.className = "children";
+    children.hidden = true;
+
+    li.appendChild(node);
+    li.appendChild(children);
     node.addEventListener("click", () => {
         if (children.children.length) {
             children.hidden = !children.hidden;
@@ -309,7 +334,28 @@ function renderStructureContent(root) {
     if (level === 'zone' && z) { title = z.name; subtitle = `${z.plants?.length || 0} Plants • ${z.devices?.length || 0} Devices`; }
     if (level === 'devices' && z) { title = `${z.name} · Devices`; subtitle = `${z.devices?.length || 0} Geräte`; }
     if (level === 'plant' && p) { title = p.name; subtitle = `${p.strain || '—'} • ${p.phase || '—'}`; }
-    header.innerHTML = `<header style="display:flex;justify-content:space-between;align-items:center"><div><strong>${title}</strong><div style="color:var(--muted);font-size:12px">${subtitle}</div></div><div class="badge">Kontext: ${level}</div></header>`;
+    const headerEl = document.createElement("header");
+    headerEl.style.display = "flex";
+    headerEl.style.justifyContent = "space-between";
+    headerEl.style.alignItems = "center";
+
+    const left = document.createElement("div");
+    const strong = document.createElement("strong");
+    strong.textContent = title;
+    left.appendChild(strong);
+    const sub = document.createElement("div");
+    sub.style.color = "var(--muted)";
+    sub.style.fontSize = "12px";
+    sub.textContent = subtitle;
+    left.appendChild(sub);
+
+    const badge = document.createElement("div");
+    badge.className = "badge";
+    badge.textContent = `Kontext: ${level}`;
+
+    headerEl.appendChild(left);
+    headerEl.appendChild(badge);
+    header.appendChild(headerEl);
     root.appendChild(header);
 
     if (level === 'structure') {
@@ -356,7 +402,10 @@ function renderStructureContent(root) {
             .then(({ ok, dto }) => {
                 if (!ok || dto.error || dto.message) {
                     const msg = dto.error || dto.message || 'Unknown error';
-                    root.innerHTML += `<p style="color:var(--danger)">Error: ${msg}</p>`;
+                    const pErr = document.createElement('p');
+                    pErr.style.color = 'var(--danger)';
+                    pErr.textContent = `Error: ${msg}`;
+                    root.appendChild(pErr);
                     return;
                 }
                 renderZoneOverview(root, dto, z);
@@ -365,7 +414,10 @@ function renderStructureContent(root) {
                 const msg = err.message === 'Simulation not running.'
                     ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
                     : err.message;
-                root.innerHTML += `<p style="color:var(--danger)">Error fetching zone overview: ${msg}</p>`;
+                const pErr = document.createElement('p');
+                pErr.style.color = 'var(--danger)';
+                pErr.textContent = `Error fetching zone overview: ${msg}`;
+                root.appendChild(pErr);
             });
     } else if (level === 'plant' && p && z) {
         kpis.appendChild(card('Age', (p.ageHours / 24).toFixed(1) + ' d'));
@@ -377,7 +429,10 @@ function renderStructureContent(root) {
             .then(({ ok, dto }) => {
                 if (!ok || dto.error || dto.message) {
                     const msg = dto.error || dto.message || 'Unknown error';
-                    root.innerHTML += `<p style="color:var(--danger)">Error: ${msg}</p>`;
+                    const pErr = document.createElement('p');
+                    pErr.style.color = 'var(--danger)';
+                    pErr.textContent = `Error: ${msg}`;
+                    root.appendChild(pErr);
                     return;
                 }
                 renderPlantDetail(root, dto, z);
@@ -386,7 +441,10 @@ function renderStructureContent(root) {
                 const msg = err.message === 'Simulation not running.'
                     ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
                     : err.message;
-                root.innerHTML += `<p style="color:var(--danger)">Error fetching plant detail: ${msg}</p>`;
+                const pErr = document.createElement('p');
+                pErr.style.color = 'var(--danger)';
+                pErr.textContent = `Error fetching plant detail: ${msg}`;
+                root.appendChild(pErr);
             });
         return;
     } else {
@@ -432,7 +490,10 @@ function renderStructureContent(root) {
             .then(({ ok, dto }) => {
                 if (!ok || dto.error || dto.message) {
                     const msg = dto.error || dto.message || 'Unknown error';
-                    root.appendChild(section('Plants', `<p style="color:var(--danger)">Error: ${msg}</p>`));
+                    const pErr = document.createElement('p');
+                    pErr.style.color = 'var(--danger)';
+                    pErr.textContent = `Error: ${msg}`;
+                    root.appendChild(section('Plants', pErr));
                     return;
                 }
                 renderZonePlantsDetails(root, dto);
@@ -441,7 +502,10 @@ function renderStructureContent(root) {
                 const msg = err.message === 'Simulation not running.'
                     ? 'Simulation gestartet? Details stehen nur bei laufender Simulation zur Verfügung.'
                     : err.message;
-                root.appendChild(section('Plants', `<p style="color:var(--danger)">Error fetching zone details: ${msg}</p>`));
+                const pErr = document.createElement('p');
+                pErr.style.color = 'var(--danger)';
+                pErr.textContent = `Error fetching zone details: ${msg}`;
+                root.appendChild(section('Plants', pErr));
             });
     }
 
@@ -470,18 +534,83 @@ function renderBreadcrumbs() {
         parts.forEach((p, i) => { const a = document.createElement('a'); a.href = 'javascript:void(0)'; a.textContent = p.label; a.addEventListener('click', () => selectNode(p.kind, p.id)); c.appendChild(a); if (i < parts.length - 1) { const s = document.createElement('span'); s.textContent = '›'; s.style.color = 'var(--muted)'; s.style.margin = '0 4px'; c.appendChild(s); } });
     } else if (state.treeMode === 'editor') {
         const label = state.level === 'strains' ? 'Strains' : 'Editor';
-        c.innerHTML = `<strong>${label}</strong>`;
+        const strong = document.createElement('strong');
+        strong.textContent = label;
+        c.appendChild(strong);
     } else {
         const label = state.treeMode === 'company' ? 'Company Overview' : 'Shop Explorer';
-        c.innerHTML = `<strong>${label}</strong>`;
+        const strong = document.createElement('strong');
+        strong.textContent = label;
+        c.appendChild(strong);
     }
 }
 
-function section(title, inner) { const el = document.createElement('div'); el.className = 'section'; el.innerHTML = `<header><h3>${title}</h3></header>` + inner; return el; }
-function table(rows) { return `<table>${rows.map((row, i) => i ? `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>` : `<thead><tr>${row.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`).join('')}</tbody></table>`; }
-function card(title, value, sub = '') { const el = document.createElement('div'); el.className = 'card'; el.innerHTML = `<h3>${title}</h3><div class="metric"><div class="v">${value}</div><div class="sub">${sub}</div></div>`; return el; }
-function link(target, label) { return `<a href="#" data-jump="${target}">${label}</a>`; }
+function section(title, inner) {
+    const el = document.createElement('div');
+    el.className = 'section';
+    const header = document.createElement('header');
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    header.appendChild(h3);
+    el.appendChild(header);
+    if (inner instanceof Node) {
+        el.appendChild(inner);
+    }
+    return el;
+}
 
+function table(rows) {
+    const tableEl = document.createElement('table');
+    const [head, ...body] = rows;
+    const thead = document.createElement('thead');
+    const trHead = document.createElement('tr');
+    head.forEach(h => {
+        const th = document.createElement('th');
+        if (h instanceof Node) th.appendChild(h); else th.textContent = h;
+        trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    tableEl.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    body.forEach(row => {
+        const tr = document.createElement('tr');
+        row.forEach(cell => {
+            const td = document.createElement('td');
+            if (cell instanceof Node) td.appendChild(cell); else td.textContent = cell;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    tableEl.appendChild(tbody);
+    return tableEl;
+}
+
+function link(target, label) {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.dataset.jump = target;
+    a.textContent = label;
+    return a;
+}
+function card(title, value, sub = '') {
+    const el = document.createElement('div');
+    el.className = 'card';
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    el.appendChild(h3);
+    const metric = document.createElement('div');
+    metric.className = 'metric';
+    const v = document.createElement('div');
+    v.className = 'v';
+    v.textContent = value;
+    const s = document.createElement('div');
+    s.className = 'sub';
+    s.textContent = sub;
+    metric.appendChild(v);
+    metric.appendChild(s);
+    el.appendChild(metric);
+    return el;
+}
 function renderZoneOverview(root, dto, zone) {
     // 1. Header
     const headerGrid = document.createElement('div');
@@ -509,7 +638,7 @@ function renderZoneOverview(root, dto, zone) {
     envGrid.appendChild(card('CO2', `${env.co2.actual.toFixed(0)}ppm`, `Set: ${env.co2.set}ppm`));
     const ppfdSub = `Raw: ${(smoother?.rawPPFD ?? env.ppfd.actual).toFixed(0)} • Set: ${env.ppfd.set}`;
     envGrid.appendChild(card('PPFD', `${env.ppfd.actual.toFixed(0)}`, ppfdSub));
-    root.appendChild(section('Environment', envGrid.outerHTML));
+    root.appendChild(section('Environment', envGrid));
 
     // 3. Stress Section
     if (dto.plantStress) {
@@ -520,8 +649,12 @@ function renderZoneOverview(root, dto, zone) {
         if (entries.length > 0) {
             const rows = [ ['Stressor', 'Plants', 'Avg Stress'],
                 ...entries.map(([k, v]) => [labels[k] || k, v.count, v.avgStress.toFixed(2)]) ];
-            const stressHtml = `<p>Avg Stress: ${dto.plantStress.avgStress.toFixed(2)}</p>` + table(rows);
-            root.appendChild(section('Stress', stressHtml));
+            const stressWrap = document.createElement('div');
+            const avgP = document.createElement('p');
+            avgP.textContent = `Avg Stress: ${dto.plantStress.avgStress.toFixed(2)}`;
+            stressWrap.appendChild(avgP);
+            stressWrap.appendChild(table(rows));
+            root.appendChild(section('Stress', stressWrap));
         }
     }
 
@@ -541,8 +674,16 @@ function renderZoneOverview(root, dto, zone) {
     devicesGrid.appendChild(card('Devices', `${dev.active} / ${dev.total} active`));
     devicesGrid.appendChild(card('Avg. Health', `${dev.avgHealth}%`));
     devicesGrid.appendChild(card('Maintenance Due', `in ${dev.maintenanceDueInTicks} ticks`));
-    const cta = `<p><a href="#" data-jump="devices:${zone.id}">View All Devices</a></p>`;
-    root.appendChild(section('Devices', devicesGrid.outerHTML + cta));
+    const cta = document.createElement('p');
+    const ctaLink = document.createElement('a');
+    ctaLink.href = '#';
+    ctaLink.dataset.jump = `devices:${zone.id}`;
+    ctaLink.textContent = 'View All Devices';
+    cta.appendChild(ctaLink);
+    const devicesWrap = document.createElement('div');
+    devicesWrap.appendChild(devicesGrid);
+    devicesWrap.appendChild(cta);
+    root.appendChild(section('Devices', devicesWrap));
 
     // Delegate jumps
     root.addEventListener('click', (e) => {
@@ -572,13 +713,17 @@ function renderPlantDetail(root, dto, zone) {
         .sort((a, b) => b[1].count - a[1].count);
     if (entries.length) {
         const rows = [['Factor', 'Count', 'Avg Stress'], ...entries.map(([k, v]) => [labels[k] || k, v.count, v.avg.toFixed(2)])];
-        const stressHtml = `<p>Avg Stress: ${dto.stressFactors.avgStress.toFixed(2)}</p>` + table(rows);
-        root.appendChild(section('Stress Factors', stressHtml));
+        const stressWrap = document.createElement('div');
+        const avgP = document.createElement('p');
+        avgP.textContent = `Avg Stress: ${dto.stressFactors.avgStress.toFixed(2)}`;
+        stressWrap.appendChild(avgP);
+        stressWrap.appendChild(table(rows));
+        root.appendChild(section('Stress Factors', stressWrap));
     }
 
     const plantRows = [['ID', 'Strain', 'Age (d)', 'Health', 'Stress'],
         ...dto.plants.map(p => [
-            `<a href="#" data-jump="plant:${p.id}">${p.shortId}</a>`,
+            link(`plant:${p.id}`, p.shortId),
             p.strain,
             p.ageDays,
             p.health,
@@ -614,7 +759,7 @@ function renderZonePlantsDetails(root, dto) {
 
     const plantRows = [['ID', 'Strain', 'Stage', 'Age (d)', 'Health', 'Stress', 'Stressors'],
         ...dto.plants.map(p => [
-            `<a href="#" data-jump="plant:${p.id}">${p.id}</a>`,
+            link(`plant:${p.id}`, p.id),
             p.strain,
             p.stage,
             (p.ageHours/24).toFixed(1),
