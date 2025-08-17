@@ -40,6 +40,13 @@ const state = {
     aggregates: {},
     companyPeriod: '24h',
     structureData: { structures: [] },
+    // lookup maps for fast ID access
+    structureMap: new Map(),
+    roomMap: new Map(),
+    zoneMap: new Map(),
+    roomStructureMap: new Map(),
+    zoneRoomMap: new Map(),
+    zoneStructureMap: new Map(),
     // per-zone smoothing helpers
     zoneSmoothers: {},
 };
@@ -63,6 +70,28 @@ function ensureZoneSmoothers(zone) {
         };
     }
     return state.zoneSmoothers[zone.id];
+}
+
+function buildStructureMaps() {
+    state.structureMap = new Map();
+    state.roomMap = new Map();
+    state.zoneMap = new Map();
+    state.roomStructureMap = new Map();
+    state.zoneRoomMap = new Map();
+    state.zoneStructureMap = new Map();
+    state.structureData.structures.forEach((s) => {
+        state.structureMap.set(s.id, s);
+        s.rooms.forEach((r) => {
+            state.roomMap.set(r.id, r);
+            state.roomStructureMap.set(r.id, s);
+            r.zones.forEach((z) => {
+                state.zoneMap.set(z.id, z);
+                state.zoneRoomMap.set(z.id, r);
+                state.zoneStructureMap.set(z.id, s);
+                ensureZoneSmoothers(z);
+            });
+        });
+    });
 }
 
 // --- WebSocket connection -------------------------------------------------
@@ -101,9 +130,7 @@ async function fetchInitialData() {
             if (data.structure) {
                 // The backend returns a single structure, but the frontend expects an array of structures.
                 setState({ structureData: { structures: [data.structure] } });
-                state.structureData.structures.forEach(s =>
-                    s.rooms.forEach(r => r.zones.forEach(z => ensureZoneSmoothers(z)))
-                );
+                buildStructureMaps();
                 buildTree();
                 // By default, select the first structure
                 if (state.structureData.structures.length > 0) {
@@ -125,29 +152,23 @@ function updateWithLiveData(data) {
 
     // Update live data in the structure data before state merge
     if (data.zoneSummaries) {
-        data.zoneSummaries.forEach(summary => {
-            for (const structure of state.structureData.structures) {
-                for (const room of structure.rooms) {
-                    const zone = room.zones.find(z => z.id === summary.id);
-                    if (zone) {
-                        const smoother = ensureZoneSmoothers(zone);
-                        smoother.rawHumidity = summary.humidity;
-                        smoother.rawPPFD = summary.ppfd;
-                        smoother.avgHumidity = smoother.humidity(summary.humidity, newSimTime.getTime());
-                        smoother.avgPPFD = smoother.ppfd(summary.ppfd, newSimTime.getTime());
-                        Object.assign(zone, summary);
-                    }
-                }
+        data.zoneSummaries.forEach((summary) => {
+            const zone = state.zoneMap.get(summary.id);
+            if (zone) {
+                const smoother = ensureZoneSmoothers(zone);
+                smoother.rawHumidity = summary.humidity;
+                smoother.rawPPFD = summary.ppfd;
+                smoother.avgHumidity = smoother.humidity(summary.humidity, newSimTime.getTime());
+                smoother.avgPPFD = smoother.ppfd(summary.ppfd, newSimTime.getTime());
+                Object.assign(zone, summary);
             }
         });
     }
     if (data.roomSummaries) {
-        data.roomSummaries.forEach(summary => {
-            for (const structure of state.structureData.structures) {
-                const room = structure.rooms.find(r => r.id === summary.id);
-                if (room) {
-                    Object.assign(room, summary);
-                }
+        data.roomSummaries.forEach((summary) => {
+            const room = state.roomMap.get(summary.id);
+            if (room) {
+                Object.assign(room, summary);
             }
         });
     }
@@ -860,14 +881,14 @@ function renderTop() {
 }
 
 // --- Finders -------------------------------------------------------------
-function findStructure(id) { return state.structureData.structures.find((s) => s.id === id); }
-function findStructureOfRoom(roomId) { return state.structureData.structures.find((s) => s.rooms.some((r) => r.id === roomId)); }
+function findStructure(id) { return state.structureMap.get(id); }
+function findStructureOfRoom(roomId) { return state.roomStructureMap.get(roomId); }
 function findParentsOfZone(zoneId) {
-    for (const s of state.structureData.structures) {
-        for (const r of s.rooms) {
-            const z = r.zones.find((z) => z.id === zoneId);
-            if (z) return { s, r, z };
-        }
+    const r = state.zoneRoomMap.get(zoneId);
+    if (r) {
+        const s = state.zoneStructureMap.get(zoneId);
+        const z = state.zoneMap.get(zoneId);
+        return { s, r, z };
     }
     return null;
 }
