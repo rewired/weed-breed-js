@@ -163,6 +163,12 @@ High-level operational views for **Structure → Rooms → Zones → Plants**.
 - [frontend/main.js](../../frontend/main.js)
 - [frontend/editor/strainEditor.js](../../frontend/editor/strainEditor.js)
 
+## React-Frontend
+
+The React-based frontend lives in `frontend-react/` and is built with Vite. It uses a global `StateContext` with a reducer and a
+WebSocket-driven `useLiveData` hook for live simulation updates. The layout provides a left-hand mode navigation, a top bar with
+simulation controls, and a main content area that switches between Structure, Company, Editor and Shop views.
+
 ## Roadmap
 
 Planned views and features:
