@@ -393,15 +393,18 @@ function renderStructureContent(root) {
     }
 
     // KPI row
-    const kpis = document.createElement('div');
-    kpis.className = 'grid';
-    if (level === 'structure' && s) {
+    let kpis;
+    if (level !== 'zone') {
+        kpis = document.createElement('div');
+        kpis.className = 'grid';
+    }
+    if (level === 'structure' && s && kpis) {
         const counts = s.rooms.reduce((acc, r) => { acc.zones += r.zones.length; acc.plants += r.zones.reduce((p, z) => p + (z.plants?.length || 0), 0); acc.devices += r.zones.reduce((d, z) => d + (z.devices?.length || 0), 0); return acc; }, { zones: 0, plants: 0, devices: 0 });
         kpis.appendChild(card('Aktive Alerts', s.alerts || 0, 'gesamt'));
         kpis.appendChild(card('Rooms', s.rooms.length, 'in Structure'));
         kpis.appendChild(card('Zones', counts.zones, 'in Structure'));
     }
-    if (level === 'room' && r) {
+    if (level === 'room' && r && kpis) {
         const plants = r.zones.reduce((p, z) => p + (z.plants?.length || 0), 0);
         const devices = r.zones.reduce((d, z) => d + (z.devices?.length || 0), 0);
         kpis.appendChild(card('Zones', r.zones.length, 'im Room'));
@@ -418,9 +421,6 @@ function renderStructureContent(root) {
         header.insertAdjacentElement('afterend', consumptionGrid);
     }
     if (level === 'zone' && z) {
-        if (kpis.children.length === 0) {
-            kpis.remove();
-        }
         fetch(`/api/zones/${z.id}/overview`)
             .then(res => res.json().then(dto => ({ ok: res.ok, dto })))
             .then(({ ok, dto }) => {
@@ -432,7 +432,7 @@ function renderStructureContent(root) {
                     root.appendChild(err);
                     return;
                 }
-                renderZoneOverview(root, dto, z);
+                renderZoneOverview(root, dto, z, { showKpis: false });
             })
             .catch(err => {
                 const msg = err.message === 'Simulation not running.'
@@ -443,7 +443,7 @@ function renderStructureContent(root) {
                 errEl.textContent = `Error fetching zone overview: ${msg}`;
                 root.appendChild(errEl);
             });
-    } else if (level === 'plant' && p && z) {
+    } else if (level === 'plant' && p && z && kpis) {
         kpis.appendChild(card('Age', (p.ageHours / 24).toFixed(1) + ' d'));
         kpis.appendChild(card('Health', (p.health * 100).toFixed(1) + '%'));
         kpis.appendChild(card('Stress', (p.stress * 100).toFixed(1) + '%'));
@@ -472,7 +472,7 @@ function renderStructureContent(root) {
             });
         return;
     } else {
-        if (level !== 'none') root.appendChild(kpis);
+        if (level !== 'none' && kpis) root.appendChild(kpis);
     }
 
     // Context detail blocks
@@ -635,17 +635,19 @@ function card(title, value, sub = '') {
     el.appendChild(metric);
     return el;
 }
-function renderZoneOverview(root, dto, zone) {
+function renderZoneOverview(root, dto, zone, { showKpis = true } = {}) {
     // 1. Header
-    const headerGrid = document.createElement('div');
-    headerGrid.className = 'grid';
-    const cap = dto.capacity;
-    const stageMix = cap.stageMix.map(s => `${s.stage} ${s.pct}%`).join(', ');
-    headerGrid.appendChild(card('Occupancy', `${cap.plantsCount} / ${cap.capacitySlots} (${cap.occupancyPct}%)`));
-    headerGrid.appendChild(card('Dominant Stage', `${cap.dominantStage}`, stageMix));
-    headerGrid.appendChild(card('ETA', `${dto.predictions.harvestEtaDays} days`));
-    headerGrid.appendChild(card('Yield Forecast', formatUnits(dto.predictions.yieldForecastGrams, 'grams')));
-    root.appendChild(headerGrid);
+    if (showKpis) {
+        const headerGrid = document.createElement('div');
+        headerGrid.className = 'grid';
+        const cap = dto.capacity;
+        const stageMix = cap.stageMix.map(s => `${s.stage} ${s.pct}%`).join(', ');
+        headerGrid.appendChild(card('Occupancy', `${cap.plantsCount} / ${cap.capacitySlots} (${cap.occupancyPct}%)`));
+        headerGrid.appendChild(card('Dominant Stage', `${cap.dominantStage}`, stageMix));
+        headerGrid.appendChild(card('ETA', `${dto.predictions.harvestEtaDays} days`));
+        headerGrid.appendChild(card('Yield Forecast', formatUnits(dto.predictions.yieldForecastGrams, 'grams')));
+        root.appendChild(headerGrid);
+    }
 
     // 2. Environment Section
     const envGrid = document.createElement('div');
