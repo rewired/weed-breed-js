@@ -193,6 +193,8 @@ export class Plant {
     } else if (this.stage === 'flowering' && this.ageHours > 24 * (vegDays + flowerDays)) {
       this.stage = 'harvestReady';
     }
+
+    this.updateBiomass({ zone });
   }
 
   getPhase() {
