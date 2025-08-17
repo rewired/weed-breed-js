@@ -8,6 +8,7 @@ This folder provides an overview of the Weed Breed simulation game. The project 
 - [Data Model](data-model/overview.md) – hierarchical entity descriptions and field conventions. Supporting docs:
   - [Naming Rules](data-model/naming.md)
   - [Schemas](data-model/schemas/) – JSON blueprint documentation
+- [API](api.md) – server endpoints and real-time interfaces.
 - [Frontend](frontend/overview.md) – browser UI structure and roadmap.
 - [Reference](reference/tick-and-units.md) – uniform tick duration and unit conventions.
 
