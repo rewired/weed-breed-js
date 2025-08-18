@@ -75,6 +75,14 @@ export class Plant {
     this.deathLog = [];
   }
 
+  get biomass() {
+    return this.state?.biomassFresh_g ?? 0;
+  }
+
+  get budBiomass() {
+    return this.state?.biomassPartition?.buds_g ?? 0;
+  }
+
   /**
    * One tick of plant logic:
    * - Transpiration (E_plant) → addLatentWater(+kg)
@@ -91,6 +99,8 @@ export class Plant {
     const difficulty = zone.runtime?.difficulty?.plantStress ?? {};
     const optimalRangeMultiplier = difficulty.optimalRangeMultiplier ?? 1.0;
     const stressAccumulationMultiplier = difficulty.stressAccumulationMultiplier ?? 1.0;
+    const lethalStressThreshold = difficulty.lethalStressThreshold ?? 0.9;
+    const stressDeathChance = difficulty.stressDeathChance ?? 0.01;
 
     // Determine if lights are expected to be on for this tick
     let lightsOn = zone.runtime?.lightsOn;
@@ -209,6 +219,14 @@ export class Plant {
         this.causeOfDeath = dominant ?? 'unknown';
         this.deathLog.push({ tick: tickIndex, stressors: { ...this.stressors }, cause: this.causeOfDeath });
       }
+      this.isDead = true;
+      this.stage = 'dead';
+      return;
+    }
+
+    if (this.stress > lethalStressThreshold && this.rng.float() < stressDeathChance) {
+      this.causeOfDeath = 'stress';
+      this.deathLog.push({ tick: tickIndex, stressors: { ...this.stressors }, cause: this.causeOfDeath });
       this.isDead = true;
       this.stage = 'dead';
       return;
@@ -336,8 +354,9 @@ export class Plant {
    * @returns {number} - Yield in grams
    */
   calculateYield() {
-    const baseYield = env.plant.baseYieldGramsPerM2 ?? 400;
-    const yieldGrams = baseYield * this.area_m2 * this.health * this.geneticFactor;
+    const buds = this.state?.biomassPartition?.buds_g ?? 0;
+    const quality = Math.max(0, this.health * (1 - this.stress));
+    const yieldGrams = buds * quality;
     return Math.max(0, yieldGrams);
   }
 }
