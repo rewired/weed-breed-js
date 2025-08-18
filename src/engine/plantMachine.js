@@ -1,3 +1,7 @@
+/**
+ * XState state machine representing a plant lifecycle.
+ * @module engine/plantMachine
+ */
 import { createMachine, assign, interpret } from 'xstate';
 
 export const plantMachine = createMachine({
@@ -22,6 +26,10 @@ export const plantMachine = createMachine({
   }
 });
 
+/**
+ * Spawn and start a plant state machine service.
+ * @returns {import('xstate').Interpreter<any, any, any>}
+ */
 export function spawnPlant() {
   const service = interpret(plantMachine);
   service.start();

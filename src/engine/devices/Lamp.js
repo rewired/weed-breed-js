@@ -1,15 +1,25 @@
-// src/engine/devices/Lamp.js
+/**
+ * Lighting device affecting PPFD and heat.
+ * @module engine/devices/Lamp
+ */
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, readPowerKw, readPPFD } from '../deviceUtils.js';
 import { env } from '../../config/env.js';
 import { resolveTickHours } from '../../lib/time.js';
 
+/**
+ * Lamp device controlling light and heat output.
+ */
 export class Lamp extends BaseDevice {
   constructor(json, runtimeCtx) {
     super(json, runtimeCtx);
     this.state = 'on'; // 'on' or 'off'
   }
 
+  /**
+   * Toggle lamp state.
+   * @param {'on'|'off'} [forceState]
+   */
   toggle(forceState) {
     if (forceState === 'on' || forceState === 'off') {
       this.state = forceState;
@@ -18,6 +28,10 @@ export class Lamp extends BaseDevice {
     }
   }
 
+  /**
+   * Apply lamp effects to the zone.
+   * @param {object} zone
+   */
   applyEffect(zone) {
     if (this.state === 'off') {
       return;
@@ -52,6 +66,11 @@ export class Lamp extends BaseDevice {
     }
   }
 
+  /**
+   * Estimate energy usage for a tick.
+   * @param {number} tickHours
+   * @returns {number}
+   */
   estimateEnergyKWh(tickHours) {
     if (this.state === 'off') {
       return 0;

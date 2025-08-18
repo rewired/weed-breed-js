@@ -1,4 +1,7 @@
-// src/demos/structure_rooms_zones_demo.js
+/**
+ * Demo script showcasing structures, rooms and zones simulation.
+ * @module demos/structure_rooms_zones_demo
+ */
 import { logger } from '../lib/logger.js';
 import { createActor } from 'xstate';
 import { initializeSimulation } from '../sim/simulation.js';
@@ -11,6 +14,9 @@ const logDeep = (obj) => {
 };
 
 // --- Main -------------------------------------------------------------------
+/**
+ * Execute the hierarchical simulation demo.
+ */
 async function main() {
   // Initialize the simulation with the new hierarchical structure
   const { structure, costEngine, tickMachineLogic } = await initializeSimulation();

@@ -1,6 +1,15 @@
+/**
+ * Express routes for controlling the simulation state.
+ * @module server/simControlRoutes
+ */
 import express from 'express';
 import cors from 'cors';
 
+/**
+ * Create a router exposing simulation control endpoints.
+ * @param {object} controller - Simulation controller with play/pause/etc.
+ * @returns {import('express').Router}
+ */
 export default function createSimControlRoutes(controller) {
   const router = express.Router();
   router.use(cors({ origin: 'http://localhost:5173' }));

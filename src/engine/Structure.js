@@ -1,3 +1,7 @@
+/**
+ * Structure model representing top-level building.
+ * @module engine/Structure
+ */
 import { v4 as uuidv4 } from 'uuid';
 
 /**

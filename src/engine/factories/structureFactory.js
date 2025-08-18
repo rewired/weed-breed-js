@@ -1,3 +1,7 @@
+/**
+ * Factory for creating Structure instances.
+ * @module engine/factories/structureFactory
+ */
 import { Structure } from '../Structure.js';
 
 /**

@@ -1,4 +1,7 @@
-// src/engine/loaders/priceLoader.js
+/**
+ * Loaders for device and strain price mappings.
+ * @module engine/loaders/priceLoader
+ */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,6 +17,10 @@ async function readJson(fp) {
   return JSON.parse(raw);
 }
 
+/**
+ * Load price map for devices.
+ * @returns {Promise<Map<string, any>>}
+ */
 export async function loadDevicePriceMap() {
   const fp = path.join(CONFIG_DIR, 'devicePrices.json');
   const json = await readJson(fp);
@@ -22,6 +29,10 @@ export async function loadDevicePriceMap() {
   return new Map(Object.entries(json.devicePrices || {}));
 }
 
+/**
+ * Load price map for strains.
+ * @returns {Promise<Map<string, any>>}
+ */
 export async function loadStrainPriceMap() {
   const fp = path.join(CONFIG_DIR, 'strainPrices.json');
   const json = await readJson(fp);

@@ -1,5 +1,7 @@
-// src/config/env.js
-// Central defaults/constants for the simulation (ES Modules)
+/**
+ * Central defaults and constants for the simulation environment.
+ * @module config/env
+ */
 
 export const env = {
   time: {

@@ -1,14 +1,23 @@
-// src/engine/devices/CO2Injector.js
-// CO₂-Injektor: addiert ppm-Pulse pro Tick (einfache Hysterese um Setpoint)
+/**
+ * CO₂ injector adding ppm pulses with hysteresis around a setpoint.
+ * @module engine/devices/CO2Injector
+ */
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, addCO2Delta } from '../deviceUtils.js';
 
+/**
+ * Device injecting CO₂ into the environment.
+ */
 export class CO2Injector extends BaseDevice {
   constructor(json, runtimeCtx) {
     super(json, runtimeCtx);
     this._lastOn = false;
   }
 
+  /**
+   * Apply CO₂ injection based on current levels.
+   * @param {object} zone
+   */
   applyEffect(zone) {
     const s = ensureEnv(zone);
     const target   = Number(this.settings?.targetCO2 ?? this.settings?.setpoint ?? 1100); // ppm
@@ -38,6 +47,10 @@ export class CO2Injector extends BaseDevice {
     }
   }
 
+  /**
+   * CO₂ injection has no electrical energy usage.
+   * @returns {number}
+   */
   estimateEnergyKWh(_tickHours) {
     // in der Regel Gas/Flasche -> 0 kWh
     return 0;

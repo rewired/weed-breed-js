@@ -1,4 +1,7 @@
-// src/engine/loaders/deviceLoader.js
+/**
+ * Loader utilities for device definitions.
+ * @module engine/loaders/deviceLoader
+ */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,6 +25,11 @@ function basicValidateDevice(d) {
   return errors;
 }
 
+/**
+ * Load a device blueprint by slug.
+ * @param {string} slug
+ * @returns {Promise<object>}
+ */
 export async function loadDeviceBySlug(slug) {
   const fp = path.join(DEVICES_DIR, `${slug}.json`);
   const d = await readJson(fp);
@@ -30,6 +38,10 @@ export async function loadDeviceBySlug(slug) {
   return d;
 }
 
+/**
+ * Load all device blueprints.
+ * @returns {Promise<Array<object>>}
+ */
 export async function loadAllDevices() {
   const files = await fs.readdir(DEVICES_DIR);
   const list = [];

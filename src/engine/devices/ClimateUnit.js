@@ -1,10 +1,15 @@
-// src/engine/devices/ClimateUnit.js
-// Klimaregelung mit Hysterese + Leistungsgrenzen; schreibt negative Wärmeleistung in env._heatW
+/**
+ * Climate control unit with hysteresis and power limits.
+ * @module engine/devices/ClimateUnit
+ */
 import { env, AIR_DENSITY, AIR_CP } from '../../config/env.js';
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, getZoneVolume, clamp } from '../deviceUtils.js';
 import { resolveTickHours } from '../../lib/time.js';
 
+/**
+ * Device controlling temperature via cooling.
+ */
 export class ClimateUnit extends BaseDevice {
   constructor(json, runtimeCtx) {
     super(json, runtimeCtx);
@@ -12,6 +17,10 @@ export class ClimateUnit extends BaseDevice {
     this._lastPowerFrac = 0; // Duty-Cycle 0..1
   }
 
+  /**
+   * Apply climate effects to the zone.
+   * @param {object} zone
+   */
   applyEffect(zone) {
     const s = ensureEnv(zone);
     const settings = this.settings ?? {};
@@ -71,6 +80,11 @@ export class ClimateUnit extends BaseDevice {
     this._lastPowerFrac = powerFrac;
   }
 
+  /**
+   * Estimate energy consumption for a tick.
+   * @param {number} tickHours
+   * @returns {number}
+   */
   estimateEnergyKWh(tickHours) {
     const tickH = resolveTickHours({ tickLengthInHours: tickHours ?? this.runtimeCtx?.tickLengthInHours });
     const powerElKW = Number(this.settings?.power ?? this.settings?.powerInKilowatts ?? 0);

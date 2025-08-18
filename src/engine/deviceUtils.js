@@ -1,14 +1,28 @@
-// src/engine/deviceUtils.js
-// Helper functions for device and environment logic (ESM, Node 23+)
-
+/**
+ * Helper functions for device and environment logic.
+ * @module engine/deviceUtils
+ */
 import { env } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
 
+/**
+ * Convert a value to number with default fallback.
+ * @param {*} v
+ * @param {number} [def=0]
+ * @returns {number}
+ */
 export function toNumber(v, def = 0) {
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
 }
 
+/**
+ * Clamp a number between bounds.
+ * @param {number} n
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 export function clamp(n, min, max) {
   const x = Number(n);
   if (!Number.isFinite(x)) return Number(min);
@@ -24,6 +38,11 @@ export function clamp(n, min, max) {
  *  - _heatW [W]            (Aggregate: +Lamp, -Climate)
  *  - _waterKgDelta [kg/tick]  (Aggregate: +Source/-Sink → Moisture pool)
  *  - _co2PpmDelta [ppm/tick]  (Aggregate: +Injection/-Consumption)
+ */
+/**
+ * Ensure a zone has a mutable environmental state object.
+ * @param {object} zone
+ * @returns {object}
  */
 export function ensureEnv(zone) {
   if (!zone || typeof zone !== 'object') {
@@ -53,6 +72,10 @@ export function ensureEnv(zone) {
   return zone.environment;
 }
 
+/**
+ * Reset aggregated environment values used each tick.
+ * @param {object} envState
+ */
 export function resetEnvAggregates(envState) {
   if (!envState || typeof envState !== 'object') return;
   envState.ppfd = 0;
@@ -61,16 +84,31 @@ export function resetEnvAggregates(envState) {
   envState._co2PpmDelta = 0;
 }
 
+/**
+ * Adjust latent water delta in environment.
+ * @param {object} envState
+ * @param {number} kg
+ */
 export function addLatentWater(envState, kg) {
   if (!envState) return;
   envState._waterKgDelta = (envState._waterKgDelta ?? 0) + Number(kg || 0);
 }
 
+/**
+ * Adjust CO₂ delta in environment.
+ * @param {object} envState
+ * @param {number} ppm
+ */
 export function addCO2Delta(envState, ppm) {
   if (!envState) return;
   envState._co2PpmDelta = (envState._co2PpmDelta ?? 0) + Number(ppm || 0);
 }
 
+/**
+ * Calculate volume of a zone.
+ * @param {object} zone
+ * @returns {number}
+ */
 export function getZoneVolume(zone) {
   const area   = toNumber(zone?.area, 1);
   const height = toNumber(zone?.height, env?.defaults?.ceilingHeightM ?? 2.5);
@@ -78,10 +116,20 @@ export function getZoneVolume(zone) {
   return vol > 0 ? vol : 0;
 }
 
+/**
+ * Resolve tick duration in hours.
+ * @param {object} runtimeCtx
+ * @returns {number}
+ */
 export function getTickHours(runtimeCtx) {
   return resolveTickHours(runtimeCtx);
 }
 
+/**
+ * Read power in kilowatts from various setting keys.
+ * @param {object} [settings={}]
+ * @returns {number}
+ */
 export function readPowerKw(settings = {}) {
   if (settings.powerInKilowatts != null) return toNumber(settings.powerInKilowatts, 0);
   if (settings.power != null) return toNumber(settings.power, 0);
@@ -94,6 +142,11 @@ export function readPowerKw(settings = {}) {
  * - settings.photosyntheticPhotonFluxDensity (recommended)
  * - settings.ppfd / settings.ppfd_umol_m2_s
  * - settings.light.ppfd
+ */
+/**
+ * Read PPFD value from various setting keys.
+ * @param {object} [settings={}]
+ * @returns {number}
  */
 export function readPPFD(settings = {}) {
   if (settings.photosyntheticPhotonFluxDensity != null) {

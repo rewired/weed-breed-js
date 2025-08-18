@@ -1,13 +1,15 @@
-// src/sim/tickMachine.js
-// XState-basierte Tick-Orchestrierung gemäß ADR (§7), aktualisiert für XState v5
+/**
+ * XState based tick orchestration logic.
+ * @module sim/tickMachine
+ */
 
 import { createMachine, assign, setup, fromPromise } from 'xstate';
 import { emit } from './eventBus.js';
 import { resolveTickHours } from '../lib/time.js';
 
 /**
- * Creates the tick state machine logic.
- * This function defines the machine, which is then brought to life with createActor and input.
+ * Create the tick state machine logic.
+ * @returns {import('xstate').StateMachine<any, any, any>}
  */
 export function createTickMachine() {
   return setup({

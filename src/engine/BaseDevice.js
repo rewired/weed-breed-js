@@ -1,5 +1,8 @@
-// Abstract device base according to ADR (§4).
-// Prices/maintenance are separate (devicePrices.json).
+/**
+ * Abstract device base according to ADR (§4).
+ * Prices and maintenance are defined separately in `devicePrices.json`.
+ * @module engine/BaseDevice
+ */
 import _ from 'lodash';
 import { env } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
@@ -13,11 +16,14 @@ const ALLOWED_OVERRIDES = [
   'mode'
 ];
 
+/**
+ * Base class for all devices.
+ */
 export class BaseDevice {
   /**
    * @param {object} blueprint - JSON blueprint (see device_schema.md)
    * @param {object} runtime   - { zone, tickLengthInHours }
-   * @param {object} overrides - Runtime settings (e.g., setpoints)
+   * @param {object} [overrides={}] - Runtime settings (e.g., setpoints)
    */
   constructor(blueprint, runtime, overrides = {}) {
     this.id = blueprint?.id ?? crypto.randomUUID?.() ?? String(Math.random());

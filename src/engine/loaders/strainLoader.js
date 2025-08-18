@@ -1,4 +1,7 @@
-// src/engine/loaders/strainLoader.js
+/**
+ * Loader utilities for strain definitions.
+ * @module engine/loaders/strainLoader
+ */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -46,6 +49,11 @@ function normalizeStrain(s) {
   };
 }
 
+/**
+ * Load a strain by file slug.
+ * @param {string} slug
+ * @returns {Promise<object>}
+ */
 export async function loadStrainBySlug(slug) {
   const fp = path.join(STRAINS_DIR, `${slug}.json`);
   const strain = await readJson(fp);
@@ -56,6 +64,11 @@ export async function loadStrainBySlug(slug) {
   return normalizeStrain(strain);
 }
 
+/**
+ * Load a strain by its id.
+ * @param {string} id
+ * @returns {Promise<object>}
+ */
 export async function loadStrainById(id) {
   const files = await fs.readdir(STRAINS_DIR);
   for (const f of files) {
@@ -70,6 +83,10 @@ export async function loadStrainById(id) {
   throw new Error(`Strain with id "${id}" not found in ${STRAINS_DIR}`);
 }
 
+/**
+ * Load all strains available in the data directory.
+ * @returns {Promise<Array<object>>}
+ */
 export async function loadAllStrains() {
   const files = await fs.readdir(STRAINS_DIR);
   const strains = [];

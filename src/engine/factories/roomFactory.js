@@ -1,3 +1,7 @@
+/**
+ * Factory for creating Room instances.
+ * @module engine/factories/roomFactory
+ */
 import { Room } from '../Room.js';
 
 /**

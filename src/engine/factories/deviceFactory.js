@@ -1,5 +1,7 @@
-// src/engine/factories/deviceFactory.js
-// Factory-Registry für eingebaute Geräte
+/**
+ * Factory and registry for built-in devices.
+ * @module engine/factories/deviceFactory
+ */
 
 import { BaseDevice } from '../BaseDevice.js';
 import { Lamp } from '../devices/Lamp.js';
@@ -16,6 +18,13 @@ const REGISTRY = {
   HumidityControlUnit,
 };
 
+/**
+ * Create a device instance from its JSON blueprint.
+ * @param {object} json
+ * @param {object} [runtimeCtx={}]
+ * @param {object} [overrides={}]
+ * @returns {BaseDevice}
+ */
 export function createDevice(json, runtimeCtx = {}, overrides = {}) {
   const kind = json?.kind ?? 'Device';
   const Klass = REGISTRY[kind];
@@ -25,6 +34,11 @@ export function createDevice(json, runtimeCtx = {}, overrides = {}) {
   return new Klass(json, runtimeCtx, overrides);
 }
 
+/**
+ * Register a custom device class in the factory registry.
+ * @param {string} kind
+ * @param {typeof BaseDevice} Klass
+ */
 export function registerDeviceKind(kind, Klass) {
   if (!kind || !Klass) throw new Error('registerDeviceKind: need kind and class');
   if (REGISTRY[kind]) throw new Error(`Device kind "${kind}" already registered`);

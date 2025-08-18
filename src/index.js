@@ -1,4 +1,7 @@
-// src/index.js
+/**
+ * Simulation entry point for running the game logic standalone.
+ * @module index
+ */
 import { logger } from './lib/logger.js';
 import { emit } from './sim/eventBus.js';
 import { createActor } from 'xstate';
@@ -6,6 +9,9 @@ import { initializeSimulation } from './sim/simulation.js';
 import { resolveTickHours } from './lib/time.js';
 
 // --- Main -------------------------------------------------------------------
+/**
+ * Run the simulation for a predefined duration.
+ */
 async function main() {
   const { zones, costEngine, tickMachineLogic } = await initializeSimulation('default');
 

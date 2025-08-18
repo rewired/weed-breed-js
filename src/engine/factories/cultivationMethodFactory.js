@@ -1,5 +1,7 @@
-// src/engine/factories/cultivationMethodFactory.js
-// Baut ein Zonen-taugliches Objekt und kann die Kompatibilität mit einem Strain bewerten.
+/**
+ * Factory for cultivation methods including compatibility checks.
+ * @module engine/factories/cultivationMethodFactory
+ */
 
 function getByPath(obj, dotPath) {
   return dotPath.split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), obj);
@@ -9,6 +11,12 @@ function getByPath(obj, dotPath) {
  * Evaluates the compatibility between strain and method based on
  * method.strainTraitCompatibility.{preferred,conflicting}
  * Example keys: "genotype.indica", "photoperiod.vegetationDays"
+ */
+/**
+ * Evaluate compatibility between a strain and method.
+ * @param {object} strain
+ * @param {object} method
+ * @returns {{score:number,normalized:number,hits:Array}}
  */
 export function evaluateCompatibility(strain, method) {
   const cfg = method.strainTraitCompatibility || {};
@@ -50,6 +58,12 @@ export function evaluateCompatibility(strain, method) {
 /**
  * Builds a method object that fits directly into Zone.setCultivationMethod(method).
  * Optional: immediate compatibility evaluation against a strain (if provided).
+ */
+/**
+ * Build a cultivation method object suitable for zones.
+ * @param {object} methodJson
+ * @param {object} [opts]
+ * @returns {object}
  */
 export function buildCultivationMethod(methodJson, opts = {}) {
   const method = {

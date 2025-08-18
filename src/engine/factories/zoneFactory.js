@@ -1,3 +1,7 @@
+/**
+ * Factory for creating Zone instances.
+ * @module engine/factories/zoneFactory
+ */
 import { Zone } from '../Zone.js';
 
 /**
