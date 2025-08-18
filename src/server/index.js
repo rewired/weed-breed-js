@@ -16,6 +16,7 @@ import { uiStream$ } from '../sim/eventBus.js';
 import { initializeSimulation } from '../sim/simulation.js';
 import strainEditorService from './services/strainEditorService.js';
 import createSimControlRoutes from './simControlRoutes.js';
+import { createRng } from '../lib/rng.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +56,7 @@ app.get('/sse', (req, res) => {
 let simulationState = {
   structure: null,
   costEngine: null,
-  rng: null,
+  rng: createRng(),
   tickMachineLogic: null,
   intervalId: null,
   status: 'stopped', // 'running', 'paused'
