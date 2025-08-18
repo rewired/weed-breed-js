@@ -11,6 +11,7 @@ import { createRng } from '../lib/rng.js';
 import { createTickMachine }from './tickMachine.js';
 import { loadSavegame } from '../server/services/savegameLoader.js';
 import { loadDifficultyConfig } from '../engine/loaders/difficultyLoader.js';
+import { StatsCollector } from './StatsCollector.js';
 
 // --- Loader-Wrapper ---------------------------------------------------------
 async function getDeviceBlueprints() {
@@ -122,11 +123,23 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
 
     const tickMachineLogic = createTickMachine();
 
+    const allZones = [];
+    for (const room of structure.rooms) {
+        for (const zone of room.zones) {
+            allZones.push(zone);
+        }
+    }
+    const statsCollector = new StatsCollector(allZones);
+    process.on('beforeExit', () => {
+        statsCollector.logTotals(logger);
+    });
+
     return {
         structure, // Return the whole structure instead of flat zones array
         costEngine,
         rng,
         tickMachineLogic,
-        blueprints
+        blueprints,
+        statsCollector
     };
 }

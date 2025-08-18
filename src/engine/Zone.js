@@ -43,6 +43,9 @@ export class Zone {
     this.devices = [];
     this.plants = [];
     this.plantTemplate = null;
+    this.deathStats = {};
+    this.water = 1;
+    this.npk = 1;
   }
 
   // --- Public Methods (for tickMachine) ------------------------------------
@@ -64,35 +67,40 @@ export class Zone {
     if (!this.costEngine) return;
     const s = ensureEnv(this);
 
+    s.reservoir ??= { waterL: 0, capacityL: this.area * 10, nutrientCapacity: { N: 150, P: 150, K: 150 } };
+
     let totalWaterL = 0;
     const consumedNutrients = { N: 0, P: 0, K: 0 };
 
-    // 1. Evaluate and apply consumption for each plant
     for (const plant of this.plants) {
-      totalWaterL += plant.lastWaterConsumptionL ?? 0;
+      const demandWater = plant.lastWaterConsumptionL ?? 0;
+      totalWaterL += demandWater;
+      let waterStress = 0;
+      if (s.reservoir.waterL < demandWater) {
+        waterStress = 0.2;
+        s.reservoir.waterL = 0;
+      } else {
+        s.reservoir.waterL -= demandWater;
+      }
 
       const demand = plant.lastNutrientConsumption;
       let nutrientStress = 0;
-
-      // Check if reservoir can meet demand
       if (s.nutrients.N < demand.N || s.nutrients.P < demand.P || s.nutrients.K < demand.K) {
-        nutrientStress = 0.2; // Deficiency causes stress
+        nutrientStress = 0.2;
       } else {
-        // Consume nutrients from reservoir
         s.nutrients.N -= demand.N;
         s.nutrients.P -= demand.P;
         s.nutrients.K -= demand.K;
-        // Track what was actually consumed
         consumedNutrients.N += demand.N;
         consumedNutrients.P += demand.P;
         consumedNutrients.K += demand.K;
       }
+      plant.payload.waterStress = waterStress;
       plant.payload.nutrientStress = nutrientStress;
     }
 
     const meta = { roomId: this.roomId, zoneId: this.id };
 
-    // 2. Book costs for consumed resources
     if (totalWaterL > 0) {
       this.costEngine.bookWater(totalWaterL, meta);
     }
@@ -100,10 +108,32 @@ export class Zone {
       this.costEngine.bookFertilizer(consumedNutrients, meta);
     }
 
-    // 3. Replenish the reservoir with the consumed amount (simulates fertigation)
+    s.reservoir.waterL += totalWaterL;
     s.nutrients.N += consumedNutrients.N;
     s.nutrients.P += consumedNutrients.P;
     s.nutrients.K += consumedNutrients.K;
+
+    if (s.reservoir.waterL > s.reservoir.capacityL) {
+      s.reservoir.waterL = s.reservoir.capacityL;
+      for (const plant of this.plants) {
+        plant.payload.waterStress = Math.max(plant.payload.waterStress ?? 0, 0.2);
+      }
+    }
+
+    for (const k of ['N', 'P', 'K']) {
+      if (s.nutrients[k] > s.reservoir.nutrientCapacity[k]) {
+        s.nutrients[k] = s.reservoir.nutrientCapacity[k];
+        for (const plant of this.plants) {
+          plant.payload.nutrientStress = Math.max(plant.payload.nutrientStress ?? 0, 0.2);
+        }
+      }
+    }
+
+    this.water = s.reservoir.waterL / s.reservoir.capacityL;
+    const npkAvg = (s.nutrients.N / s.reservoir.nutrientCapacity.N +
+      s.nutrients.P / s.reservoir.nutrientCapacity.P +
+      s.nutrients.K / s.reservoir.nutrientCapacity.K) / 3;
+    this.npk = npkAvg;
   }
 
   async updatePlants(tickLengthInHours, tickIndex) {
@@ -214,9 +244,17 @@ export class Zone {
         this.logger?.error?.({ err: e, plantId: p?.id, label: p?.label }, 'Plant tick failed');
       }
     }
-    const before = this.plants.length;
-    this.plants = this.plants.filter(p => !(p.isDead || p.stage === 'dead'));
-    const removed = before - this.plants.length;
+    const survivors = [];
+    for (const p of this.plants) {
+      if (p.isDead || p.stage === 'dead') {
+        const cause = p.causeOfDeath || 'unknown';
+        this.deathStats[cause] = (this.deathStats[cause] || 0) + 1;
+      } else {
+        survivors.push(p);
+      }
+    }
+    const removed = this.plants.length - survivors.length;
+    this.plants = survivors;
     if (removed > 0) {
       this.logger?.info?.({ removed }, 'Removed dead plants');
     }
