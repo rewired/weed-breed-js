@@ -28,11 +28,8 @@ const PORT = process.env.PORT || 3000;
 const SSE_ALLOW_ORIGIN = process.env.SSE_ALLOW_ORIGIN || 'http://localhost:5173';
 
 app.use(express.json());
-// Serve static files from the frontend directory
-app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
 
-// Serve static files from the frontend directory
-const frontendPath = path.join(__dirname, '..', '..', 'frontend');
+const frontendPath = path.resolve(__dirname, '../../frontend');
 app.use(express.static(frontendPath));
 
 app.use('/api', strainEditorService);
