@@ -127,6 +127,10 @@
     "floweringDays": 60,
     "transitionTriggerHours": 12
   },
+  "stageChangeThresholds": {
+    "vegetative": { "minLightHours": 320, "maxStressForStageChange": 0.35 },
+    "flowering": { "minLightHours": 620, "maxStressForStageChange": 0.25 }
+  },
   "floweringTime": {
     "shortestDurationInDays": 58,
     "longestDurationInDays": 70

@@ -69,6 +69,9 @@ export class Plant {
     this.stress = 0; // 0..1
     this.stressors = {};
     this.lastNutrientConsumption = { N: 0, P: 0, K: 0 };
+    this.causeOfDeath = null;
+    this.stageTimeHours = 0;
+    this.lightHours = 0;
   }
 
   /**
@@ -148,25 +151,28 @@ export class Plant {
     // Environmental stress
     // Environmental stress
     const tStress = Math.abs(T - tOpt) / (env.plant.sigmaT * optimalRangeMultiplier);
-    if (tStress > 0.1) this.stressors.temperature = { actual: T, target: tOpt };
+    if (tStress > 0.1) this.stressors.temperature = { actual: T, target: tOpt, severity: tStress };
 
     const rhStress = Math.abs(RH - rhOpt) / (env.plant.rhWidth * optimalRangeMultiplier);
-    if (rhStress > 0.1) this.stressors.humidity = { actual: RH, target: rhOpt };
+    if (rhStress > 0.1) this.stressors.humidity = { actual: RH, target: rhOpt, severity: rhStress };
 
     let lStress = 0;
     if (lightsOn) {
       lStress = (L < lightPreferences[0] || L > lightPreferences[1]) ? 0.2 : 0;
-      if (lStress > 0) this.stressors.light = { actual: L, target: lightPreferences };
+      if (lStress > 0) this.stressors.light = { actual: L, target: lightPreferences, severity: lStress };
     }
 
     const envStress = Math.min(1, (tStress + rhStress + lStress) / 3);
 
     // Nutrient stress
     const nutrientStress = this.payload.nutrientStress ?? 0;
-    if (nutrientStress > 0) this.stressors.nutrients = { level: 'low' };
+    if (nutrientStress > 0) this.stressors.nutrients = { level: 'imbalance', severity: nutrientStress };
+
+    const waterStress = this.payload.waterStress ?? 0;
+    if (waterStress > 0) this.stressors.water = { level: 'imbalance', severity: waterStress };
 
     // Combine stresses
-    const totalStress = Math.min(1, envStress + nutrientStress);
+    const totalStress = Math.min(1, envStress + nutrientStress + waterStress);
 
     // Factor in resilience
     const resilienceFactor = 1 - (this.strain?.generalResilience ?? 0.5);
@@ -191,21 +197,45 @@ export class Plant {
     if (this.health <= 0) {
       this.isDead = true;
       this.stage = 'dead';
+      let dominant = null;
+      let max = -Infinity;
+      for (const [k, v] of Object.entries(this.stressors)) {
+        const sev = v?.severity ?? 0;
+        if (sev > max) {
+          max = sev;
+          dominant = k;
+        }
+      }
+      this.causeOfDeath = dominant ?? 'unknown';
       return;
     }
 
 
     // ---- Age & simple stage logic (optional/placeholder) ----
     this.ageHours += tickH;
+    this.stageTimeHours += tickH;
+    if (lightsOn) this.lightHours += tickH;
 
     const vegDays = this.strain?.photoperiod?.vegetationDays ?? 21;
     const flowerDays = this.strain?.photoperiod?.floweringDays ?? 56;
+    const thresholds = this.strain?.stageChangeThresholds ?? {};
 
-    // Heuristic for stage change, now based on strain data
-    if (this.stage === 'vegetative' && this.ageHours > 24 * vegDays) {
-      this.stage = 'flowering';
-    } else if (this.stage === 'flowering' && this.ageHours > 24 * (vegDays + flowerDays)) {
-      this.stage = 'harvestReady';
+    if (this.stage === 'vegetative') {
+      const minLight = thresholds.vegetative?.minLightHours ?? 0;
+      const maxStress = thresholds.vegetative?.maxStressForStageChange ?? 1;
+      if (this.stageTimeHours > 24 * vegDays && this.lightHours >= minLight && this.stress <= maxStress) {
+        this.stage = 'flowering';
+        this.stageTimeHours = 0;
+        this.lightHours = 0;
+      }
+    } else if (this.stage === 'flowering') {
+      const minLight = thresholds.flowering?.minLightHours ?? 0;
+      const maxStress = thresholds.flowering?.maxStressForStageChange ?? 1;
+      if (this.stageTimeHours > 24 * flowerDays && this.lightHours >= minLight && this.stress <= maxStress) {
+        this.stage = 'harvestReady';
+        this.stageTimeHours = 0;
+        this.lightHours = 0;
+      }
     }
 
     this.updateBiomass({ zone });
