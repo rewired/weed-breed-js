@@ -7,12 +7,15 @@ import { emit } from './sim/eventBus.js';
 import { createActor } from 'xstate';
 import { initializeSimulation } from './sim/simulation.js';
 import { resolveTickHours } from './lib/time.js';
+import { createRng } from './lib/rng.js';
 
 // --- Main -------------------------------------------------------------------
 /**
  * Run the simulation for a predefined duration.
  */
 async function main() {
+  const rng = createRng();
+  logger.debug({ sample: rng.float() }, 'Initialized RNG');
   const { zones, costEngine, tickMachineLogic } = await initializeSimulation('default');
 
   // Simulation duration derived from tick length
