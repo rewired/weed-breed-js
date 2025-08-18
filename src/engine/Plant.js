@@ -72,6 +72,7 @@ export class Plant {
     this.causeOfDeath = null;
     this.stageTimeHours = 0;
     this.lightHours = 0;
+    this.deathLog = [];
   }
 
   /**
@@ -195,18 +196,21 @@ export class Plant {
     this.health = Math.max(0, Math.min(1, this.health));
 
     if (this.health <= 0) {
+      if (!this.isDead) {
+        let dominant = null;
+        let max = -Infinity;
+        for (const [k, v] of Object.entries(this.stressors)) {
+          const sev = v?.severity ?? 0;
+          if (sev > max) {
+            max = sev;
+            dominant = k;
+          }
+        }
+        this.causeOfDeath = dominant ?? 'unknown';
+        this.deathLog.push({ tick: tickIndex, stressors: { ...this.stressors }, cause: this.causeOfDeath });
+      }
       this.isDead = true;
       this.stage = 'dead';
-      let dominant = null;
-      let max = -Infinity;
-      for (const [k, v] of Object.entries(this.stressors)) {
-        const sev = v?.severity ?? 0;
-        if (sev > max) {
-          max = sev;
-          dominant = k;
-        }
-      }
-      this.causeOfDeath = dominant ?? 'unknown';
       return;
     }
 
@@ -239,6 +243,10 @@ export class Plant {
     }
 
     this.updateBiomass({ zone });
+  }
+
+  getDeathLog() {
+    return this.deathLog;
   }
 
   getPhase() {
