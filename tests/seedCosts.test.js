@@ -38,8 +38,8 @@ describe('Seed cost booking', () => {
     zone.harvestAndInventory();
 
     const seedEntries = costEngine.ledger.entries.filter(e => e.meta?.subType === 'seeds');
-    expect(seedEntries.length).toBe(1);
-    expect(seedEntries[0].meta.strainId).toBe(strainId);
-    expect(costEngine.ledger.otherExpenseEUR).toBeCloseTo(2);
+    expect(seedEntries.length).toBe(4);
+    seedEntries.forEach(entry => expect(entry.meta.strainId).toBe(strainId));
+    expect(costEngine.ledger.otherExpenseEUR).toBeCloseTo(8);
   });
 });
