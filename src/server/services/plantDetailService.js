@@ -58,6 +58,7 @@ export function createPlantDetailDTO(zone, plant) {
         ageDays: Math.floor(p.ageHours / 24),
         health: Number((p.health * 100).toFixed(1)),
         stress: Number((p.stress * 100).toFixed(1)),
+        deathLog: p.getDeathLog ? p.getDeathLog() : (p.deathLog || []),
     }));
 
     return { environment, stressFactors, plants };
