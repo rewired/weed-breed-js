@@ -1,6 +1,6 @@
 // src/engine/Zone.js
 import { ensureEnv, resetEnvAggregates, getZoneVolume, clamp } from './deviceUtils.js';
-import { env, AIR_DENSITY, AIR_CP } from '../config/env.js';
+import { env, AIR_DENSITY, AIR_CP, saturationMoistureKgPerM3 } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
 import { Plant } from './Plant.js';
 import { createDevice } from './factories/deviceFactory.js';
@@ -329,14 +329,31 @@ export class Zone {
   #applyHumidityAndCO2Update() {
     const s = ensureEnv(this);
     const vol = getZoneVolume(this);
+    const tickH = resolveTickHours(this);
+    const ach = Number(env?.defaults?.airChangesPerHour ?? 0.3);
+    const mixRate = 1 - Math.exp(-ach * tickH);
 
     // --- Humidity ---
-    const mRef = Number(env?.humidity?.moistureRefKgPerM3 ?? 0.0003);
+    const tempC = Number(s.temperature ?? env.defaults.temperatureC ?? 20);
+    let mRef = Number(env.humidity.moistureRefKgPerM3 ?? 0.017);
+    if (env.humidity.deriveFromTemperature) {
+      mRef = saturationMoistureKgPerM3(tempC);
+    }
     const alpha = Number(env?.humidity?.alpha ?? 1.0);
     const MvMax = Math.max(1e-9, mRef * vol);
 
     const dMv = Number(s._waterKgDelta ?? 0);
     let Mv = Number(s.moistureKg ?? 0) + dMv;
+
+    const outsideT = Number(env?.defaults?.outsideTemperatureC ?? tempC);
+    let mRefOut = mRef;
+    if (env.humidity.deriveFromTemperature) {
+      mRefOut = saturationMoistureKgPerM3(outsideT);
+    }
+    const outsideRH = Number(env?.defaults?.outsideHumidity ?? s.humidity ?? 0.5);
+    const MvOut = Math.min(1, Math.max(0, outsideRH / alpha)) * Math.max(1e-9, mRefOut * vol);
+    Mv += (MvOut - Mv) * mixRate;
+
     if (Mv < 0) Mv = 0;
     if (Mv > MvMax) Mv = MvMax;
     s.moistureKg = Mv;
@@ -347,11 +364,19 @@ export class Zone {
     s.humidity = clamp(rh, hMin, hMax);
 
     // --- CO2 ---
+    const airMolDen = Number(env.physics.airMolarDensityMolPerM3 ?? 41.6);
+    const totalMol = airMolDen * vol;
     const co2Min = Number(env?.clamps?.co2ppmMin ?? 300);
     const co2Max = Number(env?.clamps?.co2ppmMax ?? 2000);
-    let c = Number(s.co2ppm ?? (env?.defaults?.co2ppm ?? 420));
-    c += Number(s._co2PpmDelta ?? 0);
-    s.co2ppm = clamp(c, co2Min, co2Max);
+    let cPpm = Number(s.co2ppm ?? (env?.defaults?.co2ppm ?? 420));
+    let cMol = (cPpm / 1e6) * totalMol;
+    const deltaMol = (Number(s._co2PpmDelta ?? 0) / 1e6) * totalMol;
+    cMol = Math.max(0, cMol + deltaMol);
+    const outsidePpm = Number(env?.defaults?.outsideCo2ppm ?? env?.defaults?.co2ppm ?? 420);
+    const outsideMol = (outsidePpm / 1e6) * totalMol;
+    cMol += (outsideMol - cMol) * mixRate;
+    cPpm = (cMol / totalMol) * 1e6;
+    s.co2ppm = clamp(cPpm, co2Min, co2Max);
   }
 
   getTickCosts(tickIndex) {
