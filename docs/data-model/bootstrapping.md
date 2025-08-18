@@ -9,6 +9,8 @@ It also notes where to place the files within the `data/` directory and which lo
   Loaded by [`loadSavegame`](../../src/server/services/savegameLoader.js).
 - `data/devices/` – device blueprints. Loaded by [`loadAllDevices`/`loadDeviceBySlug`](../../src/engine/loaders/deviceLoader.js).
 
+For a complete example, see [`data/savegames/default.json`](../../data/savegames/default.json).
+
 ## Structure
 
 ```json
@@ -25,30 +27,76 @@ Structure, room and zone objects usually live inside a savegame file at `data/sa
 
 ## Room
 
+Rooms are defined inside a structure's `rooms` array:
+
 ```json
 {
-  "id": "room_a_grow",
-  "name": "Grow Room A",
-  "area": 60,
-  "height": 3.0,
-  "baseCost": 50,
-  "structureId": "main_building_01"
+  "structure": {
+    "id": "main_building_01",
+    "rooms": [
+      {
+        "id": "room_a_grow",
+        "name": "Grow Room A",
+        "area": 60,
+        "height": 3.0,
+        "baseCost": 50
+      }
+    ]
+  }
 }
 ```
 
 ## Zone
 
+Zones are nested inside a room's `zones` array:
+
+```json
+{
+  "structure": {
+    "rooms": [
+      {
+        "id": "room_a_grow",
+        "zones": [
+          {
+            "id": "zone_a1",
+            "name": "Zone A1",
+            "area": 20,
+            "height": 2.8,
+            "devices": [
+              { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 16 },
+              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Zone Simulation (optional)
+
+Zones can include a `simulation` block defining default strain and method:
+
 ```json
 {
   "id": "zone_a1",
-  "name": "Zone A1",
-  "area": 20,
-  "height": 2.8,
-  "roomId": "room_a_grow",
-  "devices": [
-    { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 16 },
-    { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1 }
-  ]
+  "simulation": {
+    "strainId": "550e8400-e29b-41d4-a716-446655440000",
+    "methodId": "sog"
+  }
+}
+```
+
+### Device Overrides (optional)
+
+Device entries inside a zone may override blueprint settings:
+
+```json
+{
+  "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b",
+  "count": 1,
+  "overrides": { "targetTemperature": 24 }
 }
 ```
 
