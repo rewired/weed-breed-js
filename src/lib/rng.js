@@ -1,5 +1,14 @@
+/**
+ * Random number generator utilities.
+ * @module lib/rng
+ */
 import seedrandom from 'seedrandom';
 
+/**
+ * Create a deterministic random number generator.
+ * @param {string} [seed='weed-breed'] - Seed value.
+ * @returns {{float: function(): number, int: function(number, number): number, pick: function(Array): any}} RNG helpers.
+ */
 export function createRng(seed = 'weed-breed') {
   const rng = seedrandom(seed);
   return {

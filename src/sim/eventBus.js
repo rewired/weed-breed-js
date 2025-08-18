@@ -1,15 +1,26 @@
 // @ts-nocheck
-// RxJS-Eventlayer gemäß ADR (§6)
-// Events dienen Telemetrie/Visualisierung, keine Commands.
+/**
+ * RxJS based event layer used for telemetry and visualization.
+ * Events are semantic and not commands.
+ * @module sim/eventBus
+ */
 
 import { Subject } from 'rxjs';
 import { bufferTime, filter, share } from 'rxjs/operators';
 
-export const events$ = new Subject(); // { type, payload, tick, level, ts }
+/**
+ * Raw event stream emitting `{ type, payload, tick, level, ts }` objects.
+ * @type {Subject<{type:string,payload:object,tick:number,level:string,ts:number}>}
+ */
+export const events$ = new Subject();
 
 /** @type {(e: { level?: string }) => boolean} */
 const levelFilter = e => e?.level !== 'debug';
 
+/**
+ * Buffered event stream for UI consumption.
+ * @type {import('rxjs').Observable<Array>}
+ */
 export const uiStream$ = events$.pipe(
   filter(levelFilter),
   bufferTime(50),

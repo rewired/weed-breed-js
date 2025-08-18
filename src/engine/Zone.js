@@ -1,4 +1,7 @@
-// src/engine/Zone.js
+/**
+ * Zone aggregates devices and plants for simulation ticks.
+ * @module engine/Zone
+ */
 import { ensureEnv, resetEnvAggregates, getZoneVolume, clamp } from './deviceUtils.js';
 import { env, AIR_DENSITY, AIR_CP, saturationMoistureKgPerM3 } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
@@ -50,6 +53,10 @@ export class Zone {
 
   // --- Public Methods (for tickMachine) ------------------------------------
 
+  /**
+   * Apply device effects for the current tick.
+   * @param {number} tickIndex
+   */
   applyDevices(tickIndex) {
     const s = ensureEnv(this);
     resetEnvAggregates(s);
@@ -58,11 +65,17 @@ export class Zone {
     this.#applyDeviceEffects();
   }
 
+  /**
+   * Derive environmental values after device effects.
+   */
   deriveEnvironment() {
     this.#applyThermalUpdate();
     this.#applyHumidityAndCO2Update();
   }
 
+  /**
+   * Handle irrigation and nutrient supply for plants.
+   */
   irrigateAndFeed() {
     if (!this.costEngine) return;
     const s = ensureEnv(this);
@@ -136,15 +149,27 @@ export class Zone {
     this.npk = npkAvg;
   }
 
+  /**
+   * Update all plants for the current tick.
+   * @param {number} tickLengthInHours
+   * @param {number} tickIndex
+   */
   async updatePlants(tickLengthInHours, tickIndex) {
     await this.#updatePlants(tickLengthInHours, tickIndex);
   }
 
+  /**
+   * Harvest plants and handle device replacement.
+   */
   harvestAndInventory() {
     this.#harvestAndReplant();
     this.#replaceBrokenDevices();
   }
 
+  /**
+   * Perform accounting for the tick.
+   * @param {number} tickIndex
+   */
   accounting(tickIndex) {
     this.#bookDeviceCosts(tickIndex);
   }
@@ -161,6 +186,10 @@ export class Zone {
     return candidates[0] ?? null;
   }
 
+  /**
+   * Add a device to the zone.
+   * @param {import('./BaseDevice.js').BaseDevice} device
+   */
   addDevice(device) {
     if (!device) return;
     const deviceLogger = this.logger.child({ deviceId: device.id, deviceKind: device.kind });
@@ -175,6 +204,10 @@ export class Zone {
     this.devices.push(device);
   }
 
+  /**
+   * Add a plant to the zone.
+   * @param {Plant} plant
+   */
   addPlant(plant) {
     if (!plant) return;
     this.plants.push(plant);

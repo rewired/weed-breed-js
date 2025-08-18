@@ -1,3 +1,7 @@
+/**
+ * Room model containing zones within a structure.
+ * @module engine/Room
+ */
 import { v4 as uuidv4 } from 'uuid';
 
 /**

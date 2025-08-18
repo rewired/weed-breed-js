@@ -1,3 +1,7 @@
+/**
+ * Express router exposing CRUD operations for strains.
+ * @module server/services/strainEditorService
+ */
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -13,18 +17,30 @@ const __dirname = path.dirname(__filename);
 const strainsDir = path.join(__dirname, '..', '..', '..', 'data', 'strains');
 const backupDir = path.join(__dirname, '..', '..', '..', 'data', 'strains', 'backup');
 
+/**
+ * Ensure a directory exists.
+ * @param {string} dir
+ */
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 ensureDir(strainsDir);
 ensureDir(backupDir);
 
+/**
+ * Generate a filesystem friendly timestamp string.
+ * @returns {string}
+ */
 function timestamp() {
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
+/**
+ * Backup an existing strain file before overwriting.
+ * @param {string} id
+ */
 async function backupIfExists(id) {
   const file = path.join(strainsDir, `${id}.json`);
   if (fs.existsSync(file)) {

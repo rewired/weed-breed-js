@@ -1,6 +1,7 @@
-// src/engine/factories/plantFactory.js
-// ESM - creates Plant states (or instances) from strain blueprints.
-// Prices (seed/harvest) are optionally mixed in from /data/config/strainPrices.json.
+/**
+ * Factory helpers for creating plants from strain blueprints.
+ * @module engine/factories/plantFactory
+ */
 
 import { randomUUID } from 'crypto';
 import { loadStrainBySlug, loadStrainById } from '../loaders/strainLoader.js';
@@ -18,6 +19,12 @@ import { loadStrainBySlug, loadStrainById } from '../loaders/strainLoader.js';
  * @param {string} [opts.zoneId=null] - zone assignment
  * @param {Map}    [opts.strainPriceMap] - Map<strainId, { seedPrice, harvestPricePerGram }>
  * @returns {object} Plain state object
+ */
+/**
+ * Create an initial plant state object from a strain definition.
+ * @param {object} strain
+ * @param {object} [opts]
+ * @returns {object}
  */
 export function buildPlantStateFromStrain(strain, opts = {}) {
   const {
@@ -92,6 +99,13 @@ export function buildPlantStateFromStrain(strain, opts = {}) {
  * Creates a Plant instance directly if a Plant class is available.
  * Expects: new PlantClass(plainState)
  */
+/**
+ * Create a plant instance from a strain using provided class.
+ * @param {Function} PlantClass
+ * @param {object} strain
+ * @param {object} [opts]
+ * @returns {any}
+ */
 export function createPlantInstance(PlantClass, strain, opts = {}) {
   const state = buildPlantStateFromStrain(strain, opts);
   return new PlantClass(state);
@@ -102,6 +116,9 @@ export function createPlantInstance(PlantClass, strain, opts = {}) {
  * @param {string} slug - e.g., "ak-47"
  * @param {object} [opts] - see buildPlantStateFromStrain
  * @param {Function|null} [PlantClass=null] - optional: class for direct instantiation
+ */
+/**
+ * Convenience function to create plant state/instance by strain slug.
  */
 export async function createPlantFromStrainSlug(slug, opts = {}, PlantClass = null) {
   const strain = await loadStrainBySlug(slug);
@@ -114,6 +131,9 @@ export async function createPlantFromStrainSlug(slug, opts = {}, PlantClass = nu
  * @param {string} id - Strain ID (not the filename)
  * @param {object} [opts] - see buildPlantStateFromStrain
  * @param {Function|null} [PlantClass=null] - optional: class for direct instantiation
+ */
+/**
+ * Convenience function to create plant state/instance by strain id.
  */
 export async function createPlantFromStrainId(id, opts = {}, PlantClass = null) {
   const strain = await loadStrainById(id);

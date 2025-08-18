@@ -1,3 +1,7 @@
+/**
+ * Helpers for loading simulation savegames.
+ * @module server/services/savegameLoader
+ */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';

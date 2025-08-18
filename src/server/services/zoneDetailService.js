@@ -1,4 +1,6 @@
 /**
+ * Utilities to build detailed zone DTOs.
+ * @module server/services/zoneDetailService
  * @typedef {import('../../engine/Zone.js').Zone} Zone
  */
 

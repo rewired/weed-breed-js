@@ -1,13 +1,19 @@
-// ESM, Node 20+
-// Startet WS (/ws) und SSE (/sse) und leitet UI-Event-Batches weiter.
-// Erwartet, dass du irgendwo im Sim-Prozess einen RxJS-Stream uiStream$ hast.
-// Passe den Import unten an DEINEN Pfad an:
+/**
+ * Starts WebSocket and SSE bridges for forwarding UI event batches.
+ * Requires an RxJS `uiStream$` observable.
+ * @module uiBridge
+ */
 import http from "node:http";
 import { WebSocketServer } from "ws";
 
 // ⚠️ Pfad ggf. anpassen:
 import { uiStream$ } from "./eventBus.js"; // muss ein Observable von Arrays sein
 
+/**
+ * Start the UI bridge server.
+ * @param {{port?: number, allowOrigin?: string}} [options]
+ * @returns {{close: function(): void}} Handle to stop the server.
+ */
 export function startUIBridge({ port = 8077, allowOrigin = "*" } = {}) {
   const server = http.createServer();
   const wss = new WebSocketServer({ server, path: "/ws" });

@@ -1,4 +1,6 @@
 /**
+ * Build overview DTOs for zones.
+ * @module server/services/zoneOverviewService
  * @typedef {import('../../engine/Zone.js').Zone} Zone
  * @typedef {import('../../engine/CostEngine.js').CostEngine} CostEngine
  */

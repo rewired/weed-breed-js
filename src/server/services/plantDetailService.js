@@ -1,4 +1,6 @@
 /**
+ * Helpers for building plant detail DTOs.
+ * @module server/services/plantDetailService
  * @typedef {import('../../engine/Zone.js').Zone} Zone
  * @typedef {import('../../engine/Plant.js').Plant} Plant
  */

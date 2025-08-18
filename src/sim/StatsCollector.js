@@ -1,6 +1,16 @@
+/**
+ * Collects statistics about zones and plants during the simulation.
+ * @module sim/StatsCollector
+ */
 import { events$ } from './eventBus.js';
 
+/**
+ * Statistic aggregation for simulation zones.
+ */
 export class StatsCollector {
+  /**
+   * @param {Array} [zones=[]] - Initial zones to track.
+   */
   constructor(zones = []) {
     this.zones = new Map(zones.map(z => [z.id, z]));
     this.totalBuds_g = 0;
@@ -18,6 +28,10 @@ export class StatsCollector {
     });
   }
 
+  /**
+   * Record statistics for a single zone.
+   * @param {object} zone
+   */
   recordZone(zone) {
     let buds = 0;
     let biomass = 0;
@@ -37,6 +51,10 @@ export class StatsCollector {
     this.zoneTotals[zone.id] = zt;
   }
 
+  /**
+   * Get the aggregated totals report.
+   * @returns {{totalBuds_g:number,totalBiomass_g:number,totalDeadPlants:number,zones:object}}
+   */
   report() {
     return {
       totalBuds_g: this.totalBuds_g,
@@ -46,6 +64,10 @@ export class StatsCollector {
     };
   }
 
+  /**
+   * Log the totals using the provided logger.
+   * @param {{info:function(object,string):void}} [logger=console]
+   */
   logTotals(logger = console) {
     logger.info(this.report(), 'STATS');
   }

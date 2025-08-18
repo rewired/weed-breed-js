@@ -1,3 +1,7 @@
+/**
+ * Simulation setup and helper utilities.
+ * @module sim/simulation
+ */
 import { Zone } from '../engine/Zone.js';
 import { Plant } from '../engine/Plant.js';
 import { logger } from '../lib/logger.js';
@@ -14,11 +18,21 @@ import { loadDifficultyConfig } from '../engine/loaders/difficultyLoader.js';
 import { StatsCollector } from './StatsCollector.js';
 
 // --- Loader-Wrapper ---------------------------------------------------------
+/**
+ * Load all available device blueprints.
+ * @returns {Promise<Array>}
+ */
 async function getDeviceBlueprints() {
   return DeviceLoader.loadAllDevices();
 }
 
 // --- Runtime Helpers ------------------------------------------------------
+/**
+ * Find a blueprint matching the given query.
+ * @param {Array} blueprints
+ * @param {{id?:string,kind?:string,nameIncludes?:string}} [query]
+ * @returns {object|null}
+ */
 function findBlueprint(blueprints, query = {}) {
     const { id, kind, nameIncludes } = query;
     if (id) return blueprints.find(b => b.id === id) ?? null;
@@ -29,6 +43,15 @@ function findBlueprint(blueprints, query = {}) {
     return candidates[0] ?? null;
 }
 
+/**
+ * Add multiple devices to a zone based on a blueprint.
+ * @param {Zone} zone
+ * @param {object} blueprint
+ * @param {number} count
+ * @param {object} runtimeCtx
+ * @param {object} [overrides={}] Additional device overrides.
+ * @returns {Array} Created device instances.
+ */
 export function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
     if (!blueprint) {
       logger.warn({ overrides }, 'addDeviceN: blueprint not found');
@@ -60,6 +83,12 @@ import { createRoom } from '../engine/factories/roomFactory.js';
 import { createZone } from '../engine/factories/zoneFactory.js';
 
 
+/**
+ * Initialize the simulation environment from a savegame.
+ * @param {string} [savegame='default']
+ * @param {string} [difficulty='normal']
+ * @returns {Promise<{structure:object,costEngine:CostEngine,rng:object,tickMachineLogic:any,blueprints:Array,statsCollector:StatsCollector}>}
+ */
 export async function initializeSimulation(savegame = 'default', difficulty = 'normal') {
     // --- Load Configuration ---
     const config = await loadSavegame(savegame);

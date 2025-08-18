@@ -1,4 +1,7 @@
-// src/engine/loaders/cultivationMethodLoader.js
+/**
+ * Loader utilities for cultivation method definitions.
+ * @module engine/loaders/cultivationMethodLoader
+ */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -45,6 +48,11 @@ function normalizeMethod(m) {
   };
 }
 
+/**
+ * Load a cultivation method by slug.
+ * @param {string} slug
+ * @returns {Promise<object>}
+ */
 export async function loadCultivationMethod(slug) {
   const fp = path.join(METHODS_DIR, `${slug}.json`);
   const method = await readJson(fp);
@@ -55,6 +63,10 @@ export async function loadCultivationMethod(slug) {
   return normalizeMethod(method);
 }
 
+/**
+ * Load all cultivation methods.
+ * @returns {Promise<Array<object>>}
+ */
 export async function loadAllCultivationMethods() {
   const files = await fs.readdir(METHODS_DIR);
   const methods = [];

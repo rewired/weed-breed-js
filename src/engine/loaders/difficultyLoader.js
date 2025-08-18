@@ -1,4 +1,9 @@
 import fs from 'fs/promises';
+/**
+ * Loader for difficulty configuration settings.
+ * @module engine/loaders/difficultyLoader
+ */
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 

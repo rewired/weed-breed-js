@@ -1,15 +1,25 @@
-// src/engine/devices/HumidityControlUnit.js
+/**
+ * Humidity control device that can humidify or dehumidify air.
+ * @module engine/devices/HumidityControlUnit
+ */
 import { BaseDevice } from '../BaseDevice.js';
 import { ensureEnv, addLatentWater, getZoneVolume } from '../deviceUtils.js';
 import { env, saturationMoistureKgPerM3 } from '../../config/env.js';
 import { resolveTickHours } from '../../lib/time.js';
 
+/**
+ * Device managing humidity levels.
+ */
 export class HumidityControlUnit extends BaseDevice {
   constructor(json, runtimeCtx) {
     super(json, runtimeCtx);
     this.state = 'idle'; // 'idle', 'humidifying', 'dehumidifying'
   }
 
+  /**
+   * Apply humidity adjustments to the zone.
+   * @param {object} zone
+   */
   applyEffect(zone) {
     const s = ensureEnv(zone);
     const settings = this.settings ?? {};
@@ -54,6 +64,11 @@ export class HumidityControlUnit extends BaseDevice {
     }
   }
 
+  /**
+   * Estimate energy usage for a tick.
+   * @param {number} tickHours
+   * @returns {number}
+   */
   estimateEnergyKWh(tickHours) {
     if (this.state === 'idle') {
       return 0;

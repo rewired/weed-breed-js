@@ -1,16 +1,21 @@
-// src/engine/CostEngine.js
-// ES Modules - Cost accounting via price maps (Devices, Strains)
-// Initial capital support + aliases for existing code + optional entries tracking
+/**
+ * Cost accounting via price maps for devices and strains.
+ * Supports capital management and ledger tracking.
+ * @module engine/CostEngine
+ */
 
+/**
+ * Engine responsible for tracking and aggregating costs.
+ */
 export class CostEngine {
   /**
    * @param {Object} opts
-   * @param {Map<string, any>} [opts.devicePriceMap] - deviceId -> { capitalExpenditure, baseMaintenanceCostPerTick, costIncreasePer1000Ticks, energyPricePerKWhOverride? }
-   * @param {Map<string, any>} [opts.strainPriceMap] - strainId -> { seedPrice, harvestPricePerGram }
-   * @param {number} [opts.energyPricePerKWh=0.35]  - global electricity price (EUR/kWh), if no device override exists
-   * @param {number} [opts.initialCapital=0]        - initial capital in EUR
-   * @param {boolean} [opts.keepEntries=false]      - If true, individual bookings are stored in the ledger (more debug output)
-   * @param {number} [opts.co2PricePerPpm=0.00001]  - price per injected CO₂ ppm
+   * @param {Map<string, any>} [opts.devicePriceMap]
+   * @param {Map<string, any>} [opts.strainPriceMap]
+   * @param {number} [opts.energyPricePerKWh=0.35]
+   * @param {number} [opts.initialCapital=0]
+   * @param {boolean} [opts.keepEntries=false]
+   * @param {number} [opts.co2PricePerPpm=0.00001]
    */
   constructor({
     devicePriceMap = new Map(),

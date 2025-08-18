@@ -1,3 +1,7 @@
+/**
+ * Server entry point exposing REST and WebSocket interfaces.
+ * @module server/index
+ */
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
@@ -65,6 +69,11 @@ let simulationState = {
 // Keep a rolling history of tick totals for aggregation
 const tickHistory = [];
 
+/**
+ * Aggregate the totals of the last `n` ticks.
+ * @param {number} n - Number of ticks to aggregate.
+ * @returns {object} Aggregated totals.
+ */
 function aggregateLastTicks(n) {
   const slice = tickHistory.slice(-n);
   if (slice.length === 0) {
@@ -138,6 +147,9 @@ const speedPresets = {
 };
 
 // --- Simulation Tick Runner ----------------------------------------------
+/**
+ * Execute a single simulation tick across all rooms and zones.
+ */
 async function _runSimulationTick() {
   const { structure, costEngine, tickMachineLogic } = simulationState;
   if (!structure) return;
@@ -187,6 +199,9 @@ async function _runSimulationTick() {
   simulationState.tickCounter = absoluteTick;
 }
 
+/**
+ * Broadcast current simulation status to connected clients.
+ */
 function _broadcastStatusUpdate() {
   const { structure, costEngine } = simulationState;
   if (!structure) return;
@@ -283,11 +298,17 @@ function _broadcastStatusUpdate() {
 }
 
 
+/**
+ * Run a single tick and broadcast the resulting status update.
+ */
 async function runTick() {
   await _runSimulationTick();
   _broadcastStatusUpdate();
 }
 
+/**
+ * Run an entire simulation day as a batch of ticks.
+ */
 async function runDayAsBatch() {
   const { structure } = simulationState;
   if (!structure?.rooms?.length) return;
@@ -302,6 +323,10 @@ async function runDayAsBatch() {
 }
 
 
+/**
+ * Create simulation controller exposing play/pause/step controls.
+ * @returns {{play: function(): Promise<void>, pause: function(): void, step: function(number): Promise<void>, reset: function(): Promise<void>, setSpeed: function(number): void, getState: function(): object}}
+ */
 function createSimulationController() {
   const BASE_SECONDS_PER_DAY = 22; // seconds per sim-day at speed 1
 

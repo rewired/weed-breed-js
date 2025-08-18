@@ -1,6 +1,8 @@
-// src/engine/Plant.js
-// Minimally integrated plant model with transpiration (→ RH) & CO₂ consumption.
-// Adheres to the arcade formulas from "WB-Formeln.md" (§3.1, §3.2) and our naming conventions.
+/**
+ * Minimally integrated plant model with transpiration and CO₂ consumption.
+ * Adheres to formulas from "WB-Formeln.md" (§3.1, §3.2).
+ * @module engine/Plant
+ */
 
 import { ensureEnv, addLatentWater, addCO2Delta, getZoneVolume } from './deviceUtils.js';
 import { env } from '../config/env.js';
@@ -8,6 +10,9 @@ import { resolveTickHours } from '../lib/time.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createRng } from '../lib/rng.js';
 
+/**
+ * Simulation model for a single plant.
+ */
 export class Plant {
   constructor({
     id = uuidv4(),
