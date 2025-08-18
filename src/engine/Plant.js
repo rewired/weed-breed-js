@@ -379,11 +379,15 @@ function co2Factor(ppm) {
 }
 
 function waterFactor(coverage = 1) {
-  return clamp(0.3, Number(coverage), 1.0);
+  const c = Number(coverage);
+  if (!Number.isFinite(c)) return 1;
+  return clamp(0.3, c, 1.0);
 }
 
 function npkFactor(coverage = 1) {
-  return clamp(0.5, 0.5 + 0.5 * Number(coverage), 1.0);
+  const c = Number(coverage);
+  if (!Number.isFinite(c)) return 1;
+  return clamp(0.5, 0.5 + 0.5 * c, 1.0);
 }
 
 function rhFactor(rh = 0.6) {
