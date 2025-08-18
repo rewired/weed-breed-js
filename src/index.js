@@ -7,12 +7,13 @@ import { resolveTickHours } from './lib/time.js';
 
 // --- Main -------------------------------------------------------------------
 async function main() {
-  const { zones, costEngine, tickMachineLogic } = await initializeSimulation();
+  const { zones, costEngine, tickMachineLogic } = await initializeSimulation('default');
 
-  // Simulation run for this zone
-  const durationTicks = 840; // 105 days, static for now
+  // Simulation duration derived from tick length
   const tickLengthInHours = resolveTickHours(zones[0]);
   const ticksPerDay = Math.round(24 / tickLengthInHours);
+  const simDays = Number(process.env.SIM_DAYS) || 730;
+  const durationTicks = simDays * ticksPerDay;
 
   logger.info(`--- STARTING SIMULATION (1 tick = ${tickLengthInHours}h, 1 day = ${ticksPerDay} ticks) ---`);
 
