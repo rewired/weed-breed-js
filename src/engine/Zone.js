@@ -42,6 +42,7 @@ export class Zone {
 
     this.devices = [];
     this.plants = [];
+    this.plantTemplate = null;
   }
 
   // --- Public Methods (for tickMachine) ------------------------------------
@@ -147,6 +148,9 @@ export class Zone {
   addPlant(plant) {
     if (!plant) return;
     this.plants.push(plant);
+    if (!this.plantTemplate) {
+      this.plantTemplate = { strain: plant.strain, method: plant.method, area_m2: plant.area_m2 };
+    }
     if (this.costEngine && plant?.strain?.id) {
       this.costEngine.bookSeeds(plant.strain.id, 1);
     }
@@ -210,12 +214,22 @@ export class Zone {
         this.logger?.error?.({ err: e, plantId: p?.id, label: p?.label }, 'Plant tick failed');
       }
     }
+    const before = this.plants.length;
+    this.plants = this.plants.filter(p => !(p.isDead || p.stage === 'dead'));
+    const removed = before - this.plants.length;
+    if (removed > 0) {
+      this.logger?.info?.({ removed }, 'Removed dead plants');
+    }
   }
 
   #harvestAndReplant() {
     if (!this.costEngine || !this.rng || !this.strainPriceMap) return;
-    for (let i = 0; i < this.plants.length; i++) {
-      const plant = this.plants[i];
+    const allReady = this.plants.length > 0 && this.plants.every(p => p.stage === 'harvestReady');
+    const noneExist = this.plants.length === 0;
+    if (!allReady && !noneExist) return;
+
+    const oldPlants = [...this.plants];
+    for (const plant of oldPlants) {
       if (plant.stage === 'harvestReady') {
         const yieldGrams = plant.calculateYield();
         const strainId = plant.strain?.id;
@@ -227,17 +241,21 @@ export class Zone {
           this.costEngine.bookRevenue('Harvest', revenue);
           this.logger.info({ plantId: plant.id.slice(0,8), yieldGrams: yieldGrams.toFixed(2), revenue: revenue.toFixed(2) }, 'HARVEST');
         }
-
-        const newPlant = new Plant({
-          strain: plant.strain,
-          method: plant.method,
-          rng: this.rng
-        });
-        this.plants[i] = newPlant;
-        this.logger.info({ oldPlantId: plant.id.slice(0,8), newPlantId: newPlant.id.slice(0,8) }, 'REPLANT');
-        this.costEngine.bookSeeds(strainId, 1);
       }
     }
+
+    this.plants = [];
+
+    const template = this.plantTemplate || (oldPlants[0] ? { strain: oldPlants[0].strain, method: oldPlants[0].method, area_m2: oldPlants[0].area_m2 } : null);
+    if (!template) return;
+
+    const areaPerPlant = template.method?.areaPerPlant ?? template.area_m2 ?? 0.25;
+    const count = Math.max(0, Math.floor(this.area / areaPerPlant));
+    for (let i = 0; i < count; i++) {
+      const newPlant = new Plant({ strain: template.strain, method: template.method, rng: this.rng, area_m2: template.area_m2 });
+      this.addPlant(newPlant);
+    }
+    this.logger.info({ count }, 'REPLANT_ZONE');
   }
 
   #replaceBrokenDevices() {

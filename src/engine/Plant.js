@@ -180,6 +180,12 @@ export class Plant {
     this.health += healthChange;
     this.health = Math.max(0, Math.min(1, this.health));
 
+    if (this.health <= 0) {
+      this.isDead = true;
+      this.stage = 'dead';
+      return;
+    }
+
 
     // ---- Age & simple stage logic (optional/placeholder) ----
     this.ageHours += tickH;
