@@ -2,7 +2,7 @@
 // Minimally integrated plant model with transpiration (→ RH) & CO₂ consumption.
 // Adheres to the arcade formulas from "WB-Formeln.md" (§3.1, §3.2) and our naming conventions.
 
-import { ensureEnv, addLatentWater, addCO2Delta } from './deviceUtils.js';
+import { ensureEnv, addLatentWater, addCO2Delta, getZoneVolume } from './deviceUtils.js';
 import { env } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -119,8 +119,16 @@ export class Plant {
     const fRH  = 1 - Math.min(1, Math.abs(RH - env.plant.rhOpt) / env.plant.rhWidth);
 
     const A = (1.0) * fLight * fCO2 * fT * fRH; // A_max=1 as game scaling
-    const deltaC = (env.plant.co2KappaA ?? 1) * A * (lai || 1) * this.geneticFactor; // ppm/tick
-    if (deltaC > 0) addCO2Delta(s, -deltaC);
+    const leafArea = this.area_m2 * (lai || 1);
+    const maxAssim = Number(env.plant.maxAssimilationMolPerM2PerS ?? 30e-6);
+    const uptakeMolPerSec = maxAssim * A * leafArea * this.geneticFactor;
+    const uptakeMol = uptakeMolPerSec * 3600 * tickH; // mol per tick
+    if (uptakeMol > 0) {
+      const vol = getZoneVolume(zone);
+      const airMolDen = Number(env.physics.airMolarDensityMolPerM3 ?? 41.6);
+      const ppmDelta = uptakeMol / (airMolDen * vol) * 1e6;
+      addCO2Delta(s, -ppmDelta);
+    }
 
     // ---- Nutrient Consumption ----
     const baseUptake = env.plant.baseNutrientUptake;
