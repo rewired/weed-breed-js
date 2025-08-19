@@ -295,7 +295,7 @@ export class Plant {
     const h = Number(zone.tickLengthInHours ?? ctx.tickLengthInHours ?? 1);
 
     // -- Light driven potential growth --
-    const DLI = this.getDailyLightIntegral(zone.ppfd ?? 0, h); // mol/m²/tick
+    const DLI = this.getDailyLightIntegral(zone.environment?.ppfd ?? 0, h); // mol/m²/tick
 
     const strain = this.strain ?? {};
     const phase = this.getPhase();
