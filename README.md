@@ -1,7 +1,9 @@
 # Weed-Breed Simulation
 
 This project is a simulation game for breeding and growing weed. It includes a simulation engine that models plant growth, environmental factors, and costs.
+
 ![Weed Breed Splash](images/weed-breed-splash.png?raw=true "Weed Breed Splash")
+
 ## Getting Started
 
 ### Prerequisites
