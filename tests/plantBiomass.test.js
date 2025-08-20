@@ -7,18 +7,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const strainData = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/strains/ak-47.json'), 'utf8'));
 
 function makeCtx(overrides = {}) {
-  return {
-    zone: {
-      ppfd: 600,
-      tickLengthInHours: 1,
-      temperatureC: 25,
-      co2ppm: 1200,
-      humidity: 0.6,
-      water: 1,
-      npk: 1,
-      ...overrides,
-    },
+  const zone = {
+    tickLengthInHours: 1,
+    temperatureC: 25,
+    co2ppm: 1200,
+    humidity: 0.6,
+    water: 1,
+    npk: 1,
+    ...overrides,
   };
+  zone.environment = { ppfd: 600, ...(overrides.environment ?? {}) };
+  if (overrides.ppfd != null) zone.environment.ppfd = overrides.ppfd;
+  delete zone.ppfd;
+  return { zone };
 }
 
 describe('Plant biomass model', () => {

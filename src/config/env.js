@@ -6,7 +6,8 @@
 export const env = {
   time: {
     // Global default tick length in hours (can be overridden per simulation/zone)
-    tickLengthInHoursDefault: 1
+    tickLengthInHoursDefault: 1,
+    simDaysDefault: 200
   },
   physics: {
     // Air (at approx. 20–25°C)
@@ -30,6 +31,7 @@ export const env = {
     humidity: 0.6,                // Start RH (0..1)
     co2ppm: 420,                  // Start CO₂
     moistureKg: 0,                // Start moisture pool (kg H2O)
+    energyPriceEURPerKWh: 0.30,   // Global default electricity price
 
     // Device reliability (Mean Time Between Failures) -> Default, if not in blueprint
     deviceMTBF_hours_default: 8760 // 1 year
@@ -80,6 +82,8 @@ export const HOUR_TO_SEC = env.factors.hourToSec;
 export const OUTDOOR_TEMP_C = env.defaults.outsideTemperatureC;
 export const THERMAL_MASS_MULTIPLIER = env.defaults.thermalMassMultiplier;
 export const PASSIVE_UA_PER_M2 = env.defaults.passiveUaPerM2;
+export const SIM_DAYS_DEFAULT = env.time.simDaysDefault;
+export const ENERGY_PRICE_EUR_PER_KWH = env.defaults.energyPriceEURPerKWh;
 
 /**
  * Approximate saturation humidity (water vapor density) for a given temperature.

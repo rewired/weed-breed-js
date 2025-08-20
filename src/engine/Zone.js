@@ -1,5 +1,7 @@
 /**
  * Zone aggregates devices and plants for simulation ticks.
+ * Handles light cycles, environment derivation, harvesting and
+ * cost accounting for a cultivation zone.
  * @module engine/Zone
  */
 import { ensureEnv, resetEnvAggregates, getZoneVolume, clamp } from './deviceUtils.js';
@@ -8,19 +10,15 @@ import { resolveTickHours } from '../lib/time.js';
 import { Plant } from './Plant.js';
 import { createDevice } from './factories/deviceFactory.js';
 
-/**
- * Zone
- * - Aggregates device effects and plant feedback
- * - Integrates per tick: temperature, humidity (pool) and CO₂
- * - Subsequently executes all plant ticks (if any)
- * - Provides the interfaces for the tickMachine
- */
+// Helper to read from Map or plain object
+const get = (m, k) => m?.get?.(k) ?? m?.[k];
+
 export class Zone {
   constructor({
-    id = 'zone',
-    name = 'Zone',
-    area = 1,
-    height, // Inherited from Room/Structure
+    id,
+    name = 'Unnamed Zone',
+    area = 10,
+    height,
     tickLengthInHours,
     runtime = {},
     roomId = null,
@@ -29,12 +27,12 @@ export class Zone {
     this.id = id;
     this.name = name;
     this.area = Number(area);
-    this.height = height; // Let validation/inheritance handle Number() conversion and defaults
+    this.height = height;
     this.tickLengthInHours = resolveTickHours({ tickLengthInHours });
     this.roomId = roomId;
     this.structureId = structureId;
 
-    // Runtime dependencies
+    // runtime deps
     this.runtime = runtime;
     this.logger = runtime.logger ?? console;
     this.costEngine = runtime.costEngine;
@@ -45,18 +43,57 @@ export class Zone {
 
     this.devices = [];
     this.plants = [];
-    this.plantTemplate = null;
+    this.plantTemplate = null; // { strain, method, area_m2 }
+
+    this.environment = {
+      temperature: env?.defaults?.temperatureC ?? 24,
+      humidity: env?.defaults?.humidity ?? 0.6,
+      ppfd: 0,
+      co2ppm: env?.defaults?.co2ppm ?? 420,
+      moistureKg: env?.defaults?.moistureKg ?? 0,
+      nutrients: { N: 100, P: 100, K: 100 },
+      _heatW: 0,
+      _waterKgDelta: 0,
+      _co2PpmDelta: 0,
+    };
+
+    this.runtime.lightsOn = true;
     this.deathStats = {};
-    this.water = 1;
-    this.npk = 1;
+    this.water = 0.5;
+    this.nutrientLevel = 0.5;
+    this._warnedNoLamp = false;
   }
 
-  // --- Public Methods (for tickMachine) ------------------------------------
+  // -----------------------------------------------------------------------
+  // logging helper
+  #log(level, data, msg) {
+    try {
+      this.logger?.[level]?.(data, msg);
+    } catch {
+      /* ignore logging errors */
+    }
+  }
 
-  /**
-   * Apply device effects for the current tick.
-   * @param {number} tickIndex
-   */
+  // -----------------------------------------------------------------------
+  addDevice(device) {
+    if (!device) return;
+    this.devices.push(device);
+    device.zoneRef = this;
+  }
+
+  addPlant(plant) {
+    if (!plant) return;
+    this.plants.push(plant);
+    if (!this.plantTemplate) {
+      this.plantTemplate = { strain: plant.strain, method: plant.method, area_m2: plant.area_m2 };
+    }
+    if (this.costEngine && plant?.strain?.id) {
+      try { this.costEngine.bookSeeds(plant.strain.id, 1); } catch { /* ignore */ }
+    }
+  }
+
+  // --- Public Methods ----------------------------------------------------
+
   applyDevices(tickIndex) {
     const s = ensureEnv(this);
     resetEnvAggregates(s);
@@ -65,58 +102,31 @@ export class Zone {
     this.#applyDeviceEffects();
   }
 
-  /**
-   * Derive environmental values after device effects.
-   */
   deriveEnvironment() {
     this.#applyThermalUpdate();
     this.#applyHumidityAndCO2Update();
   }
 
-  /**
-   * Handle irrigation and nutrient supply for plants.
-   */
   irrigateAndFeed() {
     if (!this.costEngine) return;
     const s = ensureEnv(this);
 
     s.reservoir ??= { waterL: 0, capacityL: this.area * 10, nutrientCapacity: { N: 150, P: 150, K: 150 } };
 
-    let totalWaterL = 0;
-    const consumedNutrients = { N: 0, P: 0, K: 0 };
+    // Simple top-up strategy to 70% of tank
+    const targetWater = s.reservoir.capacityL * 0.7;
+    const addWater = Math.max(0, targetWater - s.reservoir.waterL);
 
-    for (const plant of this.plants) {
-      const demandWater = plant.lastWaterConsumptionL ?? 0;
-      totalWaterL += demandWater;
-      let waterStress = 0;
-      if (s.reservoir.waterL < demandWater) {
-        waterStress = 0.2;
-        s.reservoir.waterL = 0;
-      } else {
-        s.reservoir.waterL -= demandWater;
-      }
+    const targetNutrients = { N: 80, P: 50, K: 90 };
+    const addN = Math.max(0, targetNutrients.N - (s.nutrients?.N ?? 0));
+    const addP = Math.max(0, targetNutrients.P - (s.nutrients?.P ?? 0));
+    const addK = Math.max(0, targetNutrients.K - (s.nutrients?.K ?? 0));
 
-      const demand = plant.lastNutrientConsumption;
-      let nutrientStress = 0;
-      if (s.nutrients.N < demand.N || s.nutrients.P < demand.P || s.nutrients.K < demand.K) {
-        nutrientStress = 0.2;
-      } else {
-        s.nutrients.N -= demand.N;
-        s.nutrients.P -= demand.P;
-        s.nutrients.K -= demand.K;
-        consumedNutrients.N += demand.N;
-        consumedNutrients.P += demand.P;
-        consumedNutrients.K += demand.K;
-      }
-      plant.payload.waterStress = waterStress;
-      plant.payload.nutrientStress = nutrientStress;
-    }
+    const consumedNutrients = { N: addN, P: addP, K: addK };
+    const totalWaterL = addWater;
 
     const meta = { roomId: this.roomId, zoneId: this.id };
-
-    if (totalWaterL > 0) {
-      this.costEngine.bookWater(totalWaterL, meta);
-    }
+    if (totalWaterL > 0) this.costEngine.bookWater(totalWaterL, meta);
     if (consumedNutrients.N > 0 || consumedNutrients.P > 0 || consumedNutrients.K > 0) {
       this.costEngine.bookFertilizer(consumedNutrients, meta);
     }
@@ -146,36 +156,23 @@ export class Zone {
     const npkAvg = (s.nutrients.N / s.reservoir.nutrientCapacity.N +
       s.nutrients.P / s.reservoir.nutrientCapacity.P +
       s.nutrients.K / s.reservoir.nutrientCapacity.K) / 3;
-    this.npk = npkAvg;
+    this.nutrientLevel = npkAvg;
   }
 
-  /**
-   * Update all plants for the current tick.
-   * @param {number} tickLengthInHours
-   * @param {number} tickIndex
-   */
   async updatePlants(tickLengthInHours, tickIndex) {
     await this.#updatePlants(tickLengthInHours, tickIndex);
   }
 
-  /**
-   * Harvest plants and handle device replacement.
-   */
-  harvestAndInventory() {
-    this.#harvestAndReplant();
+  harvestAndInventory(tickIndex) {
+    this.#harvestAndReplant(tickIndex);
     this.#replaceBrokenDevices();
   }
 
-  /**
-   * Perform accounting for the tick.
-   * @param {number} tickIndex
-   */
   accounting(tickIndex) {
     this.#bookDeviceCosts(tickIndex);
   }
 
-  // --- Helper Methods ------------------------------------------------------
-
+  // -----------------------------------------------------------------------
   #findBlueprint(query = {}) {
     const { id, kind, nameIncludes } = query;
     if (id) return this.blueprints.find(b => b.id === id) ?? null;
@@ -186,72 +183,41 @@ export class Zone {
     return candidates[0] ?? null;
   }
 
-  /**
-   * Add a device to the zone.
-   * @param {import('./BaseDevice.js').BaseDevice} device
-   */
-  addDevice(device) {
-    if (!device) return;
-    const deviceLogger = this.logger.child({ deviceId: device.id, deviceKind: device.kind });
-    device.runtimeCtx = {
-      ...(device.runtimeCtx ?? {}),
-      structureId: this.structureId,
-      roomId: this.roomId,
-      zone: this,
-      tickLengthInHours: this.tickLengthInHours,
-      logger: deviceLogger,
-    };
-    this.devices.push(device);
-  }
-
-  /**
-   * Add a plant to the zone.
-   * @param {Plant} plant
-   */
-  addPlant(plant) {
-    if (!plant) return;
-    this.plants.push(plant);
-    if (!this.plantTemplate) {
-      this.plantTemplate = { strain: plant.strain, method: plant.method, area_m2: plant.area_m2 };
-    }
-    if (this.costEngine && plant?.strain?.id) {
-      this.costEngine.bookSeeds(plant.strain.id, 1);
-    }
-  }
-
-  // --- Private Tick-Phase Implementations ---------------------------------
-
   #manageLightCycle(tickIndex) {
     if (!this.plants.length) return;
 
-    // Use the first plant as a representative for the whole zone's cycle
-    const representativePlant = this.plants[0];
-    const stage = representativePlant.stage;
-    const lightCycle = representativePlant.strain?.environmentalPreferences?.lightCycle;
+    const plant = this.plants[0];
+    const stage = plant.stage;
+    const cyclePref = plant.strain?.environmentalPreferences?.lightCycle;
 
-    if (!lightCycle) return; // No light cycle data for this strain
-
-    const cycle = lightCycle[stage] ?? lightCycle.default ?? [18, 6];
-    const lightHours = cycle[0];
-
-    const currentSimHour = (tickIndex * this.tickLengthInHours) % 24;
-
-    const lightsOn = currentSimHour < lightHours;
-    // expose lights-on state for plant stress calculations
-    if (this.runtime) {
-      this.runtime.lightsOn = lightsOn;
+    let cycle = cyclePref?.[stage] ?? cyclePref?.default;
+    if (!cycle) {
+      cycle = stage === 'flower' ? [12, 12] : [18, 6];
+      this.#log('info', { zoneId: this.id, stage }, 'Using fallback light cycle');
     }
 
-    for (const device of this.devices) {
-      if (device.kind === 'Lamp') {
-        device.toggle(lightsOn ? 'on' : 'off');
+    const currentSimHour = (tickIndex * this.tickLengthInHours) % 24;
+    const lightHours = Number(cycle[0]) || 0;
+    const lightsOn = currentSimHour < lightHours;
+    this.runtime.lightsOn = lightsOn;
+
+    const lamps = this.devices.filter(d => d.kind === 'Lamp');
+    if (lamps.length === 0 && !this._warnedNoLamp) {
+      this._warnedNoLamp = true;
+      this.#log('warn', { zoneId: this.id }, 'No Lamp in zone; PPFD will stay ~0');
+    }
+    for (const lamp of lamps) {
+      try {
+        lamp.toggle(lightsOn ? 'on' : 'off');
+      } catch (e) {
+        this.#log('error', { err: e, deviceId: lamp.id }, 'Lamp toggle failed');
       }
     }
   }
 
   #updateDeviceStatus() {
     for (const d of this.devices) {
-      d.tick?.();
+      try { d.tick?.(); } catch (e) { this.#log('error', { err: e, deviceId: d?.id }, 'Device tick failed'); }
     }
   }
 
@@ -262,7 +228,7 @@ export class Zone {
           d.applyEffect(this);
         }
       } catch (e) {
-        this.logger?.error?.({ err: e, deviceId: d?.id, kind: d?.kind, name: d?.name }, 'Device applyEffect failed');
+        this.#log('error', { err: e, deviceId: d?.id, kind: d?.kind, name: d?.name }, 'Device applyEffect failed');
       }
     }
   }
@@ -274,59 +240,68 @@ export class Zone {
           await p.tick(this, tickLengthInHours, tickIndex);
         }
       } catch (e) {
-        this.logger?.error?.({ err: e, plantId: p?.id, label: p?.label }, 'Plant tick failed');
+        this.#log('error', { err: e, plantId: p?.id, label: p?.label }, 'Plant tick failed');
       }
     }
     const survivors = [];
     for (const p of this.plants) {
       if (p.isDead || p.stage === 'dead') {
-        const cause = p.causeOfDeath || 'unknown';
-        this.deathStats[cause] = (this.deathStats[cause] || 0) + 1;
+        const cause = p.causeOfDeath ?? 'unknown';
+        this.deathStats[cause] = (this.deathStats[cause] ?? 0) + 1;
       } else {
         survivors.push(p);
       }
     }
     const removed = this.plants.length - survivors.length;
     this.plants = survivors;
-    if (removed > 0) {
-      this.logger?.info?.({ removed }, 'Removed dead plants');
-    }
+    if (removed > 0) this.#log('info', { removed }, 'Removed dead plants');
   }
 
-  #harvestAndReplant() {
-    if (!this.costEngine || !this.rng || !this.strainPriceMap) return;
-    const allReady = this.plants.length > 0 && this.plants.every(p => p.stage === 'harvestReady');
-    const noneExist = this.plants.length === 0;
-    if (!allReady && !noneExist) return;
+  // -----------------------------------------------------------------------
+  #harvestAndReplant(tickIndex = 0) {
+    if (!this.costEngine || !this.strainPriceMap) return;
 
-    const oldPlants = [...this.plants];
-    for (const plant of oldPlants) {
-      if (plant.stage === 'harvestReady') {
-        const yieldGrams = plant.calculateYield();
-        const strainId = plant.strain?.id;
-        const priceInfo = this.strainPriceMap.get(strainId);
-        const pricePerGram = priceInfo?.harvestPricePerGram ?? 0;
-        const revenue = yieldGrams * pricePerGram;
+    const ready = [];
+    const keep = [];
+    for (const p of this.plants) {
+      if (p.stage === 'harvestReady') ready.push(p);
+      else if (!p.isDead && p.stage !== 'dead') keep.push(p);
+    }
+    if (ready.length === 0) return;
 
-        if (revenue > 0) {
-          this.costEngine.bookRevenue('Harvest', revenue);
-          this.logger.info({ plantId: plant.id.slice(0,8), yieldGrams: yieldGrams.toFixed(2), revenue: revenue.toFixed(2) }, 'HARVEST');
-        }
+    let harvested = 0;
+    let revenueEUR = 0;
+    for (const plant of ready) {
+      const yieldGrams = plant.calculateYield?.() ?? 0;
+      const strainId = plant.strain?.id;
+      const priceInfo = get(this.strainPriceMap, strainId) ?? {};
+      const pricePerGram = Number(priceInfo.harvestPricePerGram ?? priceInfo.pricePerGram ?? 0);
+      const revenue = yieldGrams * pricePerGram;
+      if (revenue > 0) {
+        try { this.costEngine.bookRevenue('Harvest', revenue); } catch { /* ignore */ }
+        revenueEUR += revenue;
       }
+      harvested += 1;
+      this.#log('info', { plantId: plant.id, yieldGrams, revenue }, 'HARVEST_PLANT');
     }
 
-    this.plants = [];
+    // remove harvested
+    this.plants = keep;
 
-    const template = this.plantTemplate || (oldPlants[0] ? { strain: oldPlants[0].strain, method: oldPlants[0].method, area_m2: oldPlants[0].area_m2 } : null);
-    if (!template) return;
-
-    const areaPerPlant = template.method?.areaPerPlant ?? template.area_m2 ?? 0.25;
-    const count = Math.max(0, Math.floor(this.area / areaPerPlant));
-    for (let i = 0; i < count; i++) {
-      const newPlant = new Plant({ strain: template.strain, method: template.method, rng: this.rng, area_m2: template.area_m2 });
-      this.addPlant(newPlant);
+    // determine template
+    const template = this.plantTemplate || ready[0] || keep[0];
+    if (template) {
+      let areaPerPlant = template.method?.areaPerPlant;
+      if (!areaPerPlant || areaPerPlant <= 0) areaPerPlant = template.area_m2;
+      if (!areaPerPlant || areaPerPlant < 1) areaPerPlant = 2.5; // sensible default
+      const capacity = Math.max(0, Math.floor(this.area / areaPerPlant));
+      const need = Math.max(0, capacity - this.plants.length);
+      for (let i = 0; i < need; i++) {
+        const newPlant = new Plant({ strain: template.strain, method: template.method, rng: this.rng, area_m2: areaPerPlant });
+        this.addPlant(newPlant);
+      }
+      this.#log('info', { harvested, revenueEUR, replanted: need }, 'HARVEST_ZONE_TICK');
     }
-    this.logger.info({ count }, 'REPLANT_ZONE');
   }
 
   #replaceBrokenDevices() {
@@ -335,17 +310,19 @@ export class Zone {
     for (let i = 0; i < this.devices.length; i++) {
       const device = this.devices[i];
       if (device.status === 'broken') {
-        this.logger.warn({ deviceId: device.id, name: device.name }, 'Device BROKEN. Replacing...');
-
-        this.costEngine.bookCapex(device.blueprintId, 1);
-
+        this.#log('warn', { deviceId: device.id, name: device.name }, 'Device BROKEN. Replacing...');
+        try { this.costEngine.bookCapex(device.blueprintId, 1); } catch { /* ignore */ }
         const blueprint = this.#findBlueprint({ id: device.blueprintId });
         if (blueprint) {
-          const newDevice = createDevice(blueprint, runtimeCtx);
-          this.devices[i] = newDevice;
-          this.logger.info({ oldDeviceId: device.id, newDeviceId: newDevice.id, name: newDevice.name }, 'Device REPLACED.');
+          try {
+            const newDevice = createDevice(blueprint, runtimeCtx);
+            this.devices[i] = newDevice;
+            this.#log('info', { oldDeviceId: device.id, newDeviceId: newDevice.id, name: newDevice.name }, 'Device REPLACED.');
+          } catch (e) {
+            this.#log('error', { err: e, blueprintId: device.blueprintId }, 'Device replacement failed');
+          }
         } else {
-          this.logger.error({ blueprintId: device.blueprintId }, 'Could not find blueprint to replace broken device. Removing device.');
+          this.#log('error', { blueprintId: device.blueprintId }, 'Could not find blueprint to replace broken device. Removing device.');
           this.devices.splice(i, 1);
           i--;
         }
@@ -366,11 +343,11 @@ export class Zone {
 
   #applyThermalUpdate() {
     const s = ensureEnv(this);
-    const tickH  = resolveTickHours(this);
-    const dtSec  = Math.max(1, tickH * (env?.factors?.hourToSec ?? 3600));
+    const tickH = resolveTickHours(this);
+    const dtSec = Math.max(1, tickH * (env?.factors?.hourToSec ?? 3600));
 
     const rhoAir = Number(env?.physics?.airDensity ?? AIR_DENSITY ?? 1.2);
-    const cpAir  = Number(env?.physics?.airCp ?? AIR_CP ?? 1005);
+    const cpAir = Number(env?.physics?.airCp ?? AIR_CP ?? 1005);
 
     const volume = getZoneVolume(this);
     const airMass = Math.max(1e-6, volume * rhoAir);
@@ -382,72 +359,31 @@ export class Zone {
     const Q = heatW * dtSec;
     const dT_heat = Q / C_eff;
 
-    const ach = Number(env?.defaults?.airChangesPerHour ?? 0.3);
-    const rate = 1 - Math.exp(-ach * tickH);
-    const outsideT = Number(env?.defaults?.outsideTemperatureC ?? env?.outdoor?.temperatureC ?? 22);
-    const T0 = Number(s.temperature ?? outsideT);
-    const dT_leak = (outsideT - T0) * rate;
-
-    s.temperature = T0 + dT_heat + dT_leak;
-
-    if (typeof s.humidity === 'number') {
-      const hMin = Number(env?.clamps?.humidityMin ?? 0.30);
-      const hMax = Number(env?.clamps?.humidityMax ?? 0.95);
-      s.humidity = clamp(s.humidity, hMin, hMax);
-    }
+    s.temperature = Number(s.temperature ?? 24) + dT_heat;
   }
 
   #applyHumidityAndCO2Update() {
     const s = ensureEnv(this);
+
     const vol = getZoneVolume(this);
-    const tickH = resolveTickHours(this);
-    const ach = Number(env?.defaults?.airChangesPerHour ?? 0.3);
-    const mixRate = 1 - Math.exp(-ach * tickH);
+    const moistureKgPerM3 = Number(s.moistureKg) / Math.max(1e-9, vol);
+    const satKgPerM3 = saturationMoistureKgPerM3(s.temperature);
+    const rhRaw = Math.max(0, Math.min(0.999, moistureKgPerM3 / Math.max(1e-12, satKgPerM3)));
+    s.humidity = clamp(rhRaw, env?.clamps?.humidityMin ?? 0.1, env?.clamps?.humidityMax ?? 0.95);
 
-    // --- Humidity ---
-    const tempC = Number(s.temperature ?? env.defaults.temperatureC ?? 20);
-    let mRef = Number(env.humidity.moistureRefKgPerM3 ?? 0.017);
-    if (env.humidity.deriveFromTemperature) {
-      mRef = saturationMoistureKgPerM3(tempC);
-    }
-    const alpha = Number(env?.humidity?.alpha ?? 1.0);
-    const MvMax = Math.max(1e-9, mRef * vol);
+    const waterDelta = Number(s._waterKgDelta ?? 0);
+    const co2DeltaPpm = Number(s._co2PpmDelta ?? 0);
 
-    const dMv = Number(s._waterKgDelta ?? 0);
-    let Mv = Number(s.moistureKg ?? 0) + dMv;
+    s.moistureKg = Math.max(0, Number(s.moistureKg ?? 0) + waterDelta);
+    s.co2ppm = Math.max(0, Number(s.co2ppm ?? 420) + co2DeltaPpm);
 
-    const outsideT = Number(env?.defaults?.outsideTemperatureC ?? tempC);
-    let mRefOut = mRef;
-    if (env.humidity.deriveFromTemperature) {
-      mRefOut = saturationMoistureKgPerM3(outsideT);
-    }
-    const outsideRH = Number(env?.defaults?.outsideHumidity ?? s.humidity ?? 0.5);
-    const MvOut = Math.min(1, Math.max(0, outsideRH / alpha)) * Math.max(1e-9, mRefOut * vol);
-    Mv += (MvOut - Mv) * mixRate;
+    const newMoisturePerM3 = Math.max(0, s.moistureKg / Math.max(1e-9, vol));
+    const newRh = Math.max(0, Math.min(0.999, newMoisturePerM3 / Math.max(1e-12, satKgPerM3)));
+    s.humidity = clamp(newRh, env?.clamps?.humidityMin ?? 0.1, env?.clamps?.humidityMax ?? 0.95);
 
-    if (Mv < 0) Mv = 0;
-    if (Mv > MvMax) Mv = MvMax;
-    s.moistureKg = Mv;
-
-    let rh = alpha * (Mv / MvMax);
-    const hMin = Number(env?.clamps?.humidityMin ?? 0.30);
-    const hMax = Number(env?.clamps?.humidityMax ?? 0.95);
-    s.humidity = clamp(rh, hMin, hMax);
-
-    // --- CO2 ---
-    const airMolDen = Number(env.physics.airMolarDensityMolPerM3 ?? 41.6);
-    const totalMol = airMolDen * vol;
-    const co2Min = Number(env?.clamps?.co2ppmMin ?? 300);
-    const co2Max = Number(env?.clamps?.co2ppmMax ?? 2000);
-    let cPpm = Number(s.co2ppm ?? (env?.defaults?.co2ppm ?? 420));
-    let cMol = (cPpm / 1e6) * totalMol;
-    const deltaMol = (Number(s._co2PpmDelta ?? 0) / 1e6) * totalMol;
-    cMol = Math.max(0, cMol + deltaMol);
-    const outsidePpm = Number(env?.defaults?.outsideCo2ppm ?? env?.defaults?.co2ppm ?? 420);
-    const outsideMol = (outsidePpm / 1e6) * totalMol;
-    cMol += (outsideMol - cMol) * mixRate;
-    cPpm = (cMol / totalMol) * 1e6;
-    s.co2ppm = clamp(cPpm, co2Min, co2Max);
+    s._waterKgDelta = 0;
+    s._co2PpmDelta = 0;
+    s.ppfd = Math.max(0, Number(s.ppfd ?? 0));
   }
 
   getTickCosts(tickIndex) {
@@ -464,8 +400,9 @@ export class Zone {
       const energyPrice = this.costEngine.getEnergyPriceForDevice(device.blueprintId ?? device.id);
       const energyCost = kWh * energyPrice;
 
-      const baseMaintenance = this.costEngine.devicePriceMap.get(device.blueprintId)?.baseMaintenanceCostPerTick ?? 0;
-      const inc = this.costEngine.devicePriceMap.get(device.blueprintId)?.costIncreasePer1000Ticks ?? 0;
+      const cfg = get(this.costEngine.devicePriceMap, device.blueprintId);
+      const baseMaintenance = cfg?.baseMaintenanceCostPerTick ?? 0;
+      const inc = cfg?.costIncreasePer1000Ticks ?? 0;
       const factor = 1 + inc * Math.floor(tickIndex / 1000);
       const maintenanceCost = baseMaintenance * factor;
 
@@ -481,16 +418,16 @@ export class Zone {
     }
 
     const { waterEUR, fertilizerEUR } = this.costEngine.getWaterAndFertilizerTotalsForZone(this.id);
+    const otherExpense = 0;
 
-    const zoneOverhead = 0;
-
+    const total = totalEnergyCost + totalMaintenanceCost + (waterEUR ?? 0) + (fertilizerEUR ?? 0) + otherExpense;
     return {
-      total: totalEnergyCost + totalMaintenanceCost + waterEUR + fertilizerEUR + zoneOverhead,
+      total,
       energy: totalEnergyCost,
       maintenance: totalMaintenanceCost,
-      water: waterEUR,
-      fertilizer: fertilizerEUR,
-      other: zoneOverhead,
+      water: waterEUR ?? 0,
+      fertilizer: fertilizerEUR ?? 0,
+      other: otherExpense,
       devices: deviceCosts,
     };
   }

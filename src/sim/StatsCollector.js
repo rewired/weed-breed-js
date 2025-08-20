@@ -40,15 +40,17 @@ export class StatsCollector {
       biomass += plant.state?.biomassFresh_g ?? 0;
     }
     const deaths = Object.values(zone.deathStats ?? {}).reduce((s, v) => s + v, 0);
-    const zt = this.zoneTotals[zone.id] ?? { buds_g: 0, biomass_g: 0, deaths: 0 };
-    this.totalBuds_g += buds;
-    this.totalBiomass_g += biomass;
-    const newDeaths = deaths - (zt.deaths || 0);
+    const prev = this.zoneTotals[zone.id] ?? { buds_g: 0, biomass_g: 0, deaths: 0 };
+    const newDeaths = deaths - (prev.deaths || 0);
     this.totalDeadPlants += newDeaths;
-    zt.buds_g += buds;
-    zt.biomass_g += biomass;
-    zt.deaths = deaths;
-    this.zoneTotals[zone.id] = zt;
+    this.zoneTotals[zone.id] = { buds_g: buds, biomass_g: biomass, deaths };
+    // Recalculate global totals based on current zone snapshots
+    this.totalBuds_g = 0;
+    this.totalBiomass_g = 0;
+    for (const z of Object.values(this.zoneTotals)) {
+      this.totalBuds_g += z.buds_g;
+      this.totalBiomass_g += z.biomass_g;
+    }
   }
 
   /**

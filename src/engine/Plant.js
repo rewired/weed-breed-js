@@ -295,7 +295,7 @@ export class Plant {
     const h = Number(zone.tickLengthInHours ?? ctx.tickLengthInHours ?? 1);
 
     // -- Light driven potential growth --
-    const DLI = this.getDailyLightIntegral(zone.ppfd ?? 0, h); // mol/m²/tick
+    const DLI = this.getDailyLightIntegral(zone.environment?.ppfd ?? 0, h); // mol/m²/tick
 
     const strain = this.strain ?? {};
     const phase = this.getPhase();
@@ -379,11 +379,15 @@ function co2Factor(ppm) {
 }
 
 function waterFactor(coverage = 1) {
-  return clamp(0.3, Number(coverage), 1.0);
+  const c = Number(coverage);
+  if (!Number.isFinite(c)) return 1;
+  return clamp(0.3, c, 1.0);
 }
 
 function npkFactor(coverage = 1) {
-  return clamp(0.5, 0.5 + 0.5 * Number(coverage), 1.0);
+  const c = Number(coverage);
+  if (!Number.isFinite(c)) return 1;
+  return clamp(0.5, 0.5 + 0.5 * c, 1.0);
 }
 
 function rhFactor(rh = 0.6) {

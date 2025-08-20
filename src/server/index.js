@@ -9,7 +9,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { logger } from '../lib/logger.js';
-import { resolveTickHours } from '../lib/time.js';
 import { createActor } from 'xstate';
 import fs from 'fs';
 import { uiStream$ } from '../sim/eventBus.js';
@@ -62,6 +61,7 @@ let simulationState = {
   status: 'stopped', // 'running', 'paused'
   tickCounter: 0,
   speed: 1,
+  tickLengthInHours: null,
 };
 
 // Keep a rolling history of tick totals for aggregation
@@ -209,9 +209,8 @@ function _broadcastStatusUpdate() {
 
   const tickTotals = costEngine.getTotals();
   const absoluteTick = simulationState.tickCounter;
-  const representativeZone = allZones[0];
-  const tickLengthInHours = representativeZone.tickLengthInHours;
-  const ticksPerDay = 24 / tickLengthInHours;
+  const tickLengthInHours = simulationState.tickLengthInHours;
+  const ticksPerDay = Math.round(24 / tickLengthInHours);
 
   // store history and compute aggregates
   tickHistory.push(tickTotals);
@@ -287,7 +286,13 @@ function _broadcastStatusUpdate() {
     grandTotals: costEngine.getGrandTotals()
   };
 
-  logger.info({ tick: absoluteTick, zones: zoneSummaries.length }, 'Broadcasting update to clients');
+  if (absoluteTick % ticksPerDay === 0) {
+    logger.info({
+      day: Math.floor(absoluteTick / ticksPerDay) + 1,
+      balance: costEngine.getGrandTotals().finalBalanceEUR ?? 0,
+      zones: zoneSummaries.length
+    }, 'Broadcasting update to clients');
+  }
   wss.clients.forEach(client => {
     if (client.readyState === 1) { // WebSocket.OPEN
       client.send(JSON.stringify(statusUpdate));
@@ -313,7 +318,7 @@ async function runDayAsBatch() {
   const allZones = structure.rooms.flatMap(r => r.zones);
   if (!allZones.length) return;
 
-  const ticksPerDay = Math.round(24 / allZones[0].tickLengthInHours);
+  const ticksPerDay = Math.round(24 / simulationState.tickLengthInHours);
   for (let i = 0; i < ticksPerDay; i++) {
     await _runSimulationTick();
   }
@@ -330,18 +335,18 @@ function createSimulationController() {
 
   async function ensureInitialized() {
     if (!simulationState.structure) {
-      const { structure, costEngine, rng, tickMachineLogic } = await initializeSimulation();
+      const { structure, costEngine, rng, tickMachineLogic, tickLengthInHours } = await initializeSimulation();
       simulationState.structure = structure;
       simulationState.costEngine = costEngine;
       simulationState.rng = rng;
       simulationState.tickMachineLogic = tickMachineLogic;
+      simulationState.tickLengthInHours = tickLengthInHours;
       simulationState.tickCounter = 0;
     }
   }
 
   function getTickIntervalMs() {
-    const zone = simulationState.structure?.rooms?.[0]?.zones?.[0];
-    const tickLengthInHours = resolveTickHours(zone);
+    const tickLengthInHours = simulationState.tickLengthInHours;
     if (!tickLengthInHours) return 1000;
     const ticksPerDay = 24 / tickLengthInHours;
     const baseMs = (BASE_SECONDS_PER_DAY / ticksPerDay) * 1000;
@@ -433,7 +438,7 @@ app.post('/simulation/start', async (req, res) => {
   const realSecondsPerSimDay = speedPresets[preset] || speedPresets.normal;
 
   try {
-    const { structure, costEngine, rng, tickMachineLogic } = await initializeSimulation(savegame, difficulty);
+    const { structure, costEngine, rng, tickMachineLogic, tickLengthInHours } = await initializeSimulation(savegame, difficulty);
 
     simulationState = {
       ...simulationState,
@@ -441,11 +446,18 @@ app.post('/simulation/start', async (req, res) => {
       costEngine,
       rng,
       tickMachineLogic,
+      tickLengthInHours,
       status: 'running',
       tickCounter: 0,
     };
 
-    const ticksPerSimDay = 24 / structure.rooms[0].zones[0].tickLengthInHours;
+    const allZones = structure.rooms.flatMap(r => r.zones);
+    const inconsistentZones = allZones.filter(z => z.tickLengthInHours !== tickLengthInHours);
+    if (inconsistentZones.length) {
+      logger.warn({ zoneIds: inconsistentZones.map(z => z.id) }, 'Zones with differing tick lengths detected');
+    }
+
+    const ticksPerSimDay = 24 / tickLengthInHours;
     let tickIntervalMs;
     let tickHandler;
 
@@ -464,8 +476,6 @@ app.post('/simulation/start', async (req, res) => {
       });
     };
     run();
-
-    const allZones = structure.rooms.flatMap(r => r.zones);
     res.status(200).send({ message: `Simulation started with preset: ${preset}, found ${allZones.length} zones.` });
   } catch (err) {
     logger.error({ err }, 'Error starting simulation');
@@ -488,7 +498,7 @@ app.post('/simulation/resume', (req, res) => {
   }
   const { preset = 'normal' } = req.body;
   const realSecondsPerSimDay = speedPresets[preset] || speedPresets.normal;
-  const ticksPerSimDay = 24 / simulationState.structure.rooms[0].zones[0].tickLengthInHours;
+  const ticksPerSimDay = 24 / simulationState.tickLengthInHours;
 
   let tickIntervalMs;
   let tickHandler;
@@ -507,13 +517,10 @@ app.post('/simulation/resume', (req, res) => {
 });
 
 app.get('/simulation/status', (req, res) => {
-  const { structure, costEngine, status, tickCounter } = simulationState;
+  const { structure, costEngine, status, tickCounter, tickLengthInHours } = simulationState;
   if (!structure) {
     return res.status(404).send({ message: 'Simulation not started.' });
   }
-
-  const tickLengthInHours = resolveTickHours(structure.rooms[0]?.zones[0]);
-
   res.status(200).send({
     status,
     tick: tickCounter,

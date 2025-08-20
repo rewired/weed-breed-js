@@ -6,8 +6,8 @@ import { logger } from './lib/logger.js';
 import { emit } from './sim/eventBus.js';
 import { createActor } from 'xstate';
 import { initializeSimulation } from './sim/simulation.js';
-import { resolveTickHours } from './lib/time.js';
 import { createRng } from './lib/rng.js';
+import { SIM_DAYS_DEFAULT } from './config/env.js';
 
 // --- Main -------------------------------------------------------------------
 /**
@@ -16,13 +16,19 @@ import { createRng } from './lib/rng.js';
 async function main() {
   const rng = createRng();
   logger.debug({ sample: rng.float() }, 'Initialized RNG');
-  const { zones, costEngine, tickMachineLogic } = await initializeSimulation('default');
+  const { structure, costEngine, tickMachineLogic, tickLengthInHours } = await initializeSimulation('default');
+  const zones = structure.rooms.flatMap(r => r.zones);
+
+  const inconsistentZones = zones.filter(z => z.tickLengthInHours !== tickLengthInHours);
+  if (inconsistentZones.length) {
+    logger.warn({ zoneIds: inconsistentZones.map(z => z.id) }, 'Zones with differing tick lengths detected');
+  }
 
   // Simulation duration derived from tick length
-  const tickLengthInHours = resolveTickHours(zones[0]);
   const ticksPerDay = Math.round(24 / tickLengthInHours);
-  const simDays = Number(process.env.SIM_DAYS) || 730;
-  const durationTicks = simDays * ticksPerDay;
+  const envSimDays = Number(process.env.SIM_DAYS);
+  const simDays = Number.isNaN(envSimDays) ? SIM_DAYS_DEFAULT : envSimDays;
+  const durationTicks = simDays === -1 ? Infinity : simDays * ticksPerDay;
 
   logger.info(`--- STARTING SIMULATION (1 tick = ${tickLengthInHours}h, 1 day = ${ticksPerDay} ticks) ---`);
 

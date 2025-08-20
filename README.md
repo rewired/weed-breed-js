@@ -2,6 +2,8 @@
 
 This project is a simulation game for breeding and growing weed. It includes a simulation engine that models plant growth, environmental factors, and costs.
 
+![Weed Breed Splash](docs/images/weed-breed-splash.png "Weed Breed Splash")
+
 ## Getting Started
 
 ### Prerequisites
@@ -49,6 +51,16 @@ npm run dev
 ```
 // src/server/index.js
 [src/server/index.js](src/server/index.js)
+
+### Logging
+
+The default log level is conservative (`warn`) to keep the console output tidy.
+When you need more insight for debugging, raise the verbosity by setting
+`LOG_LEVEL`:
+
+```sh
+LOG_LEVEL=debug npm run dev
+```
 
 ### Plant Detail View
 
