@@ -158,6 +158,7 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
             allZones.push(zone);
         }
     }
+    const tickLengthInHours = allZones[0]?.tickLengthInHours ?? 0;
     const statsCollector = new StatsCollector(allZones);
     process.on('beforeExit', () => {
         statsCollector.logTotals(logger);
@@ -169,6 +170,7 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
         rng,
         tickMachineLogic,
         blueprints,
-        statsCollector
+        statsCollector,
+        tickLengthInHours,
     };
 }
