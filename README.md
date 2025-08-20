@@ -52,6 +52,16 @@ npm run dev
 // src/server/index.js
 [src/server/index.js](src/server/index.js)
 
+### Logging
+
+The default log level is conservative (`warn`) to keep the console output tidy.
+When you need more insight for debugging, raise the verbosity by setting
+`LOG_LEVEL`:
+
+```sh
+LOG_LEVEL=debug npm run dev
+```
+
 ### Plant Detail View
 
 The frontend includes a plant detail view reachable via the structure tree. Navigate to a zone, open its plant list and select a plant to inspect. The view compares current environmental readings with the strain's preferred ranges, highlights stress factors across plants in the zone and lists all plants for quick navigation.

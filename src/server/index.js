@@ -211,7 +211,7 @@ function _broadcastStatusUpdate() {
   const absoluteTick = simulationState.tickCounter;
   const representativeZone = allZones[0];
   const tickLengthInHours = representativeZone.tickLengthInHours;
-  const ticksPerDay = 24 / tickLengthInHours;
+  const ticksPerDay = Math.round(24 / tickLengthInHours);
 
   // store history and compute aggregates
   tickHistory.push(tickTotals);
@@ -287,7 +287,13 @@ function _broadcastStatusUpdate() {
     grandTotals: costEngine.getGrandTotals()
   };
 
-  logger.info({ tick: absoluteTick, zones: zoneSummaries.length }, 'Broadcasting update to clients');
+  if (absoluteTick % ticksPerDay === 0) {
+    logger.info({
+      day: Math.floor(absoluteTick / ticksPerDay) + 1,
+      balance: costEngine.getGrandTotals().finalBalanceEUR ?? 0,
+      zones: zoneSummaries.length
+    }, 'Broadcasting update to clients');
+  }
   wss.clients.forEach(client => {
     if (client.readyState === 1) { // WebSocket.OPEN
       client.send(JSON.stringify(statusUpdate));
