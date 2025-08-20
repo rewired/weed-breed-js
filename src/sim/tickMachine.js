@@ -97,7 +97,25 @@ export function createTickMachine() {
               } else {
                 emit('sim.tickCompleted', { zoneId: null }, context.tick, 'warn');
               }
-              context.logger?.info?.({ tick: context.tick, zoneId: context.zone.id }, 'tick completed');
+              const ticksPerDay = Math.round(24 / context.tickLengthInHours);
+              if (context.tick % ticksPerDay === 0) {
+                let netEUR = 0;
+                const ce = context.zone?.costEngine;
+                if (ce) {
+                  if (typeof ce.getTotals === 'function') {
+                    netEUR = ce.getTotals().netEUR ?? 0;
+                  } else if (ce.ledger) {
+                    netEUR = ce.ledger.netEUR ?? 0;
+                  }
+                }
+                const plantCount = context.zone?.plants?.length ?? 0;
+                context.logger?.info?.({
+                  tick: context.tick,
+                  zoneId: context.zone?.id,
+                  netEUR,
+                  plantCount
+                }, 'tick completed');
+              }
               return context.tick + 1;
         }
       })
