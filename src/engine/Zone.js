@@ -192,7 +192,13 @@ export class Zone {
 
     let cycle = cyclePref?.[stage] ?? cyclePref?.default;
     if (!cycle) {
-      cycle = stage === 'flower' ? [12, 12] : [18, 6];
+      const strain = plant.strain || {};
+      const ageDays = plant.ageHours / 24;
+      if ((strain.photoperiodic ?? true) && ageDays >= (strain.vegDays ?? 28)) {
+        cycle = [12, 12];
+      } else {
+        cycle = [18, 6];
+      }
       this.#log('info', { zoneId: this.id, stage }, 'Using fallback light cycle');
     }
 

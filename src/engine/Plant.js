@@ -243,14 +243,18 @@ export class Plant {
     this.stageTimeHours += tickH;
     if (lightsOn) this.lightHours += tickH;
 
-    const vegDays = this.strain?.photoperiod?.vegetationDays ?? 21;
-    const flowerDays = this.strain?.photoperiod?.floweringDays ?? 56;
+    const photoperiodic = this.strain?.photoperiodic ?? true;
+    const vegDays = this.strain?.vegDays ?? this.strain?.photoperiod?.vegetationDays ?? 21;
+    const flowerDays = this.strain?.flowerDays ?? this.strain?.photoperiod?.floweringDays ?? 56;
+    const autoDays = this.strain?.autoFlowerDays;
     const thresholds = this.strain?.stageChangeThresholds ?? {};
 
     if (this.stage === 'vegetative') {
       const minLight = thresholds.vegetative?.minLightHours ?? 0;
       const maxStress = thresholds.vegetative?.maxStressForStageChange ?? 1;
-      if (this.stageTimeHours > 24 * vegDays && this.lightHours >= minLight && this.stress <= maxStress) {
+      const ageDays = this.ageHours / 24;
+      const trigger = photoperiodic ? ageDays >= vegDays : (autoDays != null && ageDays >= autoDays);
+      if (trigger && this.lightHours >= minLight && this.stress <= maxStress) {
         this.stage = 'flowering';
         this.stageTimeHours = 0;
         this.lightHours = 0;

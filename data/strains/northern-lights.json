@@ -1,24 +1,40 @@
 {
-  "id": "550e8400-e29b-41d4-a716-446655440001",
-  "slug": "white_widow",
-  "name": "White Widow",
+  "id": "3f0f15f4-1b75-4196-b3f3-5f6b6b7cf7a7",
+  "slug": "northern_lights",
+  "name": "Northern Lights",
+  "photoperiodic": true,
+  "vegDays": 28,
+  "flowerDays": 50,
+  "autoFlowerDays": null,
+  "light": {
+    "ppfdOpt_umol_m2s": 650,
+    "ppfdMax_umol_m2s": 1000,
+    "dliHalfSat_mol_m2d": 18,
+    "dliMax_mol_m2d": 38
+  },
+  "coeffs": {
+    "budGrowthBase_g_per_day": 1.4,
+    "tempOptC": 25,
+    "tempWidthC": 5.5,
+    "co2HalfSat_ppm": 800
+  },
   "lineage": {
-    "parents": ["Brazilian Sativa", "South Indian Indica"]
+    "parents": []
   },
   "genotype": {
-    "sativa": 0.5,
-    "indica": 0.5,
+    "sativa": 0.65,
+    "indica": 0.35,
     "ruderalis": 0.0
   },
-  "generalResilience": 0.75,
+  "generalResilience": 0.7,
   "chemotype": {
-    "thcContent": 0.18,
-    "cbdContent": 0.02
+    "thcContent": 0.2,
+    "cbdContent": 0.01
   },
   "morphology": {
-    "growthRate": 0.95,
-    "yieldFactor": 1.1,
-    "leafAreaIndex": 3.0
+    "growthRate": 1.0,
+    "yieldFactor": 1.0,
+    "leafAreaIndex": 3.2
   },
   "growthModel": {
     "maxBiomassDry_g": 180.0,
@@ -43,12 +59,12 @@
     },
     "lightIntensity": {
       "vegetation": [
-        350,
-        550
+        400,
+        600
       ],
       "flowering": [
-        550,
-        950
+        600,
+        1000
       ]
     },
     "lightCycle": {
@@ -63,22 +79,22 @@
     },
     "idealTemperature": {
       "vegetation": [
-        21,
-        27
+        20,
+        28
       ],
       "flowering": [
-        20,
-        26
+        22,
+        30
       ]
     },
     "idealHumidity": {
       "vegetation": [
-        0.55,
-        0.65
+        0.6,
+        0.7
       ],
       "flowering": [
-        0.45,
-        0.55
+        0.5,
+        0.6
       ]
     },
     "phRange": [
@@ -94,47 +110,47 @@
         "potassium": 0.3
       },
       "vegetation": {
-        "nitrogen": 1.1,
-        "phosphorus": 0.7,
-        "potassium": 1.1
+        "nitrogen": 1.2,
+        "phosphorus": 0.6,
+        "potassium": 1.0
       },
       "flowering": {
-        "nitrogen": 0.6,
-        "phosphorus": 1.5,
-        "potassium": 1.5
+        "nitrogen": 0.7,
+        "phosphorus": 1.4,
+        "potassium": 1.6
       }
     },
-    "npkTolerance": 0.2,
-    "npkStressIncrement": 0.035
+    "npkTolerance": 0.15,
+    "npkStressIncrement": 0.04
   },
   "waterDemand": {
     "dailyWaterUsagePerSquareMeter": {
-      "seedling": 1.1,
-      "vegetation": 2.7,
-      "flowering": 4.1
+      "seedling": 1.2,
+      "vegetation": 2.88,
+      "flowering": 4.32
     },
     "minimumFractionRequired": 0.15
   },
   "diseaseResistance": {
-    "dailyInfectionIncrement": 0.025,
-    "infectionThreshold": 0.45,
-    "recoveryRate": 0.012,
+    "dailyInfectionIncrement": 0.03,
+    "infectionThreshold": 0.4,
+    "recoveryRate": 0.01,
     "degenerationRate": 0.01,
-    "regenerationRate": 0.006,
+    "regenerationRate": 0.005,
     "fatalityThreshold": 0.95
   },
   "photoperiod": {
     "vegetationDays": 28,
-    "floweringDays": 60,
+    "floweringDays": 50,
     "transitionTriggerHours": 12
   },
   "stageChangeThresholds": {
-    "vegetative": { "minLightHours": 320, "maxStressForStageChange": 0.35 },
-    "flowering": { "minLightHours": 620, "maxStressForStageChange": 0.25 }
+    "vegetative": { "minLightHours": 300, "maxStressForStageChange": 0.3 },
+    "flowering": { "minLightHours": 600, "maxStressForStageChange": 0.2 }
   },
   "floweringTime": {
-    "shortestDurationInDays": 58,
-    "longestDurationInDays": 70
+    "shortestDurationInDays": 48,
+    "longestDurationInDays": 60
   },
   "harvestProperties": {
     "ripeningTimeInHours": 48,
@@ -142,16 +158,16 @@
     "qualityDecayPerHour": 0.02
   },
   "meta": {
-    "description": "White Widow is a balanced hybrid strain, a cross between a Brazilian sativa landrace and a resin-heavy South Indian indica. It is known for its resin production and relatively easy growth.",
+    "description": "Northern Lights is a legendary indica strain prized for its resilience and fast flowering time.",
     "advantages": [
-      "High resin production",
-      "Balanced effects",
-      "Good for beginners"
+      "Compact growth",
+      "Resistant to stress",
+      "Classic indica effects"
     ],
     "disadvantages": [
-      "Can be sensitive to nutrients",
-      "Prefers stable temperatures"
+      "Moderate yields",
+      "Prefers stable climates"
     ],
-    "notes": "A classic Dutch coffee-shop strain that remains popular worldwide."
+    "notes": "Often used as a baseline in breeding projects."
   }
 }

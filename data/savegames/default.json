@@ -31,7 +31,7 @@
             },
             "devices": [
               { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 16 },
-              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1, "overrides": { "targetTemperature": 24 } },
+              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 8, "overrides": { "targetTemperature": 24 } },
               { "blueprintId": "3d762260-88a5-4104-b03c-9860bbac34b6", "count": 1, "overrides": { "targetHumidity": 0.6 } },
               { "blueprintId": "c701efa6-1e90-4f28-8934-ea9c584596e4", "count": 1 }
             ]
@@ -46,7 +46,7 @@
             },
             "devices": [
               { "blueprintId": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e", "count": 25 },
-              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 1, "overrides": { "targetTemperature": 22 } },
+              { "blueprintId": "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b", "count": 12, "overrides": { "targetTemperature": 22 } },
               { "blueprintId": "3d762260-88a5-4104-b03c-9860bbac34b6", "count": 2, "overrides": { "targetHumidity": 0.6 } },
               { "blueprintId": "c701efa6-1e90-4f28-8934-ea9c584596e4", "count": 1 }
             ]

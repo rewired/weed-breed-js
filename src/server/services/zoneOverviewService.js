@@ -33,7 +33,7 @@ export function createZoneOverviewDTO(zone, costEngine) {
         pct: Math.round((count / zone.plants.length) * 100)
     }));
 
-    const harvestEtaDays = zone.plants.length > 0 ? Math.round(zone.plants.reduce((sum, p) => sum + (p.strain.photoperiod.vegetationDays + p.strain.photoperiod.floweringDays - p.ageHours / 24), 0) / zone.plants.length) : 0;
+      const harvestEtaDays = zone.plants.length > 0 ? Math.round(zone.plants.reduce((sum, p) => sum + ((p.strain.vegDays ?? p.strain.photoperiod.vegetationDays) + (p.strain.flowerDays ?? p.strain.photoperiod.floweringDays) - p.ageHours / 24), 0) / zone.plants.length) : 0;
     const yieldForecastGrams = zone.plants.reduce((sum, p) => sum + p.calculateYield(), 0);
 
     // --- Plant Stress Aggregation ---

@@ -235,10 +235,10 @@ function _broadcastStatusUpdate() {
     if (zone.plants.length === 0) {
       return { id: zone.id, name: zone.name, plantCount: 0 };
     }
-    const p0 = zone.plants[0];
-    const vegDays = p0.strain?.photoperiod?.vegetationDays ?? 21;
-    const flowerDays = p0.strain?.photoperiod?.floweringDays ?? 56;
-    const HARVEST_READY_HOURS = 24 * (vegDays + flowerDays);
+      const p0 = zone.plants[0];
+      const vegDays = p0.strain?.vegDays ?? p0.strain?.photoperiod?.vegetationDays ?? 21;
+      const flowerDays = p0.strain?.flowerDays ?? p0.strain?.photoperiod?.floweringDays ?? 56;
+      const HARVEST_READY_HOURS = 24 * (vegDays + flowerDays);
 
     const avgHealth = zone.plants.reduce((sum, p) => sum + p.health, 0) / zone.plants.length;
     const expectedYield = zone.plants.reduce((sum, p) => sum + p.calculateYield(), 0);
