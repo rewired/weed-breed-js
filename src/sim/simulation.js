@@ -210,7 +210,19 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
       keepEntries: true, // Ensure ledger entries are kept for per-room calculations
     });
 
-    const globalRuntime = { logger, costEngine, rng, strainPriceMap, devicePriceMap, blueprints, difficulty: difficultyModifiers };
+    // world-level aggregates (e.g. total harvested buds)
+    const world = { totalBuds_g: 0, strainStats: new Map() };
+
+    const globalRuntime = {
+        logger,
+        costEngine,
+        rng,
+        strainPriceMap,
+        devicePriceMap,
+        blueprints,
+        difficulty: difficultyModifiers,
+        world,
+    };
 
     // --- Build World Hierarchy ---
     const structure = createStructure(structureConfig, globalRuntime);
@@ -270,5 +282,6 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
         blueprints,
         statsCollector,
         tickLengthInHours,
+        world,
     };
 }

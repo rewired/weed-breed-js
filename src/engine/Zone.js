@@ -62,6 +62,18 @@ export class Zone {
     this.water = 0.5;
     this.nutrientLevel = 0.5;
     this._warnedNoLamp = false;
+
+    // harvest & debug tracking
+    this.totalBuds_g = 0; // accumulated harvested buds [g]
+    this.harvestedPlants = 0;
+    this.harvestEvents = 0;
+    this.firstHarvestDay = null;
+    this.lastHarvestDay = null;
+    this.startDayFlower = null;
+
+    if (process.env.DEBUG_HARVEST) {
+      this._debugDay = { ppfdSum: 0, lightHours: 0, darkHours: 0 };
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -90,6 +102,13 @@ export class Zone {
     if (this.costEngine && plant?.strain?.id) {
       try { this.costEngine.bookSeeds(plant.strain.id, 1); } catch { /* ignore */ }
     }
+    const world = this.runtime.world;
+    if (world && plant?.strain?.id) {
+      const s = world.strainStats.get(plant.strain.id) ?? { name: plant.strain.name, plantsTotal: 0, harvestedPlants: 0, totalBuds_g: 0, totalFlowerDurationDays: 0 };
+      s.name = plant.strain.name;
+      s.plantsTotal += 1;
+      world.strainStats.set(plant.strain.id, s);
+    }
   }
 
   // --- Public Methods ----------------------------------------------------
@@ -105,6 +124,16 @@ export class Zone {
   deriveEnvironment() {
     this.#applyThermalUpdate();
     this.#applyHumidityAndCO2Update();
+    if (this._debugDay) {
+      const h = this.tickLengthInHours;
+      const ppfd = this.environment.ppfd ?? 0;
+      if (this.runtime.lightsOn) {
+        this._debugDay.ppfdSum += ppfd * h;
+        this._debugDay.lightHours += h;
+      } else {
+        this._debugDay.darkHours += h;
+      }
+    }
   }
 
   irrigateAndFeed() {
@@ -277,22 +306,46 @@ export class Zone {
 
     let harvested = 0;
     let revenueEUR = 0;
+    const world = this.runtime.world;
+    const ticksPerDay = Math.round(24 / this.tickLengthInHours);
     for (const plant of ready) {
-      const yieldGrams = plant.calculateYield?.() ?? 0;
+      const buds = plant.budBiomass ?? 0;
       const strainId = plant.strain?.id;
       const priceInfo = get(this.strainPriceMap, strainId) ?? {};
       const pricePerGram = Number(priceInfo.harvestPricePerGram ?? priceInfo.pricePerGram ?? 0);
-      const revenue = yieldGrams * pricePerGram;
+      const revenue = buds * pricePerGram;
       if (revenue > 0) {
         try { this.costEngine.bookRevenue('Harvest', revenue); } catch { /* ignore */ }
         revenueEUR += revenue;
       }
       harvested += 1;
-      this.#log('info', { plantId: plant.id, yieldGrams, revenue }, 'HARVEST_PLANT');
+      this.totalBuds_g += buds;
+      if (world) {
+        world.totalBuds_g += buds;
+        const s = world.strainStats.get(strainId);
+        if (s) {
+          s.totalBuds_g += buds;
+          s.harvestedPlants += 1;
+          const flowerDur = plant.flowerStartTick != null ? (tickIndex - plant.flowerStartTick) / ticksPerDay : 0;
+          s.totalFlowerDurationDays += flowerDur;
+        }
+      }
+      if (process.env.DEBUG_HARVEST) {
+        this.#log('info', { harvested_buds_g_added: buds, plantId: plant.id, strainId }, 'HARVEST_DEBUG');
+      }
+      plant.state.biomassPartition.buds_g = 0;
     }
 
     // remove harvested
     this.plants = keep;
+    this.harvestedPlants += harvested;
+    if (harvested > 0) {
+      this.harvestEvents += 1;
+      const day = Math.floor(tickIndex / ticksPerDay);
+      if (this.firstHarvestDay == null) this.firstHarvestDay = day;
+      this.lastHarvestDay = day;
+      console.assert(this.totalBuds_g >= this.harvestedPlants * 0.5, 'totalBuds_g too low');
+    }
 
     // determine template
     const template = this.plantTemplate || ready[0] || keep[0];
@@ -408,6 +461,29 @@ export class Zone {
     s._waterKgDelta = 0;
     s._co2PpmDelta = 0;
     s.ppfd = Math.max(0, Number(s.ppfd ?? 0));
+  }
+
+  debugDailyLog(day) {
+    if (!this._debugDay) return;
+    const lightH = this._debugDay.lightHours;
+    const darkH = this._debugDay.darkHours;
+    const meanPPFD = lightH > 0 ? this._debugDay.ppfdSum / lightH : 0;
+    const DLI = meanPPFD * 3600 * lightH / 1e6;
+    const ref = meanPPFD * 3600 * lightH / 1e6;
+    const diff = Math.abs(DLI - ref) / Math.max(1, DLI);
+    console.assert(diff < 0.1, `DLI consistency check failed in zone ${this.id}`);
+    if (process.env.DEBUG_HARVEST) {
+      this.logger.info({ zoneId: this.id, day, photoperiod: [lightH, darkH], meanPPFD, DLI }, 'DEBUG_ZONE_DAY');
+      for (const p of this.plants) {
+        p.debugDailyLog?.(day, this);
+      }
+      if (Math.abs(lightH - 12) <= 1 && meanPPFD >= 400 && meanPPFD <= 500) {
+        console.assert(DLI >= 15 && DLI <= 25, `avgDLI out of range in zone ${this.id}`);
+      }
+    }
+    this._debugDay.ppfdSum = 0;
+    this._debugDay.lightHours = 0;
+    this._debugDay.darkHours = 0;
   }
 
   getTickCosts(tickIndex) {
