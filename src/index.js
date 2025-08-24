@@ -69,6 +69,7 @@ async function main() {
     lastHarvestDay: z.lastHarvestDay,
     totalBuds_g: z.totalBuds_g,
     harvestedPlants: z.harvestedPlants,
+    avgCO2ppm: z._co2AvgDays ? z._co2AvgSum / z._co2AvgDays : 0,
   }));
   console.log('\nZONE REPORT');
   console.table(zoneTable);

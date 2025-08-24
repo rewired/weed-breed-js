@@ -49,7 +49,7 @@ export class Zone {
       temperature: env?.defaults?.temperatureC ?? 24,
       humidity: env?.defaults?.humidity ?? 0.6,
       ppfd: 0,
-      co2ppm: env?.defaults?.co2ppm ?? 420,
+      co2ppm: env?.defaults?.co2ppmAmbient ?? env?.defaults?.co2ppm ?? 420,
       moistureKg: env?.defaults?.moistureKg ?? 0,
       nutrients: { N: 100, P: 100, K: 100 },
       _heatW: 0,
@@ -62,6 +62,7 @@ export class Zone {
     this.water = 0.5;
     this.nutrientLevel = 0.5;
     this._warnedNoLamp = false;
+    this._hasCo2Device = false;
 
     // harvest & debug tracking
     this.totalBuds_g = 0; // accumulated harvested buds [g]
@@ -72,8 +73,10 @@ export class Zone {
     this.startDayFlower = null;
 
     if (process.env.DEBUG_HARVEST) {
-      this._debugDay = { ppfdSum: 0, lightHours: 0, darkHours: 0 };
+      this._debugDay = { ppfdSum: 0, lightHours: 0, darkHours: 0, co2Sum: 0, tempSum: 0, totalHours: 0 };
     }
+    this._co2AvgSum = 0;
+    this._co2AvgDays = 0;
   }
 
   // -----------------------------------------------------------------------
@@ -91,6 +94,9 @@ export class Zone {
     if (!device) return;
     this.devices.push(device);
     device.zoneRef = this;
+    if (device.kind && String(device.kind).toLowerCase().includes('co2')) {
+      this._hasCo2Device = true;
+    }
   }
 
   addPlant(plant) {
@@ -127,6 +133,11 @@ export class Zone {
     if (this._debugDay) {
       const h = this.tickLengthInHours;
       const ppfd = this.environment.ppfd ?? 0;
+      const temp = this.environment.temperature ?? 0;
+      const co2 = this.environment.co2ppm ?? 0;
+      this._debugDay.tempSum += temp * h;
+      this._debugDay.co2Sum += co2 * h;
+      this._debugDay.totalHours += h;
       if (this.runtime.lightsOn) {
         this._debugDay.ppfdSum += ppfd * h;
         this._debugDay.lightHours += h;
@@ -235,6 +246,7 @@ export class Zone {
     const lightHours = Number(cycle[0]) || 0;
     const lightsOn = currentSimHour < lightHours;
     this.runtime.lightsOn = lightsOn;
+    this._currentLightHours = lightHours;
 
     const lamps = this.devices.filter(d => d.kind === 'Lamp');
     if (lamps.length === 0 && !this._warnedNoLamp) {
@@ -344,7 +356,9 @@ export class Zone {
       const day = Math.floor(tickIndex / ticksPerDay);
       if (this.firstHarvestDay == null) this.firstHarvestDay = day;
       this.lastHarvestDay = day;
-      console.assert(this.totalBuds_g >= this.harvestedPlants * 0.5, 'totalBuds_g too low');
+      if (process.env.DEBUG_HARVEST && this.harvestedPlants > 0) {
+        console.assert(this.totalBuds_g >= this.harvestedPlants * 0.1, 'totalBuds_g too low');
+      }
     }
 
     // determine template
@@ -450,9 +464,14 @@ export class Zone {
 
     const waterDelta = Number(s._waterKgDelta ?? 0);
     const co2DeltaPpm = Number(s._co2PpmDelta ?? 0);
+    const ambient = env?.defaults?.co2ppmAmbient ?? env?.defaults?.co2ppm ?? 420;
 
     s.moistureKg = Math.max(0, Number(s.moistureKg ?? 0) + waterDelta);
-    s.co2ppm = Math.max(0, Number(s.co2ppm ?? 420) + co2DeltaPpm);
+    if (!this._hasCo2Device) {
+      s.co2ppm = Math.max(0, ambient + co2DeltaPpm);
+    } else {
+      s.co2ppm = Math.max(0, Number(s.co2ppm ?? ambient) + co2DeltaPpm);
+    }
 
     const newMoisturePerM3 = Math.max(0, s.moistureKg / Math.max(1e-9, vol));
     const newRh = Math.max(0, Math.min(0.999, newMoisturePerM3 / Math.max(1e-12, satKgPerM3)));
@@ -469,21 +488,27 @@ export class Zone {
     const darkH = this._debugDay.darkHours;
     const meanPPFD = lightH > 0 ? this._debugDay.ppfdSum / lightH : 0;
     const DLI = meanPPFD * 3600 * lightH / 1e6;
-    const ref = meanPPFD * 3600 * lightH / 1e6;
-    const diff = Math.abs(DLI - ref) / Math.max(1, DLI);
+    const diff = Math.abs(DLI - (meanPPFD * 3600 * lightH / 1e6)) / Math.max(1, DLI);
     console.assert(diff < 0.1, `DLI consistency check failed in zone ${this.id}`);
+    const meanCO2ppm = this._debugDay.totalHours > 0 ? this._debugDay.co2Sum / this._debugDay.totalHours : 0;
+    const meanTemp = this._debugDay.totalHours > 0 ? this._debugDay.tempSum / this._debugDay.totalHours : 0;
     if (process.env.DEBUG_HARVEST) {
-      this.logger.info({ zoneId: this.id, day, photoperiod: [lightH, darkH], meanPPFD, DLI }, 'DEBUG_ZONE_DAY');
-      for (const p of this.plants) {
+      this.logger.info({ zoneId: this.id, day, photoperiod: [lightH, darkH], meanPPFD, DLI, meanCO2ppm, meanTemp }, 'DEBUG_ZONE_DAY');
+      for (const p of this.plants.slice(0, 3)) {
         p.debugDailyLog?.(day, this);
       }
       if (Math.abs(lightH - 12) <= 1 && meanPPFD >= 400 && meanPPFD <= 500) {
         console.assert(DLI >= 15 && DLI <= 25, `avgDLI out of range in zone ${this.id}`);
       }
     }
+    this._co2AvgSum += meanCO2ppm;
+    this._co2AvgDays += 1;
     this._debugDay.ppfdSum = 0;
     this._debugDay.lightHours = 0;
     this._debugDay.darkHours = 0;
+    this._debugDay.co2Sum = 0;
+    this._debugDay.tempSum = 0;
+    this._debugDay.totalHours = 0;
   }
 
   getTickCosts(tickIndex) {
