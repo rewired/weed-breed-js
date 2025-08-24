@@ -258,6 +258,11 @@ export class Plant {
         this.stage = 'flowering';
         this.stageTimeHours = 0;
         this.lightHours = 0;
+        if (zone && zone.startDayFlower == null) {
+          const ticksPerDay = Math.round(24 / zone.tickLengthInHours);
+          zone.startDayFlower = Math.floor(tickIndex / ticksPerDay);
+        }
+        this.flowerStartTick = tickIndex;
       }
     } else if (this.stage === 'flowering') {
       const minLight = thresholds.flowering?.minLightHours ?? 0;
@@ -299,7 +304,12 @@ export class Plant {
     const h = Number(zone.tickLengthInHours ?? ctx.tickLengthInHours ?? 1);
 
     // -- Light driven potential growth --
-    const DLI = this.getDailyLightIntegral(zone.environment?.ppfd ?? 0, h); // mol/m²/tick
+    const ppfdNow = zone.environment?.ppfd ?? 0;
+    const DLI = this.getDailyLightIntegral(ppfdNow, h); // mol/m²/tick
+    if (process.env.DEBUG_HARVEST) {
+      const DLIcheck = ppfdNow * 3600 * h / 1e6;
+      console.assert(Math.abs(DLI - DLIcheck) / Math.max(1, DLI) < 0.1, 'DLI formula mismatch');
+    }
 
     const strain = this.strain ?? {};
     const phase = this.getPhase();
@@ -312,11 +322,13 @@ export class Plant {
     // -- Stress factors --
     const Tref = growthModel.temperature?.T_ref_C ?? 25;
     const Q10 = growthModel.temperature?.Q10 ?? 2.0;
-    const f_T = tempFactorQ10(zone.temperatureC ?? 25, Tref, Q10);
-    const f_CO2 = co2Factor(zone.co2ppm ?? 400);
+    const f_T = clamp(0, tempFactorQ10(zone.temperatureC ?? 25, Tref, Q10), 1.2);
+    const f_CO2 = clamp(0, co2Factor(zone.co2ppm ?? 400), 1.2);
     const f_H2O = waterFactor(zone.water);
     const f_NPK = npkFactor(zone.npk);
     const f_RH = rhFactor(zone.humidity);
+    const dliRef = (growthModel.optimalDLI_mol_m2_d ?? 20) * (h / 24);
+    const f_DLI = clamp(0, DLI / Math.max(1e-9, dliRef), 1.2);
     const f_stress = clamp01(f_T * f_CO2 * f_H2O * f_NPK * f_RH);
 
     // -- Maintenance respiration --
@@ -328,7 +340,7 @@ export class Plant {
     const capMul = growthModel.phaseCapMultiplier?.[phase] ?? 1.0;
     const cap = maxDry * capMul;
 
-    const growthRaw = dW_light * f_stress;
+    const growthRaw = dW_light * f_DLI * f_stress;
     const growthCapped = Math.max(0, growthRaw * (1 - (this.state.biomassDry_g / cap)));
     let dW_net = Math.max(0, growthCapped - maintenance);
 
@@ -346,7 +358,14 @@ export class Plant {
     const dmFrac = growthModel.dryMatterFraction?.[phase] ?? 0.22;
     this.state.biomassFresh_g = this.state.biomassDry_g / dmFrac;
 
+    const budsBefore = this.state.biomassPartition.buds_g;
     partitionBiomass(this.state, dW_net, phase, growthModel.harvestIndex, cap);
+    const budDelta = this.state.biomassPartition.buds_g - budsBefore;
+    if (process.env.DEBUG_HARVEST) {
+      this._budDeltaToday = (this._budDeltaToday ?? 0) + budDelta;
+      const basePerDay = dW_light * (24 / h);
+      this._sanity = basePerDay * f_T * f_CO2 * f_DLI;
+    }
 
     // Telemetry hook
     this.onBiomassUpdate?.(this, {
@@ -356,6 +375,14 @@ export class Plant {
       factors: { f_T, f_CO2, f_H2O, f_NPK, f_RH },
       phase,
     });
+  }
+
+  debugDailyLog(day, zone) {
+    const buds = this.state?.biomassPartition?.buds_g ?? 0;
+    const budDelta = this._budDeltaToday ?? 0;
+    const ageDays = this.ageHours / 24;
+    zone?.logger.info({ plantId: this.id, day, phase: this.getPhase(), ageDays, buds_g: buds, budDelta_g_today: budDelta, sanityGrowth_g_per_day: this._sanity }, 'DEBUG_PLANT_DAY');
+    this._budDeltaToday = 0;
   }
 
   /**

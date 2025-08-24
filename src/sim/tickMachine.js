@@ -115,6 +115,7 @@ export function createTickMachine() {
                   netEUR,
                   plantCount
                 }, 'tick completed');
+                context.zone?.debugDailyLog?.(context.tick / ticksPerDay);
               }
               return context.tick + 1;
         }

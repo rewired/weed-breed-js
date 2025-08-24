@@ -16,7 +16,7 @@ import { SIM_DAYS_DEFAULT } from './config/env.js';
 async function main() {
   const rng = createRng();
   logger.debug({ sample: rng.float() }, 'Initialized RNG');
-  const { structure, costEngine, tickMachineLogic, tickLengthInHours } = await initializeSimulation('default');
+  const { structure, costEngine, tickMachineLogic, tickLengthInHours, world } = await initializeSimulation('default');
   const zones = structure.rooms.flatMap(r => r.zones);
 
   const inconsistentZones = zones.filter(z => z.tickLengthInHours !== tickLengthInHours);
@@ -59,6 +59,30 @@ async function main() {
     const tickTotals = costEngine.commitTick();
     emit('sim.tick', { tick: absoluteTick, ...tickTotals }, i, 'info');
   }
+
+  // --- Final reports ---
+  const zoneTable = zones.map(z => ({
+    zoneId: z.id,
+    startDayFlower: z.startDayFlower,
+    harvestEvents: z.harvestEvents,
+    firstHarvestDay: z.firstHarvestDay,
+    lastHarvestDay: z.lastHarvestDay,
+    totalBuds_g: z.totalBuds_g,
+    harvestedPlants: z.harvestedPlants,
+  }));
+  console.log('\nZONE REPORT');
+  console.table(zoneTable);
+
+  const strainTable = Array.from(world.strainStats.entries()).map(([id, s]) => ({
+    strainName: `${s.name}(${id})`,
+    plantsTotal: s.plantsTotal,
+    harvestedPlants: s.harvestedPlants,
+    totalBuds_g: s.totalBuds_g,
+    avgYieldPerPlant_g: s.harvestedPlants ? s.totalBuds_g / s.harvestedPlants : 0,
+    avgFlowerDuration_days: s.harvestedPlants ? s.totalFlowerDurationDays / s.harvestedPlants : 0,
+  }));
+  console.log('\nSTRAIN SUMMARY');
+  console.table(strainTable);
 }
 
 try {
