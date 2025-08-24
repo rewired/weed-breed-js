@@ -16,6 +16,8 @@ import { createTickMachine }from './tickMachine.js';
 import { loadSavegame } from '../server/services/savegameLoader.js';
 import { loadDifficultyConfig } from '../engine/loaders/difficultyLoader.js';
 import { StatsCollector } from './StatsCollector.js';
+import { getZoneVolume, readPowerKw } from '../engine/deviceUtils.js';
+import { env } from '../config/env.js';
 
 // --- Loader-Wrapper ---------------------------------------------------------
 /**
@@ -76,6 +78,100 @@ export function addDeviceN(zone, blueprint, count, runtimeCtx, overrides = {}) {
       costEngine.bookCapex(blueprint.id, n, { zoneId: zone.id });
     }
     return out;
+}
+
+/**
+ * Check thermal feasibility of zones before simulation starts.
+ * Throws error with a table if cooling is insufficient.
+ * @param {object} structure
+ * @param {object} log
+ */
+export function runThermalPreflight(structure, log = logger) {
+  const rows = [];
+  let fail = false;
+  for (const room of structure?.rooms ?? []) {
+    for (const zone of room.zones ?? []) {
+      const vol = getZoneVolume(zone);
+      const area = zone.area;
+      const h = zone.height ?? env?.defaults?.ceilingHeightM ?? 2.5;
+      const side = Math.sqrt(Math.max(1e-9, area));
+      const envelopeArea = (2 * area) + (4 * side * h);
+
+      const uaPerM2 = Number(env?.defaults?.passiveUaPerM2 ?? 0.5);
+      const UA_W_per_K = Math.max(0, uaPerM2 * envelopeArea);
+      const UA_kW_per_K = UA_W_per_K / 1000;
+
+      const rho = Number(env?.physics?.airDensity ?? 1.2);
+      const cp = Number(env?.physics?.airCp ?? 1005);
+      const ACH = Number(env?.defaults?.airChangesPerHour ?? 0.3);
+      const mdotCp_kW_per_K = Math.max(0, (ACH * vol / 3600) * rho * cp / 1000);
+
+      let lampKW = 0;
+      let coolingKW = 0;
+      for (const d of zone.devices ?? []) {
+        const settings = d.settings ?? {};
+        if (d.kind === 'Lamp') {
+          const heatFrac = (settings.heatFraction != null) ? Number(settings.heatFraction) : 0.9;
+          lampKW += readPowerKw(settings) * heatFrac;
+        } else if (d.kind === 'ClimateUnit') {
+          const powerKW = Number(settings.power ?? settings.powerInKilowatts ?? 0);
+          const cop = Number(settings.cop ?? (settings.coolingEfficiency && settings.coolingEfficiency > 0.5 ? settings.coolingEfficiency : 3.0));
+          let cap = 0;
+          if (settings.maxCooling != null) cap = Number(settings.maxCooling);
+          else if (settings.coolingCapacity != null) cap = Number(settings.coolingCapacity);
+          else if (powerKW > 0) cap = powerKW * Math.max(1, cop);
+          coolingKW += Math.max(0, cap);
+        }
+      }
+
+      const lossesSlope_kW_per_K = UA_kW_per_K + mdotCp_kW_per_K;
+      const Tamb = Number(env?.defaults?.outsideTemperatureC ?? 22);
+      const target = Number(zone?.environment?.targetTemp ?? env?.defaults?.temperatureC ?? 24);
+      const Tstar = Tamb + Math.max(0, lampKW - coolingKW) / Math.max(1e-9, lossesSlope_kW_per_K);
+
+      log?.info?.({
+        zoneId: zone.id,
+        area,
+        volume: vol,
+        lamps_kW: lampKW,
+        cooling_kW: coolingKW,
+        UA_kW_K: UA_kW_per_K,
+        ACH,
+        mdotCp_kW_K: mdotCp_kW_per_K,
+        Tamb,
+        target,
+        Tstar,
+      }, 'Thermal pre-flight');
+
+      const row = {
+        zone: zone.id ?? zone.name ?? '?',
+        area: area.toFixed(1),
+        vol: vol.toFixed(1),
+        lamps: lampKW.toFixed(1),
+        cooling: coolingKW.toFixed(1),
+        UA: UA_kW_per_K.toFixed(3),
+        ACH: ACH.toFixed(2),
+        mdot: mdotCp_kW_per_K.toFixed(3),
+        Tstar: Tstar.toFixed(1),
+      };
+      if (Tstar > target + 2) {
+        const deficit = lampKW - coolingKW;
+        row.verdict = `FAIL (Unterdeckung ~${deficit.toFixed(1)} kW)`;
+        fail = true;
+      } else {
+        row.verdict = 'OK';
+      }
+      rows.push(row);
+    }
+  }
+
+  if (fail) {
+    let table = 'Zone | Area m² | Vol m³ | Lamps kW | Cooling kW | UA kW/K | ACH | mdot·Cp kW/K | T* @full cool | Verdict\n';
+    table += rows.map(r => `${r.zone} | ${r.area} | ${r.vol} | ${r.lamps} | ${r.cooling} | ${r.UA} | ${r.ACH} | ${r.mdot} | ${r.Tstar} °C | ${r.verdict}`).join('\n');
+    throw new Error(table);
+  } else {
+    log?.info?.('Thermal pre-flight OK');
+  }
 }
 
 import { createStructure } from '../engine/factories/structureFactory.js';
@@ -163,6 +259,8 @@ export async function initializeSimulation(savegame = 'default', difficulty = 'n
     process.on('beforeExit', () => {
         statsCollector.logTotals(logger);
     });
+
+    runThermalPreflight(structure, logger);
 
     return {
         structure, // Return the whole structure instead of flat zones array
