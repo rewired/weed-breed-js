@@ -349,8 +349,26 @@ export class Zone {
     const rhoAir = Number(env?.physics?.airDensity ?? AIR_DENSITY ?? 1.2);
     const cpAir = Number(env?.physics?.airCp ?? AIR_CP ?? 1005);
 
-    const volume = getZoneVolume(this);
-    const airMass = Math.max(1e-6, volume * rhoAir);
+    const vol = getZoneVolume(this); // m³
+    const airMass = Math.max(1e-6, vol * rhoAir);
+
+    const area = this.area;
+    const h = this.height ?? env?.defaults?.ceilingHeightM ?? 2.5;
+    const side = Math.sqrt(Math.max(1e-9, area));
+    const envelopeArea = (2 * area) + (4 * side * h);
+
+    const uaPerM2 = Number(env?.defaults?.passiveUaPerM2 ?? 0.5);
+    const UA_W_per_K = Math.max(0, uaPerM2 * envelopeArea);
+
+    const ACH = Number(env?.defaults?.airChangesPerHour ?? 0.3);
+    const mdotCp_W_per_K = Math.max(0, (ACH * vol / 3600) * rhoAir * cpAir);
+
+    const Tamb = Number(env?.defaults?.outsideTemperatureC ?? 22);
+    const Tnow = Number(s.temperature ?? 24);
+    const dT = Tnow - Tamb;
+    const passiveW = (UA_W_per_K + mdotCp_W_per_K) * dT;
+
+    s._heatW = Number(s._heatW ?? 0) - passiveW;
 
     const massMultiplier = Number(env?.defaults?.thermalMassMultiplier ?? 200);
     const C_eff = airMass * cpAir * Math.max(1, massMultiplier);
@@ -359,7 +377,7 @@ export class Zone {
     const Q = heatW * dtSec;
     const dT_heat = Q / C_eff;
 
-    s.temperature = Number(s.temperature ?? 24) + dT_heat;
+    s.temperature = Tnow + dT_heat;
   }
 
   #applyHumidityAndCO2Update() {
