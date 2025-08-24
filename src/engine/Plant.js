@@ -5,6 +5,7 @@
  */
 
 import { ensureEnv, addLatentWater, addCO2Delta, getZoneVolume } from './deviceUtils.js';
+import { computeBudDeltaTick } from './budGrowth.js';
 import { env } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -305,11 +306,13 @@ export class Plant {
 
     // -- Light driven potential growth --
     const ppfdNow = zone.environment?.ppfd ?? 0;
-    const DLI = this.getDailyLightIntegral(ppfdNow, h); // mol/m²/tick
-    if (process.env.DEBUG_HARVEST) {
-      const DLIcheck = ppfdNow * 3600 * h / 1e6;
-      console.assert(Math.abs(DLI - DLIcheck) / Math.max(1, DLI) < 0.1, 'DLI formula mismatch');
-    }
+    const DLI_tick = this.getDailyLightIntegral(ppfdNow, h); // mol/m² per tick
+
+    // Daily DLI based on actual photoperiod
+    const lightHours = zone._currentLightHours ?? 12;
+    const DLI = ppfdNow * 3600 * lightHours / 1e6; // mol/m²/d
+    const DLIcheck = ppfdNow * 3600 * lightHours / 1e6;
+    console.assert(Math.abs(DLI - DLIcheck) / Math.max(1, DLI) < 0.1, 'DLI mismatch');
 
     const strain = this.strain ?? {};
     const phase = this.getPhase();
@@ -317,7 +320,7 @@ export class Plant {
 
     const LUE = growthModel.baseLUE_gPerMol ?? 0.9; // g/mol
     const LAI = clamp(0.5, strain.morphology?.leafAreaIndex ?? 3.0, 3.5);
-    const dW_light = LUE * DLI * LAI; // g/tick potential dry mass
+    const dW_light = LUE * DLI_tick * LAI; // g/tick potential dry mass
 
     // -- Stress factors --
     const Tref = growthModel.temperature?.T_ref_C ?? 25;
@@ -328,7 +331,7 @@ export class Plant {
     const f_NPK = npkFactor(zone.npk);
     const f_RH = rhFactor(zone.humidity);
     const dliRef = (growthModel.optimalDLI_mol_m2_d ?? 20) * (h / 24);
-    const f_DLI = clamp(0, DLI / Math.max(1e-9, dliRef), 1.2);
+    const f_DLI = clamp(0, DLI_tick / Math.max(1e-9, dliRef), 1.2);
     const f_stress = clamp01(f_T * f_CO2 * f_H2O * f_NPK * f_RH);
 
     // -- Maintenance respiration --
@@ -349,23 +352,56 @@ export class Plant {
       dW_net = applyNoise(this, dW_net, this.noise.pct);
     }
 
-    // -- Accumulate biomass --
-    if (Number.isFinite(dW_net) && dW_net > 0) {
-      this.state.biomassDry_g += dW_net;
+    // -- Bud growth model --
+    const coeffs = this.strain?.coeffs ?? { budGrowthBase_g_per_day: 1.5, tempOptC: 26, tempWidthC: 6, co2HalfSat_ppm: 900 };
+    let budDelta = 0;
+    if (phase === 'flowering') {
+      const basePerDay = Number(coeffs.budGrowthBase_g_per_day ?? 0);
+      const tempOptC = Number(coeffs.tempOptC ?? 26);
+      const tempWidthC = Number(coeffs.tempWidthC ?? 6);
+      const co2Half = Number(coeffs.co2HalfSat_ppm ?? 900);
+      const dliHalf = Number(this.strain?.light?.dliHalfSat_mol_m2d ?? 20);
+      const ppfdMax = Number(this.strain?.light?.ppfdMax_umol_m2s ?? 1500);
+      const tempC = zone.temperatureC ?? 25;
+      const co2 = zone.co2ppm ?? 420;
+
+      const fT = Math.exp(-((tempC - tempOptC) ** 2) / (2 * tempWidthC ** 2));
+      const fCO2 = co2 / (co2 + co2Half);
+      const fDLI = DLI / (DLI + dliHalf);
+      budDelta = computeBudDeltaTick({
+        basePerDay_g: basePerDay,
+        tempC,
+        tempOptC,
+        tempWidthC,
+        CO2ppm: co2,
+        co2HalfSat_ppm: co2Half,
+        DLI,
+        dliHalfSat_mol_m2d: dliHalf,
+        ppfd: ppfdNow,
+        ppfdMax,
+        tickHours: h,
+      });
+      if (process.env.DEBUG_HARVEST) {
+        this._budDeltaToday = (this._budDeltaToday ?? 0) + budDelta;
+        this._sanity = basePerDay * clamp(fT, 0, 1.2) * clamp(fCO2, 0, 1.2) * clamp(fDLI, 0, 1.0);
+      }
+    }
+
+    const dW_remaining = Math.max(0, dW_net - budDelta);
+
+    if (Number.isFinite(dW_remaining) && dW_remaining > 0) {
+      this.state.biomassDry_g += dW_remaining;
+    }
+    if (budDelta > 0) {
+      this.state.biomassDry_g += budDelta;
+      this.state.biomassPartition.buds_g += budDelta;
     }
     this.state.biomassDry_g = Math.max(0, this.state.biomassDry_g);
 
     const dmFrac = growthModel.dryMatterFraction?.[phase] ?? 0.22;
     this.state.biomassFresh_g = this.state.biomassDry_g / dmFrac;
 
-    const budsBefore = this.state.biomassPartition.buds_g;
-    partitionBiomass(this.state, dW_net, phase, growthModel.harvestIndex, cap);
-    const budDelta = this.state.biomassPartition.buds_g - budsBefore;
-    if (process.env.DEBUG_HARVEST) {
-      this._budDeltaToday = (this._budDeltaToday ?? 0) + budDelta;
-      const basePerDay = dW_light * (24 / h);
-      this._sanity = basePerDay * f_T * f_CO2 * f_DLI;
-    }
+    partitionBiomass(this.state, dW_remaining, phase, growthModel.harvestIndex, cap);
 
     // Telemetry hook
     this.onBiomassUpdate?.(this, {
@@ -461,17 +497,13 @@ function partitionBiomass(state, dW, phase, harvestIndex, cap) {
   if (!Number.isFinite(dW) || dW <= 0) return;
   const p = state.biomassPartition;
   if (phase === 'flowering') {
-    const target = harvestIndex?.targetFlowering ?? 0.7;
-    const progress = clamp01(state.biomassDry_g / (cap || state.biomassDry_g));
-    const budFrac = target * progress;
     const rootFrac = 0.10;
-    const rest = 1 - budFrac - rootFrac;
+    const rest = 1 - rootFrac;
     const leafFrac = rest * 0.6;
     const stemFrac = rest * 0.4;
     p.leaves_g += dW * leafFrac;
     p.stems_g += dW * stemFrac;
     p.roots_g += dW * rootFrac;
-    p.buds_g += dW * budFrac;
   } else {
     p.leaves_g += dW * 0.55;
     p.stems_g += dW * 0.35;

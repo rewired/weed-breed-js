@@ -30,6 +30,7 @@ export const env = {
     temperatureC: 24,             // Start temperature
     humidity: 0.6,                // Start RH (0..1)
     co2ppm: 420,                  // Start CO₂
+    co2ppmAmbient: 420,           // Ambient CO₂ level
     moistureKg: 0,                // Start moisture pool (kg H2O)
     energyPriceEURPerKWh: 0.30,   // Global default electricity price
 
