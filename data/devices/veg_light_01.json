@@ -4,11 +4,7 @@
   "name": "LED VegLight 600",
   "quality": 0.95,
   "complexity": 0.2,
-  "mtbf_hours": 52560,
-  "maintenance": {
-    "baseCost": 0.002,
-    "costIncreasePer1000": 0.0005
-  },
+  "lifespanInHours": 52560,
   "settings": {
     "power": 0.6,
     "ppfd": 800,

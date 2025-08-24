@@ -4,11 +4,7 @@
   "name": "Humidity Control Unit L1",
   "quality": 0.8,
   "complexity": 0.3,
-  "mtbf_hours": 8760,
-  "maintenance": {
-    "baseCost": 0.002,
-    "costIncreasePer1000": 0.1
-  },
+  "lifespanInHours": 8760,
   "settings": {
     "power": 0.35,
     "humidifyRateKgPerTick": 0.1,

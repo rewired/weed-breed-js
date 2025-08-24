@@ -18,7 +18,7 @@
     "waterDemand",
     "diseaseResistance",
     "photoperiod",
-    "floweringTime",
+    "harvestWindowInDays",
     "harvestProperties",
     "meta"
   ],
@@ -241,14 +241,11 @@
         "transitionTriggerHours": { "type": "number",  "minimum": 0 }
       }
     },
-    "floweringTime": {
-      "type": "object",
-      "required": ["shortestDurationInDays", "longestDurationInDays"],
-      "additionalProperties": false,
-      "properties": {
-        "shortestDurationInDays": { "type": "integer", "minimum": 0 },
-        "longestDurationInDays":  { "type": "integer", "minimum": 0 }
-      }
+    "harvestWindowInDays": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "minItems": 2,
+      "maxItems": 2
     },
     "harvestProperties": {
       "type": "object",

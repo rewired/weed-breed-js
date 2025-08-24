@@ -33,8 +33,12 @@ export class BaseDevice {
     this.complexity = blueprint?.complexity ?? 0.0;
     this.blueprintId = blueprint?.blueprintId ?? blueprint?.id;
 
-    // Back-compat: accept mtbf_hours, prefer mtbfInHours
-    this.mtbfInHours = blueprint?.mtbfInHours ?? blueprint?.mtbf_hours ?? null;
+    // Back-compat: accept mtbf_hours, mtbfInHours; prefer lifespanInHours
+    this.lifespanInHours =
+      blueprint?.lifespanInHours ??
+      blueprint?.mtbfInHours ??
+      blueprint?.mtbf_hours ??
+      null;
 
     // Safe merging of settings: Blueprint -> Overrides
     const safeOverrides = pick(overrides, ALLOWED_OVERRIDES);
@@ -69,7 +73,7 @@ export class BaseDevice {
     }
 
     // Simple failure model based on MTBF
-    let mtbfHours = this.mtbfInHours ?? env.defaults.deviceMTBF_hours_default ?? (5 * 365 * 24);
+    let mtbfHours = this.lifespanInHours ?? env.defaults.deviceMTBF_hours_default ?? (5 * 365 * 24);
     const tickHours = this.tickLengthInHours;
 
     // Apply difficulty modifier
