@@ -22,5 +22,5 @@ Maps strain IDs to economic values used at runtime.
   "harvestPricePerGram": 3.2
 }
 ```
-// data/config/strainPrices.json
-[data/config/strainPrices.json](../../../data/config/strainPrices.json)
+// data/strainPrices.json
+[data/strainPrices.json](../../../data/strainPrices.json)

@@ -1,6 +1,7 @@
 # Device Schema
 
 Blueprints describe devices that modify zone environment.
+Pricing and maintenance costs are stored separately in [`data/devicePrices.json`](../../../data/devicePrices.json).
 
 - JSON Schema: [`packages/wb-model/schemas/device.schema.json`](../../../packages/wb-model/schemas/device.schema.json)
 - Loader: [`src/engine/loaders/deviceLoader.js`](../../../src/engine/loaders/deviceLoader.js)
@@ -14,6 +15,7 @@ Blueprints describe devices that modify zone environment.
 | `name` | string | Display name |
 | `quality` | number | Quality factor 0–1 |
 | `complexity` | number | Setup/maintenance complexity |
+| `lifespanInHours` | integer | Expected mean time between failures |
 | `settings` | object | Device-specific parameters |
 
 ## Example
@@ -25,6 +27,7 @@ Blueprints describe devices that modify zone environment.
   "name": "CoolAir Split 3000",
   "quality": 0.9,
   "complexity": 0.4,
+  "lifespanInHours": 35040,
   "settings": { "power": 1.2, "airflow": 350 }
 }
 ```

@@ -4,11 +4,7 @@
   "name": "CO2 Pulse",
   "quality": 0.85,
   "complexity": 0.15,
-  "mtbf_hours": 8760,
-  "maintenance": {
-    "baseCost": 0.0008,
-    "costIncreasePer1000": 0.0004
-  },
+  "lifespanInHours": 8760,
   "settings": {
     "power": 0.05,
     "targetCO2": 1100,

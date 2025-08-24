@@ -132,10 +132,10 @@
     "vegetative": { "minLightHours": 320, "maxStressForStageChange": 0.35 },
     "flowering": { "minLightHours": 620, "maxStressForStageChange": 0.25 }
   },
-  "floweringTime": {
-    "shortestDurationInDays": 58,
-    "longestDurationInDays": 70
-  },
+  "harvestWindowInDays": [
+    58,
+    70
+  ],
   "harvestProperties": {
     "ripeningTimeInHours": 48,
     "maxStorageTimeInHours": 120,

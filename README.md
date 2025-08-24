@@ -4,6 +4,10 @@ This project is a simulation game for breeding and growing weed. It includes a s
 
 ![Weed Breed Splash](docs/images/weed-breed-splash.png "Weed Breed Splash")
 
+## Units
+
+Units are implicit across the data model; field names never contain unit suffixes. Power is in kW, temperature in °C, area in m² and time in hours or days.
+
 ## Getting Started
 
 ### Prerequisites

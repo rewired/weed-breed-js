@@ -38,6 +38,8 @@
 | `yield_factor`              | `yieldFactor`                             | Multiplier                            |
 | `leaf_area_index`           | `leafAreaIndex`                           | Ratio of leaf area / ground area      |
 | `lifespan_hours`            | `lifespanInHours`                         | Hours                                 |
+| `floweringTime.shortestDurationInDays` | `harvestWindowInDays[0]`          | Days                                  |
+| `floweringTime.longestDurationInDays`  | `harvestWindowInDays[1]`          | Days                                  |
 | `base_eur_per_hour`         | `baseMaintenanceCostPerHour`              | €                                     |
 
 ---

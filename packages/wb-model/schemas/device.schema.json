@@ -14,15 +14,7 @@
     "name": { "type": "string", "minLength": 1 },
     "quality": { "type": "number", "minimum": 0, "maximum": 1 },
     "complexity": { "type": "number", "minimum": 0, "maximum": 1 },
-    "mtbf_hours": { "type": "integer", "minimum": 0 },
-    "maintenance": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "baseCost": { "type": "number", "minimum": 0 },
-        "costIncreasePer1000": { "type": "number", "minimum": 0 }
-      }
-    },
+    "lifespanInHours": { "type": "integer", "minimum": 0 },
     "settings": { "type": "object" },
     "meta": {
       "type": "object",

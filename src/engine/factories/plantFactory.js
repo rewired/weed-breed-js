@@ -89,7 +89,7 @@ export function buildPlantStateFromStrain(strain, opts = {}) {
     pricing: null
   };
 
-  // Inject prices (optional) from /data/config/strainPrices.json
+  // Inject prices (optional) from /data/strainPrices.json
   if (strainPriceMap && strainPriceMap.has(strain.id)) {
     const sp = strainPriceMap.get(strain.id);
     state.pricing = {
