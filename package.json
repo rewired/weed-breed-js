@@ -11,10 +11,11 @@
     "dev": "node --watch src/server/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "sim": "node src/index.js",
-    "sim:200d": "node tools/sim-check/run_200d.mjs",
+    "sim:200d": "NODE_ENV=production LOG_LEVEL=warn SIM_DAYS=200 node src/demos/structure_rooms_zones_demo.js",
     "sim:200d:seed": "cross-env WB_SEED=codex-checkup-001 node tools/sim-check/run_200d.mjs",
     "sim:200d:report": "cross-env SIM_DAYS=200 WB_SEED=codex-checkup-001 AUTO_REPLANT=true node tools/sim-check/run_200d.mjs",
-    "sim:recompute": "node tools/sim-check/reporters.mjs"
+    "sim:recompute": "node tools/sim-check/reporters.mjs",
+    "audit:last": "node scripts/audit_zone_report.mjs $(node -e \"const fs=require('node:fs');const d='logs/reports';const r=fs.readdirSync(d).filter(x=>/^[0-9]{8}_[0-9]{6}$/.test(x)).sort().pop();process.stdout.write(`${d}/${r}/sim_200d_daily.jsonl`)\") $(node -e \"const fs=require('node:fs');const d='logs/reports';const r=fs.readdirSync(d).filter(x=>/^[0-9]{8}_[0-9]{6}$/.test(x)).sort().pop();process.stdout.write(`${d}/${r}/events.jsonl`)\")"
   },
   "dependencies": {
     "cors": "^2.8.5",
