@@ -79,6 +79,8 @@ export class Plant {
     this.stageTimeHours = 0;
     this.lightHours = 0;
     this.deathLog = [];
+    this.alive = true;
+    this._harvested = false;
   }
 
   get biomass() {
@@ -96,6 +98,7 @@ export class Plant {
    * - (optional) Stage & growth (deliberately kept simple here)
    */
   async tick(zone, tickLengthInHours, tickIndex) {
+    if (this._harvested || this.isDead) return;
     const s = ensureEnv(zone);
     const L = Number(s.ppfd ?? 0);           // µmol/m²·s
     const T = Number(s.temperature ?? 24);   // °C
@@ -417,10 +420,10 @@ export class Plant {
     });
   }
 
-  /** Idempotent harvest call (at most once per day). */
+  /** Idempotent harvest call (executed at most once). */
   harvestOnce(tctx) {
-    if (this._harvestedAtDay === tctx.day) return 0;
-    this._harvestedAtDay = tctx.day;
+    if (this._harvested) return 0;
+    this._harvested = true;
     const budsAtCut_g = this.state?.biomassPartition?.buds_g ?? 0;
     if (typeof this.onHarvest === 'function') {
       this.onHarvest({ ...tctx, plantId: this.id, buds_g: budsAtCut_g });
@@ -429,6 +432,7 @@ export class Plant {
     this.state.biomassDry_g = Math.max(0, this.state.biomassDry_g - budsAtCut_g);
     this.stage = 'harvested';
     this.isDead = true;
+    this.alive = false;
     return budsAtCut_g;
   }
 

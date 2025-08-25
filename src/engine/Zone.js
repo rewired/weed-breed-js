@@ -9,7 +9,7 @@ import { env, AIR_DENSITY, AIR_CP, saturationMoistureKgPerM3 } from '../config/e
 import { resolveTickHours } from '../lib/time.js';
 import { Plant } from './Plant.js';
 import { createDevice } from './factories/deviceFactory.js';
-import { writeHarvestEvent } from '../server/reporting/reportWriters.js';
+import { writeHarvestEvent } from '../lib/reporting/reportWriters.js';
 
 // Helper to read from Map or plain object
 const get = (m, k) => m?.get?.(k) ?? m?.[k];
