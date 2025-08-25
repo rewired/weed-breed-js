@@ -3,9 +3,10 @@ const config = {
   verbose: true,
   testEnvironment: 'node',
   transform: {}, // Needed for ES Modules
-  moduleFileExtensions: ['js', 'json', 'node'],
+  moduleFileExtensions: ['js', 'mjs', 'json', 'node'],
   testMatch: [
-    '**/tests/**/*.test.js'
+    '**/tests/**/*.test.js',
+    '**/tests/**/*.test.mjs'
   ],
   "transformIgnorePatterns": [
     "/node_modules/"
