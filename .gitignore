@@ -48,4 +48,4 @@ data/generated/
 data/cache/
 data/strains/backup/
 docs/__ki-data/
-reports/
+logs/
