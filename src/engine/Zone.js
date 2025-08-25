@@ -9,6 +9,7 @@ import { env, AIR_DENSITY, AIR_CP, saturationMoistureKgPerM3 } from '../config/e
 import { resolveTickHours } from '../lib/time.js';
 import { Plant } from './Plant.js';
 import { createDevice } from './factories/deviceFactory.js';
+import { writeHarvestEvent } from '../server/reporting/reportWriters.js';
 
 // Helper to read from Map or plain object
 const get = (m, k) => m?.get?.(k) ?? m?.[k];
@@ -72,6 +73,17 @@ export class Zone {
     this.lastHarvestDay = null;
     this.startDayFlower = null;
 
+    // reporting stats & metrics
+    this.stats = {
+      harvestedPlants: 0,
+      totalBudsCollected_g: 0,
+      budsCollectedToday_g: 0
+    };
+    this.metrics = {
+      totalBiomass_g: 0,
+      totalBuds_g: 0
+    };
+
     if (process.env.DEBUG_HARVEST) {
       this._debugDay = { ppfdSum: 0, lightHours: 0, darkHours: 0, co2Sum: 0, tempSum: 0, totalHours: 0 };
     }
@@ -115,6 +127,36 @@ export class Zone {
       s.plantsTotal += 1;
       world.strainStats.set(plant.strain.id, s);
     }
+    plant.onHarvest = (evt) => this._onPlantHarvest(evt);
+  }
+
+  /** Internal harvest callback from plants */
+  _onPlantHarvest(evt) {
+    this.stats.harvestedPlants += 1;
+    this.harvestedPlants += 1;
+    this.stats.totalBudsCollected_g += evt.buds_g;
+    this.stats.budsCollectedToday_g += evt.buds_g;
+    this.totalBuds_g += evt.buds_g;
+    writeHarvestEvent({
+      type: 'HARVEST',
+      runId: process.env.RUN_ID,
+      day: evt.day,
+      tick: evt.tick,
+      zoneId: this.id,
+      plantId: evt.plantId,
+      buds_g: evt.buds_g
+    });
+  }
+
+  recomputeMetrics() {
+    let biomass = 0;
+    let buds = 0;
+    for (const p of this.plants) {
+      biomass += p.state?.biomassFresh_g ?? 0;
+      buds += p.state?.biomassPartition?.buds_g ?? 0;
+    }
+    this.metrics.totalBiomass_g = biomass;
+    this.metrics.totalBuds_g = buds;
   }
 
   // --- Public Methods ----------------------------------------------------
@@ -302,6 +344,7 @@ export class Zone {
     const removed = this.plants.length - survivors.length;
     this.plants = survivors;
     if (removed > 0) this.#log('info', { removed }, 'Removed dead plants');
+    this.recomputeMetrics();
   }
 
   // -----------------------------------------------------------------------
@@ -314,14 +357,17 @@ export class Zone {
       if (p.stage === 'harvestReady') ready.push(p);
       else if (!p.isDead && p.stage !== 'dead') keep.push(p);
     }
+    const ticksPerDay = Math.round(24 / this.tickLengthInHours);
+    if (tickIndex % ticksPerDay === 0) {
+      this.stats.budsCollectedToday_g = 0;
+    }
     if (ready.length === 0) return;
 
-    let harvested = 0;
     let revenueEUR = 0;
     const world = this.runtime.world;
-    const ticksPerDay = Math.round(24 / this.tickLengthInHours);
+    const day = Math.floor(tickIndex / ticksPerDay) + 1;
     for (const plant of ready) {
-      const buds = plant.budBiomass ?? 0;
+      const buds = plant.harvestOnce({ day, tick: tickIndex, zoneId: this.id, runId: process.env.RUN_ID });
       const strainId = plant.strain?.id;
       const priceInfo = get(this.strainPriceMap, strainId) ?? {};
       const pricePerGram = Number(priceInfo.harvestPricePerGram ?? priceInfo.pricePerGram ?? 0);
@@ -330,8 +376,6 @@ export class Zone {
         try { this.costEngine.bookRevenue('Harvest', revenue); } catch { /* ignore */ }
         revenueEUR += revenue;
       }
-      harvested += 1;
-      this.totalBuds_g += buds;
       if (world) {
         world.totalBuds_g += buds;
         const s = world.strainStats.get(strainId);
@@ -345,17 +389,16 @@ export class Zone {
       if (process.env.DEBUG_HARVEST) {
         this.#log('info', { harvested_buds_g_added: buds, plantId: plant.id, strainId }, 'HARVEST_DEBUG');
       }
-      plant.state.biomassPartition.buds_g = 0;
     }
 
     // remove harvested
     this.plants = keep;
-    this.harvestedPlants += harvested;
+    const harvested = ready.length;
     if (harvested > 0) {
-      this.harvestEvents += 1;
-      const day = Math.floor(tickIndex / ticksPerDay);
-      if (this.firstHarvestDay == null) this.firstHarvestDay = day;
-      this.lastHarvestDay = day;
+      this.harvestEvents += harvested;
+      const dayIdx = Math.floor(tickIndex / ticksPerDay);
+      if (this.firstHarvestDay == null) this.firstHarvestDay = dayIdx;
+      this.lastHarvestDay = dayIdx;
       if (process.env.DEBUG_HARVEST && this.harvestedPlants > 0) {
         console.assert(this.totalBuds_g >= this.harvestedPlants * 0.1, 'totalBuds_g too low');
       }

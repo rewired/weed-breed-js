@@ -271,8 +271,12 @@ export class Plant {
       if (this.stageTimeHours > 24 * flowerDays && this.lightHours >= minLight && this.stress <= maxStress) {
         this.stage = 'harvestReady';
         this.stageTimeHours = 0;
-        this.lightHours = 0;
-      }
+    this.lightHours = 0;
+
+    // Harvest bookkeeping
+    this.onHarvest = null;
+    this._harvestedAtDay = null;
+  }
     }
 
     this.updateBiomass({ zone });
@@ -411,6 +415,21 @@ export class Plant {
       factors: { f_T, f_CO2, f_H2O, f_NPK, f_RH },
       phase,
     });
+  }
+
+  /** Idempotent harvest call (at most once per day). */
+  harvestOnce(tctx) {
+    if (this._harvestedAtDay === tctx.day) return 0;
+    this._harvestedAtDay = tctx.day;
+    const budsAtCut_g = this.state?.biomassPartition?.buds_g ?? 0;
+    if (typeof this.onHarvest === 'function') {
+      this.onHarvest({ ...tctx, plantId: this.id, buds_g: budsAtCut_g });
+    }
+    this.state.biomassPartition.buds_g = 0;
+    this.state.biomassDry_g = Math.max(0, this.state.biomassDry_g - budsAtCut_g);
+    this.stage = 'harvested';
+    this.isDead = true;
+    return budsAtCut_g;
   }
 
   debugDailyLog(day, zone) {
