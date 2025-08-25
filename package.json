@@ -26,6 +26,8 @@
     "xstate": "^5.20.2"
   },
   "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "jest": "^30.0.5"
   },
   "packageManager": "npm@^10"
