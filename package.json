@@ -10,8 +10,7 @@
     "start": "node src/server/index.js",
     "dev": "node --watch src/server/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "sim": "node src/demos/structure_rooms_zones_demo.js",
-    "sim:200d": "node src/demos/structure_rooms_zones_demo.js --env=production --logLevel=warn --simDays=200",
+    "sim": "node scripts/sim_demo.mjs",
     "audit:last": "node scripts/audit_last.mjs",
     "lint": "npx eslint@8 ."
   },

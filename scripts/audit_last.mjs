@@ -1,32 +1,19 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 
-const base = path.resolve('logs', 'reports');
-let latest = null;
-if (fs.existsSync(base)) {
-  for (const dir of fs.readdirSync(base)) {
-    if (/^\d{8}_\d{6}$/.test(dir)) {
-      if (!latest || dir > latest) latest = dir;
-    }
-  }
-}
-if (!latest) {
-  console.error('No report runs found in logs/reports');
+const file = 'reports/sim_daily.jsonl';
+if (!fs.existsSync(file)) {
+  console.error('Report file not found:', file);
   process.exit(1);
 }
-const runDir = path.join(base, latest);
-const files = fs.readdirSync(runDir);
-let daily = files.find(f => f === 'sim_200d_daily.jsonl');
-if (!daily) daily = files.find(f => /^sim_\d+d_daily\.jsonl$/.test(f));
-if (!daily) {
-  console.error('No daily report found in', runDir);
-  process.exit(1);
-}
-const dailyPath = path.join(runDir, daily);
-const eventsPath = fs.existsSync(path.join(runDir, 'events.jsonl')) ? path.join(runDir, 'events.jsonl') : null;
 
-const args = ['scripts/audit_zone_report.mjs', dailyPath];
-if (eventsPath) args.push(eventsPath);
-const res = spawnSync('node', args, { stdio: 'inherit' });
-process.exit(res.status ?? 0);
+const lines = fs.readFileSync(file, 'utf8').trim().split(/\n+/).filter(Boolean);
+const entries = lines.map(l => JSON.parse(l));
+const first = entries[0] || {};
+const last = entries[entries.length - 1] || {};
+const maxBio = entries.reduce((m, e) => Math.max(m, e.totalBiomass_g ?? 0), 0);
+
+console.log('day1Biomass_g:', first.totalBiomass_g ?? null);
+console.log('totalBiomass_g:', maxBio);
+console.log('harvestEvents:', last.harvestEvents ?? 0);
+console.log('firstHarvestDay:', last.firstHarvestDay ?? null);
+console.log('lastHarvestDay:', last.lastHarvestDay ?? null);

@@ -671,3 +671,148 @@ export class Zone {
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Simple demo zone for end-to-end simulation
+
+/**
+ * Minimal zone with hourly tick loop used by the demo simulation.
+ */
+export class SimZone {
+  constructor({
+    id,
+    ppfdVeg = 600,
+    ppfdFlower = 700,
+    temperature = 24,
+    co2ppm = 800,
+  } = {}) {
+    this.id = id;
+    this.ppfdVeg = ppfdVeg;
+    this.ppfdFlower = ppfdFlower;
+    this.temperature = temperature;
+    this.co2ppm = co2ppm;
+
+    this.environment = { ppfd: 0, temperature, co2ppm };
+    this.plants = [];
+
+    this.harvestedPlants = 0;
+    this.harvestEvents = 0;
+    this.firstHarvestDay = null;
+    this.lastHarvestDay = null;
+
+    this.metrics = { totalBiomass_g: 0, totalBuds_g: 0, plantsTotal: 0, alivePlants: 0 };
+
+    this._agg = { dli: 0, ppfdLightSum: 0, tempSum: 0, co2Sum: 0, hours: 0, lightHours: 0 };
+    this._tick = 0;
+    this._day = 0;
+    this.writer = null;
+  }
+
+  addPlant(p) {
+    if (p) this.plants.push(p);
+  }
+
+  currentStage() {
+    return this.plants.some(p => p.stage === 'flowering') ? 'flowering' : 'veg';
+  }
+
+  tick() {
+    const hour = this._tick % 24;
+    const stage = this.currentStage();
+    const lightHours = stage === 'flowering' ? 12 : 18;
+    const ppfd = stage === 'flowering' ? this.ppfdFlower : this.ppfdVeg;
+    const lightsOn = hour < lightHours;
+    this.environment.ppfd = lightsOn ? ppfd : 0;
+    this.environment.temperature = this.temperature;
+    this.environment.co2ppm = this.co2ppm;
+
+    const ppfdNow = this.environment.ppfd;
+    this._agg.dli += ppfdNow * 3600 / 1e6;
+    if (lightsOn) {
+      this._agg.ppfdLightSum += ppfdNow;
+      this._agg.lightHours += 1;
+    }
+    this._agg.tempSum += this.environment.temperature;
+    this._agg.co2Sum += this.environment.co2ppm;
+    this._agg.hours += 1;
+
+    for (const p of this.plants) p.tick(this.environment);
+
+    this._tick += 1;
+    if (this._tick % 24 === 0) {
+      this._day += 1;
+      this.#endOfDay();
+    }
+  }
+
+  #endOfDay() {
+    const dayEnv = {
+      dli: this._agg.dli,
+      meanPPFD: this._agg.ppfdLightSum / Math.max(1, this._agg.lightHours),
+      meanTemp: this._agg.tempSum / this._agg.hours,
+      meanCO2: this._agg.co2Sum / this._agg.hours,
+    };
+
+    for (const p of this.plants) {
+      p.applyDailyGrowth({ dli: dayEnv.dli, meanTemp: dayEnv.meanTemp, meanCO2: dayEnv.meanCO2 }, { day: this._day, tick: this._tick, zone: this });
+    }
+    // remove harvested plants
+    this.plants = this.plants.filter(p => p.stage !== 'harvested');
+
+    this.recomputeMetrics();
+
+    if (this.writer) {
+      this.writer.write({
+        day: this._day,
+        zoneId: this.id,
+        plantsTotal: this.metrics.plantsTotal,
+        totalBiomass_g: Number(this.metrics.totalBiomass_g.toFixed(2)),
+        totalBuds_g: Number(this.metrics.totalBuds_g.toFixed(2)),
+        harvestEvents: this.harvestEvents,
+        firstHarvestDay: this.firstHarvestDay,
+        lastHarvestDay: this.lastHarvestDay,
+        avgDLI_mol_m2d: Number(dayEnv.dli.toFixed(2)),
+        avgPPFD_umol_m2s: Number(dayEnv.meanPPFD.toFixed(1)),
+        meanTemp_C: Number(dayEnv.meanTemp.toFixed(1)),
+        meanCO2_ppm: Math.round(dayEnv.meanCO2),
+      });
+    }
+
+    this._agg = { dli: 0, ppfdLightSum: 0, tempSum: 0, co2Sum: 0, hours: 0, lightHours: 0 };
+  }
+
+  run({ days, writer } = {}) {
+    this.writer = writer;
+    const totalTicks = Number(days ?? 0) * 24;
+    for (let i = 0; i < totalTicks; i++) {
+      this.tick();
+    }
+  }
+
+  onHarvest(ev) {
+    this.harvestedPlants += 1;
+    this.harvestEvents += 1;
+    if (this.firstHarvestDay == null) this.firstHarvestDay = ev.day;
+    this.lastHarvestDay = ev.day;
+  }
+
+  recomputeMetrics() {
+    let totalBiomass = 0;
+    let totalBuds = 0;
+    let alive = 0;
+    for (const p of this.plants) {
+      const biomass = p.biomass_g ?? p.state?.biomassFresh_g ?? 0;
+      const buds = p.buds_g ?? p.state?.biomassPartition?.buds_g ?? 0;
+      totalBiomass += biomass;
+      totalBuds += buds;
+      if (!p.isDead && p.stage !== 'harvested') alive += 1;
+    }
+    this.metrics = {
+      totalBiomass_g: totalBiomass,
+      totalBuds_g: totalBuds,
+      plantsTotal: this.plants.length,
+      alivePlants: alive,
+    };
+  }
+}
+
