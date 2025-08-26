@@ -30,7 +30,7 @@ for (let i = 0; i < 5; i++) zone.addPlant(new Plant());
 
 for (let tick = 0; tick < totalTicks; tick++) {
   const day = Math.floor(tick / TICKS_PER_DAY) + 1;
-  zone.update({ tick, day, TICKS_PER_DAY });
+  await zone.update({ tick, day, TICKS_PER_DAY });
   if (tick % TICKS_PER_DAY === TICKS_PER_DAY - 1) {
     zone.recomputeMetrics();
     writeDailySnapshot(day, zone, {
