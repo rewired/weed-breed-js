@@ -533,3 +533,103 @@ function partitionBiomass(state, dW, phase, harvestIndex, cap) {
     p.roots_g += dW * 0.10;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Simple demo plant for end-to-end simulation
+
+let _simPlantId = 0;
+
+/**
+ * Minimal deterministic plant model used by the demo simulation.
+ * Growth is applied once per simulated day via {@link applyDailyGrowth}.
+ */
+export class SimPlant {
+  constructor({
+    id = `p${++_simPlantId}`,
+    strainName = 'Unknown',
+    seedlingDays = 7,
+    vegDays = 21,
+    flowerDays = 56,
+    targetBud_g = 60,
+  } = {}) {
+    this.id = id;
+    this.strainName = strainName;
+    this.stage = 'seedling';
+    this.seedlingDays = seedlingDays;
+    this.vegDays = vegDays;
+    this.flowerDays = flowerDays;
+    this.targetBud_g = targetBud_g;
+
+    this.biomass_g = 0;
+    this.buds_g = 0;
+    this.ageDays = 0;
+    this.daysInStage = 0;
+    this.daysInFlower = 0;
+    this.isDead = false;
+    this._extremeTempHours = 0;
+  }
+
+  /**
+   * Track consecutive lethal temperature hours.
+   * @param {{temperature:number}} env
+   */
+  tick(env) {
+    if (this.isDead || this.stage === 'harvested') return;
+    const T = Number(env?.temperature ?? 24);
+    if (T < 10 || T > 40) {
+      this._extremeTempHours += 1;
+    } else {
+      this._extremeTempHours = 0;
+    }
+    if (this._extremeTempHours >= 24) {
+      this.stage = 'dead';
+      this.isDead = true;
+    }
+  }
+
+  /**
+   * Apply one day of growth using aggregated zone environment.
+   * @param {{dli:number, meanTemp:number, meanCO2:number}} dayEnv
+   * @param {{day:number, tick:number, zone:object}} ctx
+   */
+  applyDailyGrowth(dayEnv = {}, ctx = {}) {
+    if (this.isDead || this.stage === 'harvested') return;
+
+    const { dli = 0, meanTemp = 24, meanCO2 = 400 } = dayEnv;
+    const G_BASE = 0.10;
+    const G_DLI = 0.35;
+    const sigma = 6;
+    const f_temp = Math.exp(-((meanTemp - 24) ** 2) / (2 * sigma ** 2));
+    const f_co2 = clampVal((meanCO2 - 400) / 800, 0, 1);
+    const delta = Math.max(0, G_BASE + G_DLI * dli * f_temp * f_co2);
+
+    this.biomass_g += delta;
+
+    if (this.stage === 'flowering') {
+      const part = Math.min(0.7, Math.max(0, (this.daysInFlower / 21) * 0.7));
+      this.buds_g += delta * part;
+      this.daysInFlower += 1;
+      if (this.daysInFlower >= this.flowerDays || this.buds_g >= this.targetBud_g) {
+        ctx?.zone?.onHarvest?.({ day: ctx.day, tick: ctx.tick, plantId: this.id, buds_g: this.buds_g });
+        this.stage = 'harvested';
+      }
+    }
+
+    this.ageDays += 1;
+    this.daysInStage += 1;
+
+    if (this.stage === 'seedling' && this.daysInStage >= this.seedlingDays) {
+      this.stage = 'veg';
+      this.daysInStage = 0;
+    } else if (this.stage === 'veg' && this.daysInStage >= this.vegDays) {
+      this.stage = 'flowering';
+      this.daysInStage = 0;
+      this.daysInFlower = 0;
+    }
+  }
+}
+
+function clampVal(v, min, max) {
+  return Math.min(max, Math.max(min, v));
+}
+
