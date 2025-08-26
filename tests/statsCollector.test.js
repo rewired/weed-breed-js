@@ -1,4 +1,4 @@
-import { StatsCollector } from '../src/sim/StatsCollector.js';
+import { StatsCollector } from '../src/runtime/StatsCollector.js';
 
 describe('StatsCollector', () => {
   test('tracks current plant biomass without cumulative growth', () => {

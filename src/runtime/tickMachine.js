@@ -1,6 +1,6 @@
 /**
  * XState based tick orchestration logic.
- * @module sim/tickMachine
+ * @module runtime/tickMachine
  */
 
 import { createMachine, assign, setup, fromPromise } from 'xstate';

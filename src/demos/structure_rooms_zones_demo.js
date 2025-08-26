@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { Zone } from '../sim/Zone.js';
-import { Plant } from '../sim/Plant.js';
+import { Zone } from '../engine/Zone.js';
+import { Plant } from '../engine/Plant.js';
 
 // CLI flags override process.env
 const args = process.argv.slice(2);

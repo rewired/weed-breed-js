@@ -14,7 +14,6 @@
     "name": { "type": "string", "minLength": 1 },
     "quality": { "type": "number", "minimum": 0, "maximum": 1 },
     "complexity": { "type": "number", "minimum": 0, "maximum": 1 },
-    "lifespanInHours": { "type": "integer", "minimum": 0 },
     "settings": { "type": "object" },
     "meta": {
       "type": "object",
@@ -27,9 +26,9 @@
       }
     }
   },
-  "oneOf": [
-    { "$ref": "#/$defs/ClimateUnit" },
+  "allOf": [
     { "$ref": "#/$defs/Lamp" },
+    { "$ref": "#/$defs/ClimateUnit" },
     { "$ref": "#/$defs/CO2Injector" },
     { "$ref": "#/$defs/Dehumidifier" },
     { "$ref": "#/$defs/HumidityControlUnit" }
@@ -42,16 +41,15 @@
         "properties": {
           "settings": {
             "type": "object",
-            "required": ["power", "coolingCapacity", "airflow", "targetTemperature", "targetTemperatureRange", "coolingEfficiency", "maxCooling", "hysteresisK", "fullPowerAtDeltaK"],
+            "required": ["power", "coolingCapacity", "airflow", "targetTemperature"],
             "additionalProperties": false,
             "properties": {
-              "power": { "type": "number", "minimum": 0 },
-              "coolingCapacity": { "type": "number", "minimum": 0 },
-              "airflow": { "type": "number", "minimum": 0 },
-              "targetTemperature": { "type": "number" },
+              "power": { "type": "number", "minimum": 0, "description": "Electrical power draw at full load (kW)" },
+              "coolingCapacity": { "type": "number", "minimum": 0, "description": "Nominal sensible cooling capacity (kW)" },
+              "airflow": { "type": "number", "minimum": 0, "description": "Air flow rate (m3/h)" },
+              "targetTemperature": { "type": "number", "description": "Target room air temperature (°C)" },
               "targetTemperatureRange": { "$ref": "#/$defs/numRange2" },
-              "coolingEfficiency": { "type": "number", "minimum": 0 },
-              "maxCooling": { "type": "number", "minimum": 0, "maximum": 1 },
+              "cop": { "type": "number", "minimum": 0, "description": "Coefficient of Performance (dimensionless)" },
               "hysteresisK": { "type": "number", "minimum": 0 },
               "fullPowerAtDeltaK": { "type": "number", "minimum": 0 }
             }
@@ -66,13 +64,12 @@
         "properties": {
           "settings": {
             "type": "object",
-            "required": ["power", "ppfd", "coverageArea", "spectralRange", "heatFraction"],
+            "required": ["power", "ppf", "coverageArea"],
             "additionalProperties": false,
             "properties": {
-              "power": { "type": "number", "minimum": 0 },
-              "ppfd": { "type": "number", "minimum": 0 },
-              "coverageArea": { "type": "number", "minimum": 0 },
-              "spectralRange": { "$ref": "#/$defs/numRange2" },
+              "power": { "type": "number", "minimum": 0, "description": "Electrical power draw (kW)" },
+              "ppf": { "type": "number", "minimum": 0, "description": "Photosynthetic Photon Flux (µmol/s)" },
+              "coverageArea": { "type": "number", "minimum": 0, "description": "Effective area coverage at working height (m2)" },
               "heatFraction": { "type": "number", "minimum": 0, "maximum": 1 }
             }
           }
@@ -86,7 +83,7 @@
         "properties": {
           "settings": {
             "type": "object",
-            "required": ["power", "targetCO2", "hysteresis", "pulsePpmPerTick"],
+            "required": ["power", "targetCO2"],
             "additionalProperties": false,
             "properties": {
               "power": { "type": "number", "minimum": 0 },
@@ -105,11 +102,11 @@
         "properties": {
           "settings": {
             "type": "object",
-            "required": ["latentRemovalKgPerTick", "power"],
+            "required": ["power"],
             "additionalProperties": false,
             "properties": {
-              "latentRemovalKgPerTick": { "type": "number", "minimum": 0 },
-              "power": { "type": "number", "minimum": 0 }
+              "power": { "type": "number", "minimum": 0 },
+              "waterKgPerHour": { "type": "number", "minimum": 0 }
             }
           }
         }
@@ -122,14 +119,11 @@
         "properties": {
           "settings": {
             "type": "object",
-            "required": ["power", "humidifyRateKgPerTick", "dehumidifyRateKgPerTick", "targetHumidity", "hysteresis"],
+            "required": ["power"],
             "additionalProperties": false,
             "properties": {
               "power": { "type": "number", "minimum": 0 },
-              "humidifyRateKgPerTick": { "type": "number", "minimum": 0 },
-              "dehumidifyRateKgPerTick": { "type": "number", "minimum": 0 },
-              "targetHumidity": { "type": "number", "minimum": 0, "maximum": 1 },
-              "hysteresis": { "type": "number", "minimum": 0, "maximum": 1 }
+              "targetHumidity": { "type": "number", "minimum": 0, "maximum": 1 }
             }
           }
         }

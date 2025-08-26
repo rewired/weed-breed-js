@@ -3,9 +3,9 @@
  * @module index
  */
 import { logger } from './lib/logger.js';
-import { emit } from './sim/eventBus.js';
+import { emit } from './runtime/eventBus.js';
 import { createActor } from 'xstate';
-import { initializeSimulation } from './sim/simulation.js';
+import { initializeSimulation } from './runtime/simulation.js';
 import { createRng } from './lib/rng.js';
 import { SIM_DAYS_DEFAULT } from './config/env.js';
 

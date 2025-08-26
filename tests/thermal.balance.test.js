@@ -2,7 +2,7 @@ import { Zone } from '../src/engine/Zone.js';
 import { Lamp } from '../src/engine/devices/Lamp.js';
 import { ClimateUnit } from '../src/engine/devices/ClimateUnit.js';
 import { env } from '../src/config/env.js';
-import { runThermalPreflight } from '../src/sim/simulation.js';
+import { runThermalPreflight } from '../src/runtime/simulation.js';
 
 describe('thermal balance', () => {
   const achOrig = env.defaults.airChangesPerHour;

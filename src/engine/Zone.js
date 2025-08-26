@@ -148,15 +148,53 @@ export class Zone {
     });
   }
 
+  // Place this method inside the Zone class
   recomputeMetrics() {
+    // Robust metric computation supporting both legacy (sim/) and engine Plant shapes.
     let biomass = 0;
     let buds = 0;
-    for (const p of this.plants) {
-      biomass += p.state?.biomassFresh_g ?? 0;
-      buds += p.state?.biomassPartition?.buds_g ?? 0;
+    let alive = 0;
+
+    for (const p of this.plants ?? []) {
+      // Legacy fields
+      const legacyBiomass = p?.biomass_g ?? p?.state?.biomass_g;
+      const legacyBuds    = p?.buds_g ?? p?.state?.buds_g;
+      // Engine fields
+      const engineBiomass = p?.state?.biomassFresh_g ?? p?.state?.biomassDry_g ?? 0;
+      const engineBuds    = p?.state?.biomassPartition?.buds_g ?? p?.payload?.buds_g ?? 0;
+
+      const b   = Number(legacyBiomass ?? engineBiomass ?? 0);
+      const bud = Number(legacyBuds ?? engineBuds ?? 0);
+
+      if (Number.isFinite(b))  biomass += b;
+      if (Number.isFinite(bud)) buds   += bud;
+
+      if (!(p?.isDead) && p?.stage !== 'dead') alive += 1;
     }
-    this.metrics.totalBiomass_g = biomass;
-    this.metrics.totalBuds_g = buds;
+
+    // Capacity-weighted mean utilization of ClimateUnits (0..1)
+    let capSum = 0;
+    let utilWeighted = 0;
+    for (const d of this.devices ?? []) {
+      if (d?.kind === 'ClimateUnit') {
+        const s = d.settings ?? {};
+        const capKW = Number(s.coolingCapacity ?? s.maxCooling ?? s.power ?? 0);
+        const frac  = Number(d._lastPowerFrac ?? 0);
+        if (Number.isFinite(capKW) && capKW > 0) {
+          capSum += capKW;
+          utilWeighted += capKW * Math.max(0, Math.min(1, frac));
+        }
+      }
+    }
+    const meanCoolingUtilization = capSum > 0 ? utilWeighted / capSum : 0;
+
+    this.metrics.totalBiomass_g = Math.max(0, biomass);
+    this.metrics.totalBuds_g = Math.max(0, buds);
+    this.metrics.plantsTotal = this.plants?.length ?? 0;
+    this.metrics.alivePlants = alive;
+    this.metrics.meanCoolingUtilization = meanCoolingUtilization;
+
+    return this.metrics;
   }
 
   // --- Public Methods ----------------------------------------------------

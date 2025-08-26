@@ -1,6 +1,6 @@
 /**
  * Simulation setup and helper utilities.
- * @module sim/simulation
+ * @module runtime/simulation
  */
 import { Zone } from '../engine/Zone.js';
 import { Plant } from '../engine/Plant.js';
@@ -18,6 +18,7 @@ import { loadDifficultyConfig } from '../engine/loaders/difficultyLoader.js';
 import { StatsCollector } from './StatsCollector.js';
 import { getZoneVolume, readPowerKw } from '../engine/deviceUtils.js';
 import { env } from '../config/env.js';
+import { readCop } from '../engine/devices/ClimateUnit.js';
 
 // --- Loader-Wrapper ---------------------------------------------------------
 /**
@@ -115,7 +116,7 @@ export function runThermalPreflight(structure, log = logger) {
           lampKW += readPowerKw(settings) * heatFrac;
         } else if (d.kind === 'ClimateUnit') {
           const powerKW = Number(settings.power ?? settings.powerInKilowatts ?? 0);
-          const cop = Number(settings.cop ?? (settings.coolingEfficiency && settings.coolingEfficiency > 0.5 ? settings.coolingEfficiency : 3.0));
+          const cop = readCop(settings) || 3.0;
           let cap = 0;
           if (settings.maxCooling != null) cap = Number(settings.maxCooling);
           else if (settings.coolingCapacity != null) cap = Number(settings.coolingCapacity);

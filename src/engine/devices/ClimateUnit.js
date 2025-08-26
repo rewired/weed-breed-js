@@ -8,6 +8,18 @@ import { ensureEnv, getZoneVolume, clamp } from '../deviceUtils.js';
 import { resolveTickHours } from '../../lib/time.js';
 
 /**
+ * Read device performance parameters with backward-compatibility.
+ * - Preferred: settings.cop
+ * - Legacy: settings.coolingEfficiency (interpreted as COP)
+ */
+function readCop(settings) {
+  const cop = Number(settings?.cop);
+  if (Number.isFinite(cop) && cop > 0) return cop;
+  const legacy = Number(settings?.coolingEfficiency);
+  return Number.isFinite(legacy) && legacy > 0 ? legacy : 0;
+}
+
+/**
  * Device controlling temperature via cooling.
  */
 export class ClimateUnit extends BaseDevice {
@@ -56,7 +68,7 @@ export class ClimateUnit extends BaseDevice {
       const powerElKW = Number(settings.power ?? settings.powerInKilowatts ?? 0); // elektrisch
       const powerElW  = Math.max(0, powerElKW * KW_TO_W);
 
-      const cop = Number(settings.cop ?? (settings.coolingEfficiency && settings.coolingEfficiency > 0.5 ? settings.coolingEfficiency : 3.0));
+      const cop = readCop(settings) || 3.0;
       const capKW_th = (
         (settings.maxCooling != null)       ? Number(settings.maxCooling)
         : (settings.coolingCapacity != null)? Number(settings.coolingCapacity)
@@ -91,3 +103,7 @@ export class ClimateUnit extends BaseDevice {
     return Math.max(0, powerElKW * clamp(this._lastPowerFrac ?? 0, 0, 1) * tickH);
   }
 }
+
+// Example usage inside the device constructor or applyEffect():
+// this._cop = readCop(this.settings);
+export { readCop };
