@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { appendFile } from 'node:fs/promises';
 import { createActor } from 'xstate';
-import { initializeSimulation } from '../../src/sim/simulation.js';
+import { initializeSimulation } from '../../src/runtime/simulation.js';
 import { Plant } from '../../src/engine/Plant.js';
 import { Zone } from '../../src/engine/Zone.js';
 import { attach } from '../../src/instrumentation/attach.js';

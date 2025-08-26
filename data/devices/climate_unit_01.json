@@ -10,17 +10,13 @@
     "coolingCapacity": 1.6,
     "airflow": 350,
     "targetTemperature": 24,
-    "targetTemperatureRange": [
-      18,
-      30
-    ],
-    "coolingEfficiency": 0.05,
-    "maxCooling": 0.4,
-    "hysteresisK": 0.5,
-    "fullPowerAtDeltaK": 5
+    "targetTemperatureRange": [18, 30],
+    "cop": 3.2,
+    "hysteresisK": 0.8,
+    "fullPowerAtDeltaK": 2
   },
   "meta": {
-    "description": "High-performance climate control unit for closed growing environments. Provides targeted cooling with moderate energy usage and solid airflow.",
+    "description": "High-performance climate control unit for clean indoor cultivation rooms; targeted cooling with moderate energy usage and solid airflow.",
     "advantages": [
       "Effective cooling for medium-sized rooms",
       "Reliable airflow distribution",

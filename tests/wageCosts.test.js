@@ -1,5 +1,5 @@
 import { CostEngine } from '../src/engine/CostEngine.js';
-import { initializeSimulation } from '../src/sim/simulation.js';
+import { initializeSimulation } from '../src/runtime/simulation.js';
 import { env } from '../src/config/env.js';
 
 describe('Labor cost booking', () => {

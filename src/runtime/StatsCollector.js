@@ -1,6 +1,6 @@
 /**
  * Collects statistics about zones and plants during the simulation.
- * @module sim/StatsCollector
+ * @module runtime/StatsCollector
  */
 import { events$ } from './eventBus.js';
 

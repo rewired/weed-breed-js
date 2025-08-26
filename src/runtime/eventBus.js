@@ -2,7 +2,7 @@
 /**
  * RxJS based event layer used for telemetry and visualization.
  * Events are semantic and not commands.
- * @module sim/eventBus
+ * @module runtime/eventBus
  */
 
 import { Subject } from 'rxjs';

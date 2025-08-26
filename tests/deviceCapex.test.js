@@ -1,6 +1,6 @@
 import { Zone } from '../src/engine/Zone.js';
 import { CostEngine } from '../src/engine/CostEngine.js';
-import { addDeviceN } from '../src/sim/simulation.js';
+import { addDeviceN } from '../src/runtime/simulation.js';
 
 describe('Device CapEx booking', () => {
   it('books capex once per device batch and updates opening balance', () => {

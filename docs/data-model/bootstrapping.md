@@ -131,7 +131,7 @@ Plants can be embedded in savegames under `zones[].plants[]` or generated from s
     "airflow": 350,
     "targetTemperature": 24,
     "targetTemperatureRange": [18, 30],
-    "coolingEfficiency": 0.05,
+    "cop": 3.2,
     "maxCooling": 0.4,
     "hysteresisK": 0.5,
     "fullPowerAtDeltaK": 5
