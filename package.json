@@ -11,6 +11,7 @@
     "dev": "node --watch src/server/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "sim": "node scripts/sim_demo.mjs",
+    "sim:default": "node scripts/sim_from_save.mjs",
     "audit:last": "node scripts/audit_last.mjs",
     "lint": "npx eslint@8 ."
   },

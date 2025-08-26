@@ -25,3 +25,13 @@ export class DailyWriter {
     fs.appendFileSync(this.filePath, `${JSON.stringify(entry)}\n`);
   }
 }
+
+/**
+ * Convenience helper to append a single daily row to a report file.
+ * @param {string} reportPath
+ * @param {object} obj
+ */
+export function writeDailyRow(reportPath, obj) {
+  const writer = new DailyWriter(reportPath);
+  writer.write(obj);
+}

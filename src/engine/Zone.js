@@ -701,6 +701,7 @@ export class SimZone {
     this.lastHarvestDay = null;
 
     this.metrics = { totalBiomass_g: 0, totalBuds_g: 0, plantsTotal: 0, alivePlants: 0 };
+    this.stats = { budsCollectedToday_g: 0, totalBudsCollected_g: 0 };
 
     this._agg = { dli: 0, ppfdLightSum: 0, tempSum: 0, co2Sum: 0, hours: 0, lightHours: 0 };
     this._tick = 0;
@@ -768,6 +769,8 @@ export class SimZone {
         plantsTotal: this.metrics.plantsTotal,
         totalBiomass_g: Number(this.metrics.totalBiomass_g.toFixed(2)),
         totalBuds_g: Number(this.metrics.totalBuds_g.toFixed(2)),
+        budsCollectedToday_g: Number(this.stats.budsCollectedToday_g.toFixed(2)),
+        totalBudsCollected_g: Number(this.stats.totalBudsCollected_g.toFixed(2)),
         harvestEvents: this.harvestEvents,
         firstHarvestDay: this.firstHarvestDay,
         lastHarvestDay: this.lastHarvestDay,
@@ -777,7 +780,7 @@ export class SimZone {
         meanCO2_ppm: Math.round(dayEnv.meanCO2),
       });
     }
-
+    this.stats.budsCollectedToday_g = 0;
     this._agg = { dli: 0, ppfdLightSum: 0, tempSum: 0, co2Sum: 0, hours: 0, lightHours: 0 };
   }
 
@@ -792,6 +795,8 @@ export class SimZone {
   onHarvest(ev) {
     this.harvestedPlants += 1;
     this.harvestEvents += 1;
+    this.stats.budsCollectedToday_g += ev?.buds_g ?? 0;
+    this.stats.totalBudsCollected_g += ev?.buds_g ?? 0;
     if (this.firstHarvestDay == null) this.firstHarvestDay = ev.day;
     this.lastHarvestDay = ev.day;
   }
