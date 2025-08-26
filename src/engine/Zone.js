@@ -199,6 +199,26 @@ export class Zone {
 
   // --- Public Methods ----------------------------------------------------
 
+  /**
+   * Convenience wrapper that runs one complete simulation tick.
+   *
+   * This mirrors the sequence used by the tick state machine and exists
+   * primarily for simple demos and legacy callers that previously invoked
+   * `zone.update(...)` directly.
+   *
+   * @param {object} [opts]
+   * @param {number} [opts.tick=0] - Absolute tick index
+   * @returns {Promise<void>} Resolves when the tick has been processed
+   */
+  async update({ tick = 0 } = {}) {
+    this.applyDevices?.(tick);
+    this.deriveEnvironment?.();
+    await this.updatePlants?.(this.tickLengthInHours, tick);
+    this.irrigateAndFeed?.();
+    this.harvestAndInventory?.(tick);
+    this.accounting?.(tick);
+  }
+
   applyDevices(tickIndex) {
     const s = ensureEnv(this);
     resetEnvAggregates(s);
