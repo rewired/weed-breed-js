@@ -544,6 +544,9 @@ export class Zone {
           }
           this.#log('info', { harvested, revenueEUR, replanted: need }, 'HARVEST_ZONE_TICK');
         }
+      } else if (this.replantingPolicy?.zoneGateMode === 'zoneEmpty' && this.plants.length === 0) {
+        // delegate to zone-level replanting when policy is zoneEmpty
+        try { this.replanting({ tick: tickIndex }); } catch { /* ignore */ }
       }
       // END: REPLANTING v1
   }
