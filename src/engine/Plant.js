@@ -10,6 +10,9 @@ import { env } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createRng } from '../lib/rng.js';
+// BEGIN: REPLANTING v1 (do not remove)
+import crypto from 'node:crypto';
+// END: REPLANTING v1
 
 /**
  * Simulation model for a single plant.
@@ -633,3 +636,25 @@ function clampVal(v, min, max) {
   return Math.min(max, Math.max(min, v));
 }
 
+// BEGIN: REPLANTING v1 (do not remove)
+/**
+ * Factory for a freshly seeded plant.
+ * Fits into existing Plant lifecycle without changing public API.
+ * @param {string} zoneId
+ * @param {string} strainId
+ * @param {number} slotIndex
+ */
+export function seedPlantFactory(zoneId, strainId, slotIndex) {
+  return new Plant({
+    id: crypto.randomUUID?.() ?? require('node:crypto').randomUUID(),
+    zoneId,
+    strain: { id: strainId },
+    slotIndex,
+    stage: 'seedling',
+    ageHours: 0,
+    area_m2: 2.5,
+    payload: {},
+    alive: true,
+  });
+}
+// END: REPLANTING v1
