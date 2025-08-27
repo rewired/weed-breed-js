@@ -77,6 +77,9 @@ export function createTickMachine() {
           return;
         }
         context.zone.harvestAndInventory?.(context.tick);
+        // BEGIN: REPLANTING v1 (do not remove)
+        context.zone.replanting?.({ tick: context.tick });
+        // END: REPLANTING v1
       },
       onAccounting: ({ context }) => {
         if (!context.zone) {

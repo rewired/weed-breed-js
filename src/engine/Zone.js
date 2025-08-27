@@ -7,9 +7,13 @@
 import { ensureEnv, resetEnvAggregates, getZoneVolume, clamp } from './deviceUtils.js';
 import { env, AIR_DENSITY, AIR_CP, saturationMoistureKgPerM3 } from '../config/env.js';
 import { resolveTickHours } from '../lib/time.js';
-import { Plant } from './Plant.js';
+import { Plant, seedPlantFactory } from './Plant.js';
 import { createDevice } from './factories/deviceFactory.js';
 import { writeHarvestEvent } from '../lib/reporting/reportWriters.js';
+// BEGIN: REPLANTING v1 (do not remove)
+import { emit } from '../runtime/eventBus.js';
+import { normalizeReplantingPolicy } from './ReplantingPolicy.js';
+// END: REPLANTING v1
 
 // Helper to read from Map or plain object
 const get = (m, k) => m?.get?.(k) ?? m?.[k];
@@ -24,6 +28,7 @@ export class Zone {
     runtime = {},
     roomId = null,
     structureId = null,
+    policy = {},
   } = {}) {
     this.id = id;
     this.name = name;
@@ -41,6 +46,11 @@ export class Zone {
     this.strainPriceMap = runtime.strainPriceMap;
     this.devicePriceMap = runtime.devicePriceMap;
     this.blueprints = runtime.blueprints;
+    // BEGIN: REPLANTING v1 (do not remove)
+    this.replantingPolicy = normalizeReplantingPolicy(policy?.replanting);
+    this.capacity = Math.max(0, Math.floor(this.area / 2.5));
+    this.emptySinceTick = null;
+    // END: REPLANTING v1
 
     this.devices = [];
     this.plants = [];
@@ -216,6 +226,9 @@ export class Zone {
     await this.updatePlants?.(this.tickLengthInHours, tick);
     this.irrigateAndFeed?.();
     this.harvestAndInventory?.(tick);
+    // BEGIN: REPLANTING v1 (do not remove)
+    this.replanting?.({ tick });
+    // END: REPLANTING v1
     this.accounting?.(tick);
   }
 
@@ -308,6 +321,49 @@ export class Zone {
     this.#replaceBrokenDevices();
   }
 
+  // BEGIN: REPLANTING v1 (do not remove)
+  /**
+   * Replant zone when completely empty and cooldown passed.
+   * @param {{tick?:number}} [ctx]
+   */
+  replanting({ tick = 0 } = {}) {
+    const policy = this.replantingPolicy;
+    if (!policy?.enabled || policy.zoneGateMode !== 'zoneEmpty') return;
+    if (this.plants.length > 0) {
+      emit('zone.replant.skipped', { zoneId: this.id, reason: 'zoneNotEmpty' }, tick);
+      emit('zone.replant.attempted', { zoneId: this.id, tick, attempted: 0, succeeded: 0, skipped: this.capacity, gateMode: policy.zoneGateMode }, tick);
+      return;
+    }
+    const ticksPerHour = 1 / this.tickLengthInHours;
+    if (policy.zoneEmptyCooldownHours > 0) {
+      const needed = policy.zoneEmptyCooldownHours * ticksPerHour;
+      if (this.emptySinceTick == null || (tick - this.emptySinceTick) < needed) {
+        emit('zone.replant.skipped', { zoneId: this.id, reason: 'cooldownWindow' }, tick);
+        emit('zone.replant.attempted', { zoneId: this.id, tick, attempted: 0, succeeded: 0, skipped: this.capacity, gateMode: policy.zoneGateMode }, tick);
+        return;
+      }
+    }
+    const strainId = policy.defaultStrainId ?? this.plantTemplate?.strain?.id;
+    if (!strainId) {
+      emit('zone.replant.skipped', { zoneId: this.id, reason: 'noStrain' }, tick);
+      emit('zone.replant.attempted', { zoneId: this.id, tick, attempted: 0, succeeded: 0, skipped: this.capacity, gateMode: policy.zoneGateMode }, tick);
+      return;
+    }
+    let succeeded = 0;
+    for (let i = 0; i < this.capacity; i++) {
+      const plant = seedPlantFactory(this.id, strainId, i);
+      this.addPlant(plant);
+      const priceInfo = get(this.strainPriceMap, strainId) ?? {};
+      const seedPriceEur = Number(priceInfo.seedPrice ?? 0);
+      const substrateCostEur = policy.requireSubstrateReset ? Number(priceInfo.substrateCostEUR ?? 0) : 0;
+      emit('plant.seeded', { zoneId: this.id, plantId: plant.id, slotIndex: i, strainId, tick, seedPriceEur, substrateCostEur }, tick);
+      succeeded++;
+    }
+    emit('zone.replant.attempted', { zoneId: this.id, tick, attempted: this.capacity, succeeded, skipped: this.capacity - succeeded, gateMode: policy.zoneGateMode }, tick);
+    this.emptySinceTick = null;
+  }
+  // END: REPLANTING v1
+
   accounting(tickIndex) {
     this.#bookDeviceCosts(tickIndex);
   }
@@ -399,10 +455,17 @@ export class Zone {
         survivors.push(p);
       }
     }
-    const removed = this.plants.length - survivors.length;
-    this.plants = survivors;
-    if (removed > 0) this.#log('info', { removed }, 'Removed dead plants');
-    this.recomputeMetrics();
+      const removed = this.plants.length - survivors.length;
+      this.plants = survivors;
+      if (removed > 0) this.#log('info', { removed }, 'Removed dead plants');
+      // BEGIN: REPLANTING v1 (do not remove)
+      if (this.plants.length === 0) {
+        this.emptySinceTick ??= tickIndex;
+      } else {
+        this.emptySinceTick = null;
+      }
+      // END: REPLANTING v1
+      this.recomputeMetrics();
   }
 
   // -----------------------------------------------------------------------
@@ -449,33 +512,40 @@ export class Zone {
       }
     }
 
-    // remove harvested
-    this.plants = keep;
-    const harvested = ready.length;
-    if (harvested > 0) {
-      this.harvestEvents += harvested;
-      const dayIdx = Math.floor(tickIndex / ticksPerDay);
-      if (this.firstHarvestDay == null) this.firstHarvestDay = dayIdx;
-      this.lastHarvestDay = dayIdx;
-      if (process.env.DEBUG_HARVEST && this.harvestedPlants > 0) {
-        console.assert(this.totalBuds_g >= this.harvestedPlants * 0.1, 'totalBuds_g too low');
+      // remove harvested
+      this.plants = keep;
+      const harvested = ready.length;
+      if (harvested > 0) {
+        this.harvestEvents += harvested;
+        const dayIdx = Math.floor(tickIndex / ticksPerDay);
+        if (this.firstHarvestDay == null) this.firstHarvestDay = dayIdx;
+        this.lastHarvestDay = dayIdx;
+        if (process.env.DEBUG_HARVEST && this.harvestedPlants > 0) {
+          console.assert(this.totalBuds_g >= this.harvestedPlants * 0.1, 'totalBuds_g too low');
+        }
       }
-    }
-
-    // determine template
-    const template = this.plantTemplate || ready[0] || keep[0];
-    if (template) {
-      let areaPerPlant = template.method?.areaPerPlant;
-      if (!areaPerPlant || areaPerPlant <= 0) areaPerPlant = template.area_m2;
-      if (!areaPerPlant || areaPerPlant < 1) areaPerPlant = 2.5; // sensible default
-      const capacity = Math.max(0, Math.floor(this.area / areaPerPlant));
-      const need = Math.max(0, capacity - this.plants.length);
-      for (let i = 0; i < need; i++) {
-        const newPlant = new Plant({ strain: template.strain, method: template.method, rng: this.rng, area_m2: areaPerPlant });
-        this.addPlant(newPlant);
+      // BEGIN: REPLANTING v1 (do not remove)
+      if (this.plants.length === 0) {
+        this.emptySinceTick ??= tickIndex;
+      } else {
+        this.emptySinceTick = null;
       }
-      this.#log('info', { harvested, revenueEUR, replanted: need }, 'HARVEST_ZONE_TICK');
-    }
+      if (this.replantingPolicy?.zoneGateMode === 'perSlot') {
+        const template = this.plantTemplate || ready[0] || keep[0];
+        if (template) {
+          let areaPerPlant = template.method?.areaPerPlant;
+          if (!areaPerPlant || areaPerPlant <= 0) areaPerPlant = template.area_m2;
+          if (!areaPerPlant || areaPerPlant < 1) areaPerPlant = 2.5; // sensible default
+          const capacity = Math.max(0, Math.floor(this.area / areaPerPlant));
+          const need = Math.max(0, capacity - this.plants.length);
+          for (let i = 0; i < need; i++) {
+            const newPlant = new Plant({ strain: template.strain, method: template.method, rng: this.rng, area_m2: areaPerPlant });
+            this.addPlant(newPlant);
+          }
+          this.#log('info', { harvested, revenueEUR, replanted: need }, 'HARVEST_ZONE_TICK');
+        }
+      }
+      // END: REPLANTING v1
   }
 
   #replaceBrokenDevices() {
