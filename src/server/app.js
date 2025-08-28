@@ -3,7 +3,9 @@
  */
 import http from 'node:http';
 import express from 'express';
+import cors from 'cors';
 import pino from 'pino';
+import { attachLogHelpers } from '../lib/logging.mjs';
 import { createRng } from '../lib/rng.mjs';
 import { resolveProjectPath } from '../lib/pathutil.mjs';
 
@@ -21,7 +23,7 @@ import { ensureDataDirs } from './config.mjs';
 export async function createServerApp(opts = {}) {
   await ensureDataDirs();
 
-  const logger = opts.logger || pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' });
+  const logger = opts.logger || attachLogHelpers(pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' }));
 
   // Resolve env/opts
   const port = Number(opts.port ?? process.env.PORT ?? 3000);
@@ -39,6 +41,11 @@ export async function createServerApp(opts = {}) {
   // Express + HTTP server
   const app = express();
   const httpServer = http.createServer(app);
+
+  app.use(cors({ origin: true, credentials: true }));
+  app.get('/healthz', (req, res) => {
+    res.json({ ok: true, uptime_s: process.uptime(), pid: process.pid });
+  });
 
   // Attach WS forwarder (read-only telemetry)
   attachUiWs(httpServer, { path: '/ws/ui', logger });
@@ -68,7 +75,10 @@ export async function createServerApp(opts = {}) {
         httpServer.listen(port, resolve);
       });
       listening = true;
-      logger.info({ msg: 'server listening', port, seed, tickMs, savegamePath: meta.pathResolved });
+      logger.info(
+        { name: 'server', port, vitePort: 5173, env: process.env.NODE_ENV, logLevel: logger.level },
+        'Server listening'
+      );
     }
     if (autoStart !== false && !engine.isRunning()) {
       await engine.start();

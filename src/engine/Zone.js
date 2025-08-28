@@ -395,10 +395,25 @@ export class Zone {
       } else {
         cycle = [18, 6];
       }
-      this.#log('info', { zoneId: this.id, stage }, 'Using fallback light cycle');
+      this.logger.onceKeyed(
+        `fallback:${this.roomId}:${this.id}:${stage}`,
+        'warn',
+        {
+          name: 'server',
+          structureId: this.structureId,
+          roomId: this.roomId,
+          roomName: this.roomName,
+          zoneName: this.name,
+          stage,
+        },
+        'Using fallback light cycle'
+      );
     }
 
     const currentSimHour = (tickIndex * this.tickLengthInHours) % 24;
+    if (process.env.DEBUG_LIGHT_CYCLE) {
+      this.#log('debug', { stage, cycle }, 'Light cycle tick');
+    }
     const lightHours = Number(cycle[0]) || 0;
     const lightsOn = currentSimHour < lightHours;
     this.runtime.lightsOn = lightsOn;
@@ -407,7 +422,7 @@ export class Zone {
     const lamps = this.devices.filter(d => d.kind === 'Lamp');
     if (lamps.length === 0 && !this._warnedNoLamp) {
       this._warnedNoLamp = true;
-      this.#log('warn', { zoneId: this.id }, 'No Lamp in zone; PPFD will stay ~0');
+      this.#log('warn', {}, 'No Lamp in zone; PPFD will stay ~0');
     }
     for (const lamp of lamps) {
       try {
@@ -667,7 +682,7 @@ export class Zone {
     const meanCO2ppm = this._debugDay.totalHours > 0 ? this._debugDay.co2Sum / this._debugDay.totalHours : 0;
     const meanTemp = this._debugDay.totalHours > 0 ? this._debugDay.tempSum / this._debugDay.totalHours : 0;
     if (process.env.DEBUG_HARVEST) {
-      this.logger.info({ zoneId: this.id, day, photoperiod: [lightH, darkH], meanPPFD, DLI, meanCO2ppm, meanTemp }, 'DEBUG_ZONE_DAY');
+      this.logger.info({ day, photoperiod: [lightH, darkH], meanPPFD, DLI, meanCO2ppm, meanTemp }, 'DEBUG_ZONE_DAY');
       for (const p of this.plants.slice(0, 3)) {
         p.debugDailyLog?.(day, this);
       }

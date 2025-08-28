@@ -1,6 +1,7 @@
 /** Thin runner that delegates to createServerApp for Electron-ready startup. */
 import { config as dotenv } from 'dotenv';
 import pino from 'pino';
+import { attachLogHelpers } from '../lib/logging.mjs';
 import { createServerApp } from './app.js';
 import { router as strainsRouter } from './routes/strains.mjs';
 import { router as devicesRouter } from './routes/devices.mjs';
@@ -11,6 +12,7 @@ dotenv({
 });
 
 const logger = pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' });
+attachLogHelpers(logger);
 
 async function main() {
   const port = Number(process.env.PORT || 3000);

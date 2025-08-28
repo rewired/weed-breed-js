@@ -55,6 +55,7 @@ export class Room {
 
     this.zones.push(zone);
     zone.roomId = this.id;
+    zone.roomName = this.name;
     zone.structureId = this.structureId;
 
     // Pass down the contextual logger
