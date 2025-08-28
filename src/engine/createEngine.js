@@ -19,11 +19,14 @@ import { telemetryAdapter } from '../sim/telemetryAdapter.js';
 
 /**
  * @typedef {object} Engine
- * @property {() => void} start
+ * @property {() => Promise<void>} start
  * @property {() => void} stop
  * @property {() => boolean} isRunning
+ * @property {(ms: number) => void} setSpeed
+ * @property {() => number} getTickMs
+ * @property {() => number} getTick
  * @property {() => any} getState
- */
+*/
 
 /**
  * @param {{ savegame: any, rng: Function, tickMs: number, logger: any }} opts
@@ -32,6 +35,7 @@ import { telemetryAdapter } from '../sim/telemetryAdapter.js';
 export function createEngine({ savegame, rng, tickMs, logger }) {
   let timer = null;
   let tick = 0;
+  let tickMsCurrent = Math.max(10, Number(tickMs || 100));
   /** @type {Array<any>} */
   let zones = [];
   /** @type {any} */
@@ -144,15 +148,26 @@ export function createEngine({ savegame, rng, tickMs, logger }) {
     async start() {
       if (timer) return; // idempotent
       await ensureBuilt();
-      const ms = Math.max(10, Number(tickMs || 100));
-      timer = setInterval(() => { step().catch(() => {}); }, ms);
+      timer = setInterval(() => { step().catch(() => {}); }, tickMsCurrent);
       if (timer.unref) timer.unref();
-      logger?.info?.({ msg: 'engine started', tickMs: ms, zones: zones.length });
+      logger?.info?.({ msg: 'engine started', tickMs: tickMsCurrent, zones: zones.length });
     },
     stop() {
       if (timer) { clearInterval(timer); timer = null; logger?.info?.({ msg: 'engine stopped' }); }
     },
     isRunning() { return Boolean(timer); },
+    setSpeed(ms) {
+      const next = Math.max(10, Number(ms));
+      tickMsCurrent = next;
+      if (timer) {
+        clearInterval(timer);
+        timer = setInterval(() => { step().catch(() => {}); }, tickMsCurrent);
+        if (timer.unref) timer.unref();
+      }
+      logger?.info?.({ msg: 'engine speed set', tickMs: tickMsCurrent });
+    },
+    getTickMs() { return tickMsCurrent; },
+    getTick() { return tick; },
     getState() {
       const plants = zones.reduce((sum, z) => sum + (z.plants?.length ?? 0), 0);
       return { tick, zonesCount: zones.length, plantsCount: plants, structure, zones };
