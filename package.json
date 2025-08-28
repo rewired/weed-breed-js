@@ -9,6 +9,9 @@
   "scripts": {
     "start": "node src/server/index.js",
     "dev": "node --watch src/server/index.js",
+    "dev:server": "node --watch src/server/index.js",
+    "dev:client": "npm run dev --prefix apps/client",
+    "dev:all": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "sim:demo": "node scripts/sim_demo.mjs",
     "sim": "node scripts/sim_from_save.mjs",
@@ -31,7 +34,8 @@
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "jest": "^30.0.5"
+    "jest": "^30.0.5",
+    "concurrently": "^8.2.1"
   },
   "packageManager": "npm@^10"
 }

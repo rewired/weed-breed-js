@@ -10,6 +10,8 @@ import seedrandom from 'seedrandom';
 import { loadDefaultSavegame } from './loadSavegame.js';
 import { attachUiWs } from '../sim/uiStreamWs.js';
 import { createEngine } from '../engine/createEngine.js';
+import { register, dispatch } from '../sim/commandBus.js';
+import { createSimControlRouter } from './routes/simControl.js';
 
 /**
  * @param {{ port?: number, tickMs?: number, autoStart?: boolean, logger?: any }} opts
@@ -40,6 +42,20 @@ export async function createServerApp(opts = {}) {
 
   // Create engine
   const engine = createEngine({ savegame, rng: rngFn, tickMs, logger });
+
+  // Command bus registrations
+  register('sim.start',   ({ engine }) => { engine.start(); });
+  register('sim.stop',    ({ engine }) => { engine.stop(); });
+  register('sim.setSpeed',({ engine, payload }) => { engine.setSpeed(Number(payload?.tickMs)); });
+  register('sim.status',  ({ engine }) => ({
+    running: engine.isRunning(),
+    tick: engine.getTick(),
+    tickMs: engine.getTickMs(),
+    seed,
+    savegamePath: meta.pathResolved,
+  }));
+
+  app.use('/api/sim', createSimControlRouter({ engine, dispatch, logger, meta: { seed, savegamePath: meta.pathResolved } }));
 
   let listening = false;
 
