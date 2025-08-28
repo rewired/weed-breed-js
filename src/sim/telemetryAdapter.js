@@ -56,3 +56,12 @@ export function telemetryAdapter(engine, bus) {
 
 export default telemetryAdapter;
 
+/**
+ * Backwards-compatible export name as specified in the request.
+ * @param {{ getState(): any }} engine
+ * @param {{ emitUi: (e:object)=>void }} bus
+ * @returns {(tick:number)=>void}
+ */
+export function bindTelemetry(engine, bus) {
+  return telemetryAdapter(engine, bus);
+}
