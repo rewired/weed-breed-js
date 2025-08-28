@@ -1,8 +1,14 @@
 /** Thin runner that delegates to createServerApp for Electron-ready startup. */
+import { config as dotenv } from 'dotenv';
 import pino from 'pino';
 import { createServerApp } from './app.js';
 import { router as strainsRouter } from './routes/strains.mjs';
 import { router as devicesRouter } from './routes/devices.mjs';
+
+// Load server-specific env (does NOT affect Vite)
+dotenv({
+  path: ['.env.server.local', '.env.server', '.env'],
+});
 
 const logger = pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' });
 

@@ -16,6 +16,8 @@ import { CostEngine } from '../engine/CostEngine.js';
 import { createTickMachine } from '../runtime/tickMachine.js';
 import { uiStream$, emit } from '../runtime/eventBus.js';
 import { telemetryAdapter } from '../sim/telemetryAdapter.js';
+import { ensureRng } from '../lib/rng.mjs';
+import { resolveProjectPath } from '../lib/pathutil.mjs';
 
 /**
  * @typedef {object} Engine
@@ -29,10 +31,16 @@ import { telemetryAdapter } from '../sim/telemetryAdapter.js';
 */
 
 /**
- * @param {{ savegame: any, rng: Function, tickMs: number, logger: any }} opts
+ * @param {{ savegame?: any, rng?: Function, tickMs?: number, logger?: any, savegamePath?: string }} [opts]
  * @returns {Engine}
  */
-export function createEngine({ savegame, rng, tickMs, logger }) {
+export function createEngine(opts = {}) {
+  const { savegame, rng, tickMs, logger, savegamePath: savegamePathOpt } = opts;
+  const rngWrapped = ensureRng(rng);
+  const savegamePath = resolveProjectPath(
+    savegamePathOpt || process.env.SAVEGAME_PATH || 'data/savegames/default.json'
+  );
+  const config = { savegamePath };
   let timer = null;
   let tick = 0;
   let tickMsCurrent = Math.max(10, Number(tickMs || 100));
@@ -59,7 +67,7 @@ export function createEngine({ savegame, rng, tickMs, logger }) {
     const costEngine = new CostEngine({ devicePriceMap, strainPriceMap });
     const world = { totalBuds_g: 0, strainStats: new Map() };
 
-    const runtimeBase = { logger, rng, costEngine, devicePriceMap, strainPriceMap, blueprints, world };
+    const runtimeBase = { logger, rng: rngWrapped, costEngine, devicePriceMap, strainPriceMap, blueprints, world };
 
     const sg = savegame || {};
     const structCfg = sg.structure || sg.world?.structure || null;
@@ -80,7 +88,7 @@ export function createEngine({ savegame, rng, tickMs, logger }) {
           if (!bp) continue;
           const count = Number(d.count ?? 1);
           for (let i = 0; i < count; i++) {
-            const dev = createDevice(bp, { zone, tickLengthInHours: zone.tickLengthInHours, logger: zone.logger, rng }, d.overrides);
+            const dev = createDevice(bp, { zone, tickLengthInHours: zone.tickLengthInHours, logger: zone.logger, rng: rngWrapped }, d.overrides);
             zone.addDevice(dev);
           }
         }
@@ -94,7 +102,7 @@ export function createEngine({ savegame, rng, tickMs, logger }) {
           const n = Math.max(0, Math.floor((zone.area ?? 0) / areaPerPlant));
           for (let i = 0; i < n; i++) {
             // Plant ctor resolves shape internally using provided method/strain
-            const plant = new (await import('../engine/Plant.js')).Plant({ strain, method, rng, area_m2: areaPerPlant });
+            const plant = new (await import('../engine/Plant.js')).Plant({ strain, method, rng: rngWrapped, area_m2: areaPerPlant });
             zone.addPlant(plant);
           }
         }
@@ -145,6 +153,7 @@ export function createEngine({ savegame, rng, tickMs, logger }) {
   }
 
   return {
+    config,
     async start() {
       if (timer) return; // idempotent
       await ensureBuilt();
