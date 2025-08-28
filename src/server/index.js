@@ -12,8 +12,8 @@ import seedrandom from 'seedrandom';
 
 import { loadDefaultSavegame } from './loadSavegame.js';
 import { attachUiWs } from '../sim/uiStreamWs.js';
-import { emit } from '../runtime/eventBus.js';
 import { loadFromSavegame } from '../engine/loaders/savegameLoader.mjs';
+import { createEngine } from '../engine/createEngine.js';
 
 const logger = pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' });
 
@@ -26,12 +26,8 @@ async function main() {
   const rng = seedrandom(meta.seed);
   const rngFn = () => rng();
 
-  // Initialize simulation state from savegame
-  try {
-    await loadFromSavegame({ path: meta.pathResolved, runtime: { logger, rng: rngFn } });
-  } catch (err) {
-    logger.warn({ msg: 'Failed to init world from savegame', err: String(err) });
-  }
+  // Initialize simulation state from savegame (built in engine)
+  // Note: loadFromSavegame kept for compatibility; engine performs its own world build.
 
   // Optional static serving in production
   if (process.env.NODE_ENV === 'production') {
@@ -45,15 +41,13 @@ async function main() {
   // Attach telemetry WS
   attachUiWs(server, { path: '/ws/ui', logger });
 
-  // simple heartbeat until real simulation is wired
-  const tickMs = Number(process.env.TICK_MS || 50);
-  setInterval(() => {
-    emit('tick', { rand: rngFn() });
-  }, tickMs);
+  const tickMs = Number(process.env.TICK_MS || 100);
+  const engine = createEngine({ savegame, rng: rngFn, tickMs, logger });
+  await engine.start();
 
   const port = Number(process.env.PORT || 3000);
   server.listen(port, () => {
-    logger.info({ msg: 'server started', port, savegamePath: meta.pathResolved, seed: meta.seed });
+    logger.info({ msg: 'server started', port, savegamePath: meta.pathResolved, seed: meta.seed, tickMs });
   });
 
   const shutdown = (sig) => {

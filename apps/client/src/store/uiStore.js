@@ -25,6 +25,11 @@ export const connection$ = new BehaviorSubject({
 });
 
 export const uiState$ = new BehaviorSubject({
+  // control flags
+  paused: true,
+  lastTickSeen: null,
+
+  // derived/UI state
   lastTick: null,
   counters: {},
   rooms: new Map(),
@@ -32,7 +37,7 @@ export const uiState$ = new BehaviorSubject({
   plants: new Map(),
 });
 
-let paused = false;
+let paused = true; // start paused; UI ignores incoming batches until unpaused
 let socket;
 let sub;
 let statusSub;
@@ -41,6 +46,8 @@ let statusSub;
 export function startUiStream() {
   if (socket) {
     paused = false;
+    // reflect in store
+    uiState$.next({ ...uiState$.value, paused });
     return;
   }
   socket = openUiSocket();
@@ -56,7 +63,7 @@ export function startUiStream() {
     }
     if (data?.type === 'ui.batch' && Array.isArray(data.events)) {
       connection$.next({ ...connection$.value, lastBatchSize: data.events.length, lastMessageTs: Date.now() });
-      if (paused) return;
+      if (paused) return; // ignore batch while paused; we still update connection$ above
       const next = reduceEvents(uiState$.value, data.events);
       uiState$.next(next);
     }
@@ -66,6 +73,8 @@ export function startUiStream() {
 /** Pause incoming event processing. */
 export function setPaused(v) {
   paused = v;
+  const cur = uiState$.value;
+  uiState$.next({ ...cur, paused: v });
 }
 
 /** Stop stream and close socket. */
@@ -84,6 +93,8 @@ export function closeUiStream() {
  */
 function reduceEvents(state, events) {
   const next = {
+    paused: state.paused,
+    lastTickSeen: state.lastTickSeen,
     lastTick: state.lastTick,
     counters: { ...state.counters },
     rooms: new Map(state.rooms),
@@ -98,6 +109,10 @@ function reduceEvents(state, events) {
     if (typeof ev.type === 'string') {
       const prefix = ev.type.split('.')[0];
       next.counters[prefix] = (next.counters[prefix] || 0) + 1;
+    }
+    // Only record lastTickSeen on tick.summary to establish heartbeat
+    if (ev.type === 'tick.summary' && typeof ev.tick === 'number') {
+      next.lastTickSeen = ev.tick;
     }
     if (ev.roomId) {
       const prev = next.rooms.get(ev.roomId) || { id: ev.roomId };
