@@ -38,6 +38,22 @@ Units are implicit across the data model; field names never contain unit suffixe
 
 ### Data Layout
 
+## Testing
+
+Run unit tests and ensure deterministic behaviour:
+
+```sh
+npm test
+```
+
+Validate bundled data files:
+
+```sh
+npm run validate:data
+```
+
+The simulation uses seedable random number generators. Provide the same seed to repeat runs deterministically.
+
 Strain and device definitions are split into drafts and published variants. The server writes backups before overwriting files.
 
 ```

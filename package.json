@@ -15,7 +15,9 @@
     "sim:demo": "node scripts/sim_demo.mjs",
     "sim": "node scripts/sim_from_save.mjs",
     "audit:last": "node scripts/audit_last.mjs",
-    "lint": "npx eslint@8 ."
+    "lint": "npx eslint@8 .",
+    "validate:data": "node scripts/validate_data.mjs",
+    "test:unit": "npm test -- tests/unit"
   },
   "dependencies": {
     "ajv": "^8.17.1",
