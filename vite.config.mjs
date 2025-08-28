@@ -7,11 +7,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = __dirname;
 
-// Client lives in /frontend
-const clientRoot = path.resolve(projectRoot, 'frontend');
+// Client lives in /app (pinned)
+const clientRoot = path.resolve(projectRoot, 'app');
 
 export default defineConfig(({ mode }) => {
-  // Only load VITE_* variables for client
+  // Only load VITE_* variables for the client
   const env = loadEnv(mode, projectRoot, 'VITE_');
   const apiBase = env.VITE_API_BASE || 'http://localhost:3000';
 
@@ -39,9 +39,8 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      // Safe fallback for rare client code paths checking NODE_ENV
+      // Safe fallback if any client code checks NODE_ENV
       'process.env.NODE_ENV': JSON.stringify(mode)
     }
   };
 });
-
