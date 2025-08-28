@@ -1,4 +1,4 @@
-# Node.js – Abhängigkeiten & Build-Artefakte
+# Node.js – Dependencies & build artifacts
 node_modules/
 dist/
 build/
@@ -13,16 +13,16 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Betriebssystem-Artefakte
+# OS artifacts
 .DS_Store
 Thumbs.db
 
-# Lokale Umgebungsdateien
+# Local environment files
 .env
 .env.local
 .env.*.local
 
-# Temporäre Dateien/Ordner
+# Temporary files/folders
 .tmp/
 temp/
 *.tmp
@@ -37,16 +37,19 @@ temp/
 __tests__/coverage/
 *.snap
 
-# Frontend-Artefakte (falls Editor/React im Projekt)
+# Frontend artifacts
 *.cache
 .cache/
 .next/
 out/
 
-# Projekt-spezifisch: Keine generierten JSON-Instanzen im Repo
+# Project-specific: exclude generated JSON instances
 data/generated/
 data/cache/
-data/strains/backup/
+
+# Backups can grow large; keep them out of VCS
+data/backups/
+
 docs/__ki-data/
 logs/
 reports/

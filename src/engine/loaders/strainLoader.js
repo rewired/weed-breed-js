@@ -10,8 +10,8 @@ import { validate as isUuid, version as uuidVersion } from 'uuid';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Assumption: Project structure: <root>/src/engine/* and <root>/data/strains/*.json
-const STRAINS_DIR = path.resolve(__dirname, '../../../data/strains');
+// Assumption: Project structure: <root>/src/engine/* and <root>/data/published/strains/*.json
+const STRAINS_DIR = path.resolve(__dirname, '../../../data/published/strains');
 
 async function readJson(fp) {
   const raw = await fs.readFile(fp, 'utf-8');

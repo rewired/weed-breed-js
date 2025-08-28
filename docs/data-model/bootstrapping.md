@@ -7,7 +7,7 @@ It also notes where to place the files within the `data/` directory and which lo
 
 - `data/savegames/` – hierarchical definitions for structures, rooms, zones and optionally plants.
   Loaded by [`loadSavegame`](../../src/server/services/savegameLoader.js).
-- `data/devices/` – device blueprints. Loaded by [`loadAllDevices`/`loadDeviceBySlug`](../../src/engine/loaders/deviceLoader.js).
+- `data/published/devices/` – device blueprints. Loaded by [`loadAllDevices`/`loadDeviceBySlug`](../../src/engine/loaders/deviceLoader.js).
 
 For a complete example, see [`data/savegames/default.json`](../../data/savegames/default.json).
 
@@ -139,4 +139,4 @@ Plants can be embedded in savegames under `zones[].plants[]` or generated from s
 }
 ```
 
-Device blueprints reside in `data/devices/` and are loaded by the device loader.
+Device blueprints reside in `data/published/devices/` and are loaded by the device loader.

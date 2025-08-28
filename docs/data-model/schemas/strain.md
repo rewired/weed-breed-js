@@ -28,5 +28,5 @@ Defines genetics and growth properties for plants.
   "floweringDays": 63
 }
 ```
-// data/strains/ak-47.json
-[data/strains/ak-47.json](../../../data/strains/ak-47.json)
+// data/published/strains/ak-47.json
+[data/published/strains/ak-47.json](../../../data/published/strains/ak-47.json)

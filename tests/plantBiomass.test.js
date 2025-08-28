@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const strainData = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/strains/ak-47.json'), 'utf8'));
+const strainData = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/published/strains/ak-47.json'), 'utf8'));
 
 function makeCtx(overrides = {}) {
   const zone = {
