@@ -7,8 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = __dirname;
 
-// Client lives in /app (pinned)
-const clientRoot = path.resolve(projectRoot, 'app');
+// Client lives in /apps/client (pinned)
+const clientRoot = path.resolve(projectRoot, 'apps', 'client');
 
 export default defineConfig(({ mode }) => {
   // Only load VITE_* variables for the client
@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      // Safe fallback if any client code checks NODE_ENV
+      // Safe fallback if any client code checks NODE_ENV (avoid relying on .env NODE_ENV for Vite)
       'process.env.NODE_ENV': JSON.stringify(mode)
     }
   };
