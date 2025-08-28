@@ -12,6 +12,7 @@ import { attachUiWs } from '../sim/uiStreamWs.js';
 import { createEngine } from '../engine/createEngine.js';
 import { register, dispatch } from '../sim/commandBus.js';
 import { createSimControlRouter } from './routes/simControl.js';
+import { ensureDataDirs } from './config.mjs';
 
 /**
  * @param {{ port?: number, tickMs?: number, autoStart?: boolean, logger?: any }} opts
@@ -20,6 +21,7 @@ import { createSimControlRouter } from './routes/simControl.js';
 export async function createServerApp(opts = {}) {
   // Load .env within the factory
   dotenv.config();
+  await ensureDataDirs();
 
   const logger = opts.logger || pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' });
 
@@ -93,6 +95,7 @@ export async function createServerApp(opts = {}) {
     port,
     engine,
     httpServer,
+    app,
   };
 }
 

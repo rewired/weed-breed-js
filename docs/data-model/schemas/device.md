@@ -31,5 +31,5 @@ Pricing and maintenance costs are stored separately in [`data/devicePrices.json`
   "settings": { "power": 1.2, "airflow": 350 }
 }
 ```
-// data/devices/climate_unit_01.json
-[data/devices/climate_unit_01.json](../../../data/devices/climate_unit_01.json)
+// data/published/devices/climate_unit_01.json
+[data/published/devices/climate_unit_01.json](../../../data/published/devices/climate_unit_01.json)

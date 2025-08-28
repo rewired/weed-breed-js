@@ -193,7 +193,7 @@ Example response (shortened):
 | PUT    | `/api/strains/{id}` | Update a strain (existing file backed up first).            |
 
 - **Strain object:** must follow the JSON schema at `packages/wb-model/schemas/strain.schema.json`.
-- **Backups:** existing files are zipped and moved to `data/strains/backup` before overwrite.
+- **Backups:** existing files are copied to `data/backups/` before overwrite.
 
 ---
 

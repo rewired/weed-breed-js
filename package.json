@@ -5,13 +5,12 @@
   "license": "MIT",
   "author": "bjoern ahlers",
   "type": "module",
-  "main": "src/server/index.js",
+  "main": "src/server/index.mjs",
   "scripts": {
-    "start": "node src/server/index.js",
-    "dev": "node --watch src/server/index.js",
-    "dev:server": "node --watch src/server/index.js",
-    "dev:client": "npm run dev --prefix apps/client",
-    "dev:all": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "start": "node src/server/index.mjs",
+    "dev:server": "node --watch src/server/index.mjs",
+    "dev:client": "vite",
+    "dev": "concurrently -k -n server,client \"npm:dev:server\" \"npm:dev:client\"",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "sim:demo": "node scripts/sim_demo.mjs",
     "sim": "node scripts/sim_from_save.mjs",
@@ -19,6 +18,8 @@
     "lint": "npx eslint@8 ."
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -32,10 +33,10 @@
     "xstate": "^5.20.2"
   },
   "devDependencies": {
-    "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
     "jest": "^30.0.5",
-    "concurrently": "^8.2.1"
+    "concurrently": "^9.0.0",
+    "vite": "^5.4.0"
   },
+  "engines": { "node": ">=23.0.0" },
   "packageManager": "npm@^10"
 }

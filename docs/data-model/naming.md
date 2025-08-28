@@ -54,8 +54,8 @@
   "flowering": [300, 650]
 }
 ```
-// data/strains/ak-47.json
-[data/strains/ak-47.json](../../data/strains/ak-47.json)
+// data/published/strains/ak-47.json
+[data/published/strains/ak-47.json](../../data/published/strains/ak-47.json)
 
 ### Nutrients
 
@@ -65,8 +65,8 @@
   "flowering": { "nitrogen": 0.7, "phosphorus": 1.4, "potassium": 1.6 }
 }
 ```
-// data/strains/ak-47.json
-[data/strains/ak-47.json](../../data/strains/ak-47.json)
+// data/published/strains/ak-47.json
+[data/published/strains/ak-47.json](../../data/published/strains/ak-47.json)
 
 ### Temperature Range
 
@@ -76,8 +76,8 @@
   "flowering": [22, 30]
 }
 ```
-// data/strains/ak-47.json
-[data/strains/ak-47.json](../../data/strains/ak-47.json)
+// data/published/strains/ak-47.json
+[data/published/strains/ak-47.json](../../data/published/strains/ak-47.json)
 
 ---
 

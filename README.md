@@ -36,6 +36,28 @@ Units are implicit across the data model; field names never contain unit suffixe
     // package.json
     [package.json](package.json)
 
+### Data Layout
+
+Strain and device definitions are split into drafts and published variants. The server writes backups before overwriting files.
+
+```
+data/
+  drafts/
+    strains/
+    devices/
+  published/
+    strains/
+    devices/
+  backups/
+```
+
+Set environment variables in `.env` to customize paths and retention:
+
+```
+WB_DATA_DIR=./data
+WB_BACKUP_RETENTION_DAYS=30
+```
+
 ### Running the Simulation
 
 To run the main simulation scenario, use the following command:
@@ -53,8 +75,8 @@ To start the web server and interact with the simulation through the frontend, u
 ```sh
 npm run dev
 ```
-// src/server/index.js
-[src/server/index.js](src/server/index.js)
+// src/server/index.mjs
+[src/server/index.mjs](src/server/index.mjs)
 
 ### Logging
 
