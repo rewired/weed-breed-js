@@ -14,12 +14,7 @@
     "preview": "vite preview --config vite.config.mjs",
     "start": "node src/server/index.mjs",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "sim": "node scripts/sim_from_save.mjs",
-    "sim:demo": "node scripts/sim_demo.mjs",
-    "audit:last": "node scripts/audit_last.mjs",
-    "lint": "npx eslint@8 .",
-    "validate:data": "node scripts/validate_data.mjs",
-    "test:unit": "npm test -- tests/unit"
+    "sim": "node src/demos/structure_rooms_zones_demo.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",
