@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import AppShell from '@/components/AppShell.jsx';
 import Router from '@/routes/Router.jsx';
 import StrainEditor from '@/components/StrainEditor.jsx';
+import DevConsole from '@/components/DevConsole.jsx';
 
 export default function App() {
   const [editorOpen, setEditorOpen] = useState(false);
@@ -12,6 +13,7 @@ export default function App() {
         <Router />
       </AppShell>
       <StrainEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+      <DevConsole />
     </>
   );
 }

@@ -1,4 +1,4 @@
-const apiBase = import.meta.env.VITE_API_BASE || '';
+const apiBase = import.meta.env.VITE_SERVER_URL || 'http://localhost:7071';
 const token = import.meta.env.VITE_SIM_CONTROL_TOKEN;
 
 async function request(path, opts = {}) {

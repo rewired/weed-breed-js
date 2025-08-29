@@ -207,7 +207,7 @@ Example response (shortened):
 
 ### 4.2 WebSocket
 
-- **Path:** `ws://<host>:<port>/ws`
+- **Path:** `ws://<host>:<port>/ui`
 - **Description:**
   - On connection, periodic status updates are sent. Example payload:
 

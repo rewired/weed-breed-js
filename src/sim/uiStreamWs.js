@@ -10,7 +10,7 @@ import { uiStream$ } from '../runtime/eventBus.js';
  * @param {import('http').Server} server
  * @param {{path?:string, logger?:import('pino').Logger}} [opts]
  */
-export function attachUiWs(server, { path = '/ws/ui', logger = console } = {}) {
+export function attachUiWs(server, { path = '/ui', logger = console } = {}) {
   const wss = new WebSocketServer({ server, path });
 
   wss.on('connection', (ws) => {
@@ -18,7 +18,7 @@ export function attachUiWs(server, { path = '/ws/ui', logger = console } = {}) {
     const sub = uiStream$.subscribe((batch) => {
       try {
         if (ws.readyState === ws.OPEN) {
-          ws.send(JSON.stringify(batch));
+          ws.send(JSON.stringify({ type: 'ui.batch', events: batch }));
         }
       } catch (err) {
         logger.warn?.({ msg: 'ui ws send failed', err: String(err) });

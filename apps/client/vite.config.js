@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  root: __dirname,
   plugins: [react()],
   resolve: {
     alias: {
@@ -16,14 +17,14 @@ export default defineConfig({
     port: 5173,
     host: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
-      '/ws': {
-        target: 'ws://localhost:3000',
-        ws: true,
-      },
+      '/healthz': { target: 'http://localhost:7071', changeOrigin: true },
+      '/api': { target: 'http://localhost:7071', changeOrigin: true },
+      '/ui': { target: 'ws://localhost:7071', ws: true },
     },
+  },
+  publicDir: path.resolve(__dirname, 'public'),
+  build: {
+    outDir: path.resolve(__dirname, '../../dist/client'),
+    emptyOutDir: true,
   },
 });
