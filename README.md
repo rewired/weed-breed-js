@@ -94,6 +94,16 @@ npm run dev
 // src/server/index.mjs
 [src/server/index.mjs](src/server/index.mjs)
 
+The client is served through [Vite](https://vitejs.dev/). To run only the
+frontend during development, start the Vite dev server:
+
+```sh
+npm run dev:client
+```
+
+Opening `apps/client/index.html` directly in the browser will not load the
+modules correctly; always use the dev server or a production build.
+
 ### Logging
 
 The default log level is conservative (`warn`) to keep the console output tidy.
