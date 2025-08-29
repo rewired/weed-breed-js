@@ -50,7 +50,12 @@ export function startUiStream() {
     uiState$.next({ ...uiState$.value, paused });
     return;
   }
-  socket = openUiSocket();
+  try {
+    socket = openUiSocket();
+  } catch {
+    connection$.next({ status: 'error' });
+    return;
+  }
   paused = false;
   uiState$.next({ ...uiState$.value, paused });
   statusSub = socket.status$.subscribe((s) => {
