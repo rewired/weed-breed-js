@@ -1,3 +1,4 @@
+// src/sim/uiStreamWs.js
 /**
  * WebSocket forwarder for UI telemetry (read-only).
  */
@@ -14,20 +15,23 @@ export function attachUiWs(server, { path = '/ws/ui', logger = console } = {}) {
 
   wss.on('connection', (ws) => {
     logger.info?.({ msg: 'ui ws connected', clients: wss.clients.size });
-    const sub = uiStream$.subscribe((events) => {
+    const sub = uiStream$.subscribe((batch) => {
       try {
-        ws.send(JSON.stringify({ type: 'ui.batch', events }));
+        if (ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify(batch));
+        }
       } catch (err) {
         logger.warn?.({ msg: 'ui ws send failed', err: String(err) });
       }
     });
     const cleanup = () => {
-      sub.unsubscribe();
-      logger.info?.({ msg: 'ui ws disconnected', clients: wss.clients.size - 1 });
+      try { sub.unsubscribe(); } catch {}
+      logger.info?.({ msg: 'ui ws disconnected', clients: Math.max(0, wss.clients.size - 1) });
     };
     ws.on('close', cleanup);
     ws.on('error', cleanup);
     ws.on('message', () => {}); // telemetry only
   });
+
   return wss;
 }

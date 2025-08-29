@@ -8,7 +8,7 @@
   "main": "src/server/index.mjs",
   "scripts": {
     "dev:server": "node --watch src/server/index.mjs",
-    "dev:client": "vite --host --config apps/client/vite.config.js",
+    "dev:client": "vite --host --config vite.config.mjs",
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
     "build": "vite build --config vite.config.mjs",
     "preview": "vite preview --config vite.config.mjs",
@@ -35,7 +35,8 @@
     "concurrently": "^9.0.0",
     "cross-env": "^7.0.3",
     "jest": "^30.0.5",
-    "vite": "^7.1.3"
+    "vite": "^7.1.3",
+    "@vitejs/plugin-react": "^4.7.0"
   },
   "engines": {
     "node": ">=23.0.0"

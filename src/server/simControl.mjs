@@ -1,6 +1,6 @@
 // src/server/simControl.mjs
 import express from 'express';
-import { emit } from '../sim/eventBus.mjs';
+import { emit } from '../runtime/eventBus.js';
 
 /**
  * Simple in-memory ticker stub. Replace hooks with your real tick engine if present.
