@@ -1,0 +1,157 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "slug": "white_widow",
+  "name": "White Widow",
+  "lineage": {
+    "parents": ["Brazilian Sativa", "South Indian Indica"]
+  },
+  "genotype": {
+    "sativa": 0.5,
+    "indica": 0.5,
+    "ruderalis": 0.0
+  },
+  "generalResilience": 0.75,
+  "chemotype": {
+    "thcContent": 0.18,
+    "cbdContent": 0.02
+  },
+  "morphology": {
+    "growthRate": 0.95,
+    "yieldFactor": 1.1,
+    "leafAreaIndex": 3.0
+  },
+  "growthModel": {
+    "maxBiomassDry_g": 180.0,
+    "baseLUE_gPerMol": 0.9,
+    "maintenanceFracPerDay": 0.01,
+    "dryMatterFraction": { "vegetation": 0.25, "flowering": 0.20 },
+    "harvestIndex": { "targetFlowering": 0.70 },
+    "phaseCapMultiplier": { "vegetation": 0.5, "flowering": 1.0 },
+    "temperature": { "Q10": 2.0, "T_ref_C": 25 }
+  },
+  "noise": { "enabled": true, "pct": 0.02 },
+  "environmentalPreferences": {
+    "lightSpectrum": {
+      "vegetation": [
+        400,
+        700
+      ],
+      "flowering": [
+        300,
+        650
+      ]
+    },
+    "lightIntensity": {
+      "vegetation": [
+        350,
+        550
+      ],
+      "flowering": [
+        550,
+        950
+      ]
+    },
+    "lightCycle": {
+      "vegetation": [
+        18,
+        6
+      ],
+      "flowering": [
+        12,
+        12
+      ]
+    },
+    "idealTemperature": {
+      "vegetation": [
+        21,
+        27
+      ],
+      "flowering": [
+        20,
+        26
+      ]
+    },
+    "idealHumidity": {
+      "vegetation": [
+        0.55,
+        0.65
+      ],
+      "flowering": [
+        0.45,
+        0.55
+      ]
+    },
+    "phRange": [
+      5.8,
+      6.2
+    ]
+  },
+  "nutrientDemand": {
+    "dailyNutrientDemand": {
+      "seedling": {
+        "nitrogen": 0.3,
+        "phosphorus": 0.2,
+        "potassium": 0.3
+      },
+      "vegetation": {
+        "nitrogen": 1.1,
+        "phosphorus": 0.7,
+        "potassium": 1.1
+      },
+      "flowering": {
+        "nitrogen": 0.6,
+        "phosphorus": 1.5,
+        "potassium": 1.5
+      }
+    },
+    "npkTolerance": 0.2,
+    "npkStressIncrement": 0.035
+  },
+  "waterDemand": {
+    "dailyWaterUsagePerSquareMeter": {
+      "seedling": 1.1,
+      "vegetation": 2.7,
+      "flowering": 4.1
+    },
+    "minimumFractionRequired": 0.15
+  },
+  "diseaseResistance": {
+    "dailyInfectionIncrement": 0.025,
+    "infectionThreshold": 0.45,
+    "recoveryRate": 0.012,
+    "degenerationRate": 0.01,
+    "regenerationRate": 0.006,
+    "fatalityThreshold": 0.95
+  },
+  "photoperiod": {
+    "vegetationDays": 28,
+    "floweringDays": 60,
+    "transitionTriggerHours": 12
+  },
+  "stageChangeThresholds": {
+    "vegetative": { "minLightHours": 320, "maxStressForStageChange": 0.35 },
+    "flowering": { "minLightHours": 620, "maxStressForStageChange": 0.25 }
+  },
+  "harvestWindowInDays": [
+    58,
+    70
+  ],
+  "harvestProperties": {
+    "ripeningTimeInHours": 48,
+    "maxStorageTimeInHours": 120,
+    "qualityDecayPerHour": 0.02
+  },
+  "meta": {
+    "description": "White Widow is a balanced hybrid strain, a cross between a Brazilian sativa landrace and a resin-heavy South Indian indica. It is known for its resin production and relatively easy growth.",
+    "advantages": [
+      "High resin production",
+      "Balanced effects",
+      "Good for beginners"
+    ],
+    "disadvantages": [
+      "Can be sensitive to nutrients",
+      "Prefers stable temperatures"
+    ],
+    "notes": "A classic Dutch coffee-shop strain that remains popular worldwide."
+  }
+}
