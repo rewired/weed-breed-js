@@ -23,6 +23,7 @@ Thumbs.db
 .env.*.local
 .env.server
 .env.*.server
+.env.development
 
 # Temporary files/folders
 .tmp/
