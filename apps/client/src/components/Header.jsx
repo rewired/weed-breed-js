@@ -1,87 +1,198 @@
-import React, { useEffect, useState } from 'react';
-import { useConnection, useUiState, setPaused } from '../store/uiStore.js';
-import { fmtTick } from '../utils/format.js';
-import control from '../api/control.js';
+// apps/client/src/components/Header.jsx
+// Single-toggle simulation control + Dev-only Strain Editor link/panel.
+// Uses /api/sim/* for control.
 
-/** Header with connection status and controls. */
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import StrainEditor from './StrainEditor.jsx';
+
+const apiBase =
+  import.meta?.env?.VITE_API_BASE ||
+  `${window.location.protocol}//${window.location.hostname}:3000`;
+
+const wsUrl =
+  import.meta?.env?.VITE_WS_URL ||
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:3000/ws/ui`;
+
+const SHOW_STRAIN_EDITOR =
+  (import.meta?.env?.VITE_SHOW_STRAIN_EDITOR ?? 'true') === 'true';
+
+// --- small HTTP helpers (keep local to avoid global refactors)
+async function getSimState() {
+  const r = await fetch(`${apiBase}/api/sim/state`);
+  return r.json();
+}
+async function post(path, body) {
+  const r = await fetch(`${apiBase}${path}`, {
+    method: 'POST',
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return r.json().catch(() => ({}));
+}
+const sim = {
+  start: (speed) => post('/api/sim/start', { speed }),
+  pause: () => post('/api/sim/pause'),
+  resume: () => post('/api/sim/resume'),
+  stop: () => post('/api/sim/stop'),
+  speed: (speed) => post('/api/sim/speed', { speed }),
+};
+
+function labelFor(state) {
+  if (state === 'running') return 'Pause';
+  if (state === 'paused') return 'Resume';
+  return 'Start';
+}
+
 export default function Header() {
-  const conn = useConnection();
-  const { lastTick, lastTickSeen, paused } = useUiState();
+  const [simState, setSimState] = useState('idle'); // 'idle' | 'running' | 'paused'
+  const [tick, setTick] = useState(0);
+  const [speed, setSpeed] = useState(1);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const wsRef = useRef(null);
 
-  const [server, setServer] = useState({ running: false, tickMs: null });
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  const toggle = () => setPaused(!paused);
-
+  // initial state fetch
   useEffect(() => {
-    let cancelled = false;
-    async function poll() {
+    let alive = true;
+    (async () => {
       try {
-        const s = await control.status();
-        if (!cancelled) setServer(s);
-      } catch {}
-      if (!cancelled) setTimeout(poll, 4000);
-    }
-    poll();
-    return () => { cancelled = true; };
+        const s = await getSimState();
+        if (!alive) return;
+        setSimState(s.state ?? 'idle');
+        setTick(s.tick ?? 0);
+        setSpeed(s.speed ?? 1);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const now = Date.now();
-  let status = conn.status;
-  if (status === 'connected' && conn.lastMessageTs && now - conn.lastMessageTs > 10000) {
-    status = 'stalling';
-  }
+  // WS telemetry for ticks
+  useEffect(() => {
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      ws.onmessage = (ev) => {
+        try {
+          // server batches events; we accept either array or single event
+          const data = JSON.parse(ev.data);
+          const last = Array.isArray(data) ? data[data.length - 1] : data;
+          if (last?.type === 'sim.tickCompleted') {
+            const t = last?.payload?.tick;
+            if (Number.isFinite(t)) setTick(t);
+          }
+        } catch {
+          // ignore
+        }
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => {};
+      return () => {
+        try { ws.close(); } catch {}
+      };
+    } catch {
+      return () => {};
+    }
+  }, []);
 
-  const label = (lastTickSeen === null) ? 'Start' : (paused ? 'Resume' : 'Pause');
-
-  const play = async () => {
-    setBusy(true); setMsg('');
-    try { await control.start(); setServer({ ...server, running: true }); setMsg('started'); }
-    catch { setMsg('start failed'); }
-    finally { setBusy(false); }
+  // click handlers
+  const onToggle = async () => {
+    if (simState === 'idle') {
+      await sim.start(speed);
+    } else if (simState === 'running') {
+      await sim.pause();
+    } else if (simState === 'paused') {
+      await sim.resume();
+    }
+    const s = await getSimState();
+    setSimState(s.state ?? 'idle');
+    setTick(s.tick ?? 0);
+    setSpeed(s.speed ?? 1);
   };
 
-  const stop = async () => {
-    setBusy(true); setMsg('');
-    try { await control.stop(); setServer({ ...server, running: false }); setMsg('stopped'); }
-    catch { setMsg('stop failed'); }
-    finally { setBusy(false); }
+  const onStop = async (e) => {
+    e?.preventDefault?.();
+    await sim.stop();
+    const s = await getSimState();
+    setSimState(s.state ?? 'idle');
+    setTick(s.tick ?? 0);
+    setSpeed(s.speed ?? 1);
   };
 
-  const changeSpeed = async (ms) => {
-    setBusy(true); setMsg('');
-    try { await control.setSpeed(ms); setServer({ ...server, tickMs: ms }); setMsg(`speed ${ms}ms`); }
-    catch { setMsg('speed failed'); }
-    finally { setBusy(false); }
-  };
-
-  const speeds = [
-    { label: '0.5x', ms: 200 },
-    { label: '1x', ms: 100 },
-    { label: '2x', ms: 50 },
-    { label: '5x', ms: 20 }
-  ];
+  // optional: wire speed buttons if they exist elsewhere in the page via data-speed attribute
+  useEffect(() => {
+    // This keeps existing speed buttons functional without refactors.
+    const nodes = Array.from(document.querySelectorAll('[data-speed]'));
+    const handlers = nodes.map((el) => {
+      const h = async () => {
+        const v = Number(el.getAttribute('data-speed'));
+        if (Number.isFinite(v) && v > 0) {
+          await sim.speed(v);
+          setSpeed(v);
+          // do not force state; it will refresh on next tick or explicit GET
+        }
+      };
+      el.addEventListener('click', h);
+      return { el, h };
+    });
+    return () => handlers.forEach(({ el, h }) => el.removeEventListener('click', h));
+  }, []);
 
   return (
-    <header>
-      <div>
-        <span className={`status-pill status-${status}`}>{status}</span>
-        <span style={{ marginLeft: '1rem' }}>last tick: {fmtTick(lastTick)}</span>
-        <span style={{ marginLeft: '1rem' }}>server: {server.running ? 'running' : 'stopped'} @ {server.tickMs ?? '?'}ms</span>
-        {msg && <span style={{ marginLeft: '1rem' }}>{msg}</span>}
-      </div>
-      <div>
-        <button onClick={toggle}>{label}</button>
-        <button onClick={play} disabled={busy || server.running}>Play</button>
-        <button onClick={stop} disabled={busy || !server.running}>Stop</button>
-        <span style={{ marginLeft: '1rem' }}>
-          {speeds.map(s => (
-            <button key={s.ms} onClick={() => changeSpeed(s.ms)} disabled={busy || s.ms === server.tickMs} style={{ marginRight: '0.25rem' }}>{s.label}</button>
-          ))}
-        </span>
-        <span style={{ marginLeft: '1rem' }}>balance: �?"</span>
-      </div>
+    <header
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '8px 12px',
+        borderBottom: '1px solid #333',
+      }}
+    >
+      {/* App title / brand */}
+      <strong style={{ marginRight: 'auto' }}>Weed&nbsp;Breed</strong>
+
+      {/* Single Toggle Button */}
+      <button onClick={onToggle} title="Start/Pause/Resume simulation">
+        {labelFor(simState)}
+      </button>
+
+      {/* Small Stop icon (only when running or paused) */}
+      {(simState === 'running' || simState === 'paused') && (
+        <a
+          href="#"
+          onClick={onStop}
+          title="Stop simulation"
+          style={{ textDecoration: 'none', opacity: 0.9 }}
+          aria-label="Stop simulation"
+        >
+          ⏹
+        </a>
+      )}
+
+      {/* Status label */}
+      <span style={{ opacity: 0.8 }}>
+        State: {simState} | Tick: {tick} | Speed: {speed}x
+      </span>
+
+      {/* Dev-only Strain Editor */}
+      {SHOW_STRAIN_EDITOR && (
+        <>
+          <span style={{ opacity: 0.5 }}>|</span>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setEditorOpen((v) => !v);
+            }}
+            title="Open Strain Editor (dev)"
+          >
+            Strain Editor
+          </a>
+          <StrainEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+        </>
+      )}
     </header>
   );
 }
