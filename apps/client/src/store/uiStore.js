@@ -51,6 +51,8 @@ export function startUiStream() {
     return;
   }
   socket = openUiSocket();
+  paused = false;
+  uiState$.next({ ...uiState$.value, paused });
   statusSub = socket.status$.subscribe((s) => {
     connection$.next({ ...connection$.value, status: s.status, lastMessageTs: s.lastMessageTs });
   });
