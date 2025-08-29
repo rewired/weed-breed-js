@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { attachUiWs } from '../sim/uiStreamWs.js';
 import { createSimController } from './simControl.mjs';
 import { createStrainRouter } from './strainRouter.mjs';
-import pkg from '../../package.json' assert { type: 'json' };
+import pkg from '../../package.json' with { type: 'json' };
 
 const PORT = Number(process.env.PORT || 7071);
 
@@ -40,5 +40,5 @@ const server = http.createServer(app);
 attachUiWs(server, { path: '/ui', logger: console });
 
 server.listen(PORT, () => {
-  console.log(`[server] listening on http://localhost:${PORT}`);
+  console.log(`[server] v${pkg.version} listening on http://localhost:${PORT}`);
 });
