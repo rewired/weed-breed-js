@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weed-breed.local/schemas/strain.schema.json",
+  "title": "Strain",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "name"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "genetics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string", "enum": ["indica", "sativa", "hybrid", "ruderalis"] },
+        "parents": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "flowering": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "days": { "type": "integer", "minimum": 1 },
+        "photoperiod": { "type": "string", "enum": ["auto", "photo"] }
+      }
+    },
+    "yield": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "buds_g_per_plant": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

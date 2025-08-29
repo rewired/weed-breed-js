@@ -7,25 +7,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="sim-controls" style="margin-top:1rem;">
-      <button id="sim-toggle">Start</button>
-      <a href="#" data-sim-stop title="Stop">⏹</a>
-      <span id="sim-status" style="margin-left:0.5rem;"></span>
-      <div style="margin-top:0.5rem;">
-        <button data-speed="1">1x</button>
-        <button data-speed="2">2x</button>
-        <button data-speed="5">5x</button>
-        <button data-speed="10">10x</button>
-      </div>
-    </div>
     <script type="module" src="/src/main.jsx"></script>
-    <script type="module">
-      import { mountSimToggle } from '/src/lib/simToggle.js';
-      const btn = document.getElementById('sim-toggle');
-      const statusEl = document.getElementById('sim-status');
-      const speedBtns = [...document.querySelectorAll('[data-speed]')];
-      mountSimToggle(btn, statusEl, speedBtns);
-    </script>
-    <script type="module" src="/src/dev/strainEditorBoot.js"></script>
   </body>
 </html>
