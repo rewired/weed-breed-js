@@ -1,0 +1,173 @@
+{
+  "id": "3f0f15f4-1b75-4196-b3f3-5f6b6b7cf7a7",
+  "slug": "northern_lights",
+  "name": "Northern Lights",
+  "photoperiodic": true,
+  "vegDays": 28,
+  "flowerDays": 50,
+  "autoFlowerDays": null,
+  "light": {
+    "ppfdOpt_umol_m2s": 650,
+    "ppfdMax_umol_m2s": 1000,
+    "dliHalfSat_mol_m2d": 18,
+    "dliMax_mol_m2d": 38
+  },
+  "coeffs": {
+    "budGrowthBase_g_per_day": 1.4,
+    "tempOptC": 25,
+    "tempWidthC": 5.5,
+    "co2HalfSat_ppm": 800
+  },
+  "lineage": {
+    "parents": []
+  },
+  "genotype": {
+    "sativa": 0.65,
+    "indica": 0.35,
+    "ruderalis": 0.0
+  },
+  "generalResilience": 0.7,
+  "chemotype": {
+    "thcContent": 0.2,
+    "cbdContent": 0.01
+  },
+  "morphology": {
+    "growthRate": 1.0,
+    "yieldFactor": 1.0,
+    "leafAreaIndex": 3.2
+  },
+  "growthModel": {
+    "maxBiomassDry_g": 180.0,
+    "baseLUE_gPerMol": 0.9,
+    "maintenanceFracPerDay": 0.01,
+    "dryMatterFraction": { "vegetation": 0.25, "flowering": 0.20 },
+    "harvestIndex": { "targetFlowering": 0.70 },
+    "phaseCapMultiplier": { "vegetation": 0.5, "flowering": 1.0 },
+    "temperature": { "Q10": 2.0, "T_ref_C": 25 }
+  },
+  "noise": { "enabled": true, "pct": 0.02 },
+  "environmentalPreferences": {
+    "lightSpectrum": {
+      "vegetation": [
+        400,
+        700
+      ],
+      "flowering": [
+        300,
+        650
+      ]
+    },
+    "lightIntensity": {
+      "vegetation": [
+        400,
+        600
+      ],
+      "flowering": [
+        600,
+        1000
+      ]
+    },
+    "lightCycle": {
+      "vegetation": [
+        18,
+        6
+      ],
+      "flowering": [
+        12,
+        12
+      ]
+    },
+    "idealTemperature": {
+      "vegetation": [
+        20,
+        28
+      ],
+      "flowering": [
+        22,
+        30
+      ]
+    },
+    "idealHumidity": {
+      "vegetation": [
+        0.6,
+        0.7
+      ],
+      "flowering": [
+        0.5,
+        0.6
+      ]
+    },
+    "phRange": [
+      5.8,
+      6.2
+    ]
+  },
+  "nutrientDemand": {
+    "dailyNutrientDemand": {
+      "seedling": {
+        "nitrogen": 0.3,
+        "phosphorus": 0.2,
+        "potassium": 0.3
+      },
+      "vegetation": {
+        "nitrogen": 1.2,
+        "phosphorus": 0.6,
+        "potassium": 1.0
+      },
+      "flowering": {
+        "nitrogen": 0.7,
+        "phosphorus": 1.4,
+        "potassium": 1.6
+      }
+    },
+    "npkTolerance": 0.15,
+    "npkStressIncrement": 0.04
+  },
+  "waterDemand": {
+    "dailyWaterUsagePerSquareMeter": {
+      "seedling": 1.2,
+      "vegetation": 2.88,
+      "flowering": 4.32
+    },
+    "minimumFractionRequired": 0.15
+  },
+  "diseaseResistance": {
+    "dailyInfectionIncrement": 0.03,
+    "infectionThreshold": 0.4,
+    "recoveryRate": 0.01,
+    "degenerationRate": 0.01,
+    "regenerationRate": 0.005,
+    "fatalityThreshold": 0.95
+  },
+  "photoperiod": {
+    "vegetationDays": 28,
+    "floweringDays": 50,
+    "transitionTriggerHours": 12
+  },
+  "stageChangeThresholds": {
+    "vegetative": { "minLightHours": 300, "maxStressForStageChange": 0.3 },
+    "flowering": { "minLightHours": 600, "maxStressForStageChange": 0.2 }
+  },
+  "harvestWindowInDays": [
+    48,
+    60
+  ],
+  "harvestProperties": {
+    "ripeningTimeInHours": 48,
+    "maxStorageTimeInHours": 120,
+    "qualityDecayPerHour": 0.02
+  },
+  "meta": {
+    "description": "Northern Lights is a legendary indica strain prized for its resilience and fast flowering time.",
+    "advantages": [
+      "Compact growth",
+      "Resistant to stress",
+      "Classic indica effects"
+    ],
+    "disadvantages": [
+      "Moderate yields",
+      "Prefers stable climates"
+    ],
+    "notes": "Often used as a baseline in breeding projects."
+  }
+}

@@ -7,9 +7,9 @@
   "type": "module",
   "main": "src/server/index.mjs",
   "scripts": {
-    "dev": "concurrently -k -n server,client \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "cross-env NODE_ENV=development node --watch src/server/index.mjs",
-    "dev:client": "vite --config vite.config.mjs",
+    "dev:server": "node --watch src/server/index.mjs",
+    "dev:client": "vite --host --config apps/client/vite.config.js",
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
     "build": "vite build --config vite.config.mjs",
     "preview": "vite preview --config vite.config.mjs",
     "start": "node src/server/index.mjs",

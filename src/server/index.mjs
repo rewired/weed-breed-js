@@ -1,31 +1,36 @@
-/** Thin runner that delegates to createServerApp for Electron-ready startup. */
-import { config as dotenv } from 'dotenv';
-import pino from 'pino';
-import { attachLogHelpers } from '../lib/logging.mjs';
-import { createServerApp } from './app.js';
-import { router as strainsRouter } from './routes/strains.mjs';
-import { router as devicesRouter } from './routes/devices.mjs';
+// src/server/index.mjs
+import express from 'express';
+import http from 'node:http';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import { WebSocketServer } from 'ws';
+import { uiStream$ } from '../sim/eventBus.mjs';
+import { createSimController } from './simControl.mjs';
+import { createStrainRouter } from './strainRouter.mjs';
 
-// Load server-specific env (does NOT affect Vite)
-dotenv({
-  path: ['.env.server.local', '.env.server', '.env'],
+const PORT = Number(process.env.PORT || 3000);
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json({ limit: '1mb' }));
+
+// Routes
+const sim = createSimController();
+app.use('/api/sim', sim.router);
+app.use('/api/strains', createStrainRouter().router);
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+const server = http.createServer(app);
+
+// WebSocket for UI telemetry
+const wss = new WebSocketServer({ server, path: '/ws/ui' });
+wss.on('connection', (ws) => {
+  const sub = uiStream$.subscribe((evt) => {
+    if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(evt));
+  });
+  ws.on('close', () => sub.unsubscribe());
 });
 
-const logger = pino({ name: 'server', level: process.env.LOG_LEVEL || 'info' });
-attachLogHelpers(logger);
-
-async function main() {
-  const port = Number(process.env.PORT || 3000);
-  const tickMs = Number(process.env.TICK_MS || 100);
-  const autoStart = process.env.AUTO_START == null ? true : !/^false|0$/i.test(String(process.env.AUTO_START));
-
-  const app = await createServerApp({ port, tickMs, autoStart, logger });
-  app.app.use('/api/strains', strainsRouter);
-  app.app.use('/api/devices', devicesRouter);
-  await app.start();
-}
-
-main().catch((err) => {
-  logger.error(err);
-  process.exit(1);
+server.listen(PORT, () => {
+  console.log(`[server] listening on http://localhost:${PORT}`);
 });
