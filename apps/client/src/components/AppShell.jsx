@@ -6,10 +6,10 @@ import Sidebar from './Sidebar.jsx';
  * Application shell layout with header, sidebar and content.
  * @param {{children: React.ReactNode}} props
  */
-export default function AppShell({ children }) {
+export default function AppShell({ children, onOpenEditor }) {
   return (
     <div className="app-shell">
-      <Header />
+      <Header onOpenEditor={onOpenEditor} />
       <div className="app-body">
         <Sidebar />
         <main className="app-content">{children}</main>

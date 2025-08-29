@@ -1,56 +1,85 @@
 // apps/client/src/lib/simApi.js
-// REST + WS helpers for simulation control (ESM). Works in Vite (src).
+// REST + WS helpers with relative defaults; resilient in dev.
 
-const apiBase =
-  import.meta?.env?.VITE_API_BASE ||
-  `${window.location.protocol}//${window.location.hostname}:3000`;
+// --- Base URLs (relative by default for Vite proxy)
+const apiBase = (import.meta?.env?.VITE_API_BASE ?? '').trim(); // '' => same-origin
+const wsUrl   = (import.meta?.env?.VITE_WS_URL   ?? '/ws/ui').trim();
 
-const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const wsUrl =
-  import.meta?.env?.VITE_WS_URL || `${wsProto}//${window.location.hostname}:3000/ws/ui`;
+// --- Health
+export async function health() {
+  const r = await fetch(`${apiBase}/api/health`);
+  return r.json();
+}
 
+// --- Sim state & control
 export async function getState() {
-  const res = await fetch(`${apiBase}/api/sim/state`);
-  return res.json();
+  const r = await fetch(`${apiBase}/api/sim/state`);
+  if (!r.ok) throw new Error('sim/state failed');
+  return r.json();
 }
-
 export async function start(speed) {
-  const res = await fetch(`${apiBase}/api/sim/start`, {
+  const r = await fetch(`${apiBase}/api/sim/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ speed }),
+    body: JSON.stringify({ speed })
   });
-  return res.json();
+  if (!r.ok) throw new Error('sim/start failed');
+  return r.json();
 }
-
 export async function pause() {
-  const res = await fetch(`${apiBase}/api/sim/pause`, { method: 'POST' });
-  return res.json();
+  const r = await fetch(`${apiBase}/api/sim/pause`, { method: 'POST' });
+  if (!r.ok) throw new Error('sim/pause failed');
+  return r.json();
 }
-
 export async function resume() {
-  const res = await fetch(`${apiBase}/api/sim/resume`, { method: 'POST' });
-  return res.json();
+  const r = await fetch(`${apiBase}/api/sim/resume`, { method: 'POST' });
+  if (!r.ok) throw new Error('sim/resume failed');
+  return r.json();
 }
-
 export async function stop() {
-  const res = await fetch(`${apiBase}/api/sim/stop`, { method: 'POST' });
-  return res.json();
+  const r = await fetch(`${apiBase}/api/sim/stop`, { method: 'POST' });
+  if (!r.ok) throw new Error('sim/stop failed');
+  return r.json();
 }
-
 export async function setSpeed(speed) {
-  const res = await fetch(`${apiBase}/api/sim/speed`, {
+  const r = await fetch(`${apiBase}/api/sim/speed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ speed }),
+    body: JSON.stringify({ speed })
   });
-  return res.json();
+  if (!r.ok) throw new Error('sim/speed failed');
+  return r.json();
 }
 
+// --- WS (telemetry only)
 export function openUiWs(onMessage) {
-  const ws = new WebSocket(wsUrl);
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const finalUrl = wsUrl.startsWith('/') ? `${proto}//${window.location.host}${wsUrl}` : wsUrl;
+  const ws = new WebSocket(finalUrl);
   ws.onmessage = (ev) => {
     try { onMessage(JSON.parse(ev.data)); } catch {}
   };
   return ws;
+}
+
+// --- Strain API
+export async function listStrains() {
+  const r = await fetch(`${apiBase}/api/strains`);
+  if (!r.ok) throw new Error('strains list failed');
+  return r.json();
+}
+export async function loadStrain(id) {
+  const r = await fetch(`${apiBase}/api/strains/${id}`);
+  if (!r.ok) throw new Error('strain not found');
+  return r.json();
+}
+export async function saveStrainDraft(id, body) {
+  const r = await fetch(`${apiBase}/api/strains/${id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  return r.ok;
+}
+export async function publishStrain(id) {
+  const r = await fetch(`${apiBase}/api/strains/${id}/publish`, { method: 'POST' });
+  return r.ok;
 }
