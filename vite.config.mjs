@@ -1,46 +1,31 @@
 // vite.config.mjs
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = __dirname;
+const clientRoot = path.resolve(__dirname, 'apps', 'client');
 
-// Client lives in /apps/client (pinned)
-const clientRoot = path.resolve(projectRoot, 'apps', 'client');
-
-export default defineConfig(({ mode }) => {
-  // Only load VITE_* variables for the client
-  const env = loadEnv(mode, projectRoot, 'VITE_');
-  const apiBase = env.VITE_API_BASE || 'http://localhost:3000';
-
-  return {
-    root: clientRoot,
-    base: '/',
-    server: {
-      host: true,
-      port: 5173,
-      strictPort: true,
-      proxy: {
-        '/api': {
-          target: apiBase,
-          changeOrigin: true
-        }
-      }
-    },
-    preview: {
-      port: 5173,
-      strictPort: true
-    },
-    resolve: {
-      alias: {
-        '@': path.resolve(clientRoot, 'src')
-      }
-    },
-    define: {
-      // Safe fallback if any client code checks NODE_ENV (avoid relying on .env NODE_ENV for Vite)
-      'process.env.NODE_ENV': JSON.stringify(mode)
+export default defineConfig({
+  root: clientRoot,
+  plugins: [react()],
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      '/ws':  { target: 'ws://localhost:3000', ws: true, changeOrigin: true }
     }
-  };
+  },
+  resolve: {
+    alias: { '@': path.resolve(clientRoot, 'src') }
+  },
+  publicDir: path.resolve(clientRoot, 'public'),
+  build: {
+    outDir: path.resolve(__dirname, 'dist/client'),
+    emptyOutDir: true
+  }
 });

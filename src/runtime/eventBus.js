@@ -1,29 +1,23 @@
-// @ts-nocheck
-/**
- * RxJS based event layer used for telemetry and visualization.
- * Events are semantic and not commands.
- * @module runtime/eventBus
- */
+// src/runtime/eventBus.js
+// RxJS based event layer used for telemetry and visualization.
+// Events are semantic and not commands.
 
 import { Subject } from 'rxjs';
 import { bufferTime, filter, share } from 'rxjs/operators';
 
 /**
- * Raw event stream emitting `{ type, payload, tick, level, ts }` objects.
- * @type {Subject<{type:string,payload:object,tick:number,level:string,ts:number}>}
+ * Raw event stream emitting { type, payload, tick, level, ts } objects.
+ * @type {Subject<{type:string,payload:any,tick?:number,level?:string,ts:number}>}
  */
 export const events$ = new Subject();
 
-/** @type {(e: { level?: string }) => boolean} */
-const levelFilter = e => e?.level !== 'debug';
-
 /**
- * Buffered event stream for UI consumption.
- * @type {import('rxjs').Observable<Array>}
+ * UI stream batches for front-end (arrays of events).
+ * Batches every 200ms; drops empty batches.
  */
 export const uiStream$ = events$.pipe(
-  filter(levelFilter),
-  bufferTime(50),
+  bufferTime(200),
+  filter(batch => Array.isArray(batch) && batch.length > 0),
   share()
 );
 
@@ -31,8 +25,8 @@ export const uiStream$ = events$.pipe(
  * Emit a semantic event for observers (UI, logs, tests).
  * @param {string} type
  * @param {object} payload
- * @param {number} tick
- * @param {string} level
+ * @param {number} [tick=0]
+ * @param {string} [level='info']
  */
 export function emit(type, payload = {}, tick = 0, level = 'info') {
   events$.next({ type, payload, tick, level, ts: Date.now() });
