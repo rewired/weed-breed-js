@@ -1,4 +1,8 @@
 <!doctype html>
+<!--
+  This file must be served through Vite (e.g. `npm run dev:client`) or a
+  production build. Opening it directly in a browser will fail to load modules.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -7,6 +11,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="color: red; text-align: center;">
+        JavaScript is required for Weed Breed. Serve this file via Vite or use a
+        built bundle.
+      </p>
+    </noscript>
     <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>
