@@ -1,4 +1,4 @@
-// apps/client/public/js/strainEditor.js
+// apps/client/src/dev/strainEditorBoot.js
 const SHOW = (import.meta?.env?.VITE_SHOW_STRAIN_EDITOR ?? 'true') === 'true';
 const apiBase = import.meta?.env?.VITE_API_BASE || `${window.location.protocol}//${window.location.hostname}:3000`;
 

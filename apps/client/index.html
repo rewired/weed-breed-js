@@ -20,12 +20,12 @@
     </div>
     <script type="module" src="/src/main.jsx"></script>
     <script type="module">
-      import { mountSimToggle } from '/js/simToggle.js';
+      import { mountSimToggle } from '/src/lib/simToggle.js';
       const btn = document.getElementById('sim-toggle');
       const statusEl = document.getElementById('sim-status');
       const speedBtns = [...document.querySelectorAll('[data-speed]')];
       mountSimToggle(btn, statusEl, speedBtns);
     </script>
-    <script type="module" src="/js/strainEditor.js"></script>
+    <script type="module" src="/src/dev/strainEditorBoot.js"></script>
   </body>
 </html>
