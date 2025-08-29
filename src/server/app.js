@@ -48,7 +48,7 @@ export async function createServerApp(opts = {}) {
   });
 
   // Attach WS forwarder (read-only telemetry)
-  attachUiWs(httpServer, { path: '/ws/ui', logger });
+  attachUiWs(httpServer, { path: '/ui', logger });
 
   // Create engine
   const engine = createEngine({ savegame, rng, tickMs, logger, savegamePath });

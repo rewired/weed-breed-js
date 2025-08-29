@@ -37,6 +37,8 @@ export const uiState$ = new BehaviorSubject({
   plants: new Map(),
 });
 
+export const devLog$ = new BehaviorSubject([]);
+
 let paused = true; // start paused; UI ignores incoming batches until unpaused
 let socket;
 let sub;
@@ -70,6 +72,10 @@ export function startUiStream() {
     }
     if (data?.type === 'ui.batch' && Array.isArray(data.events)) {
       connection$.next({ ...connection$.value, lastBatchSize: data.events.length, lastMessageTs: Date.now() });
+      if (import.meta.env.DEV) {
+        const lines = devLog$.value.concat(data.events.map(e => JSON.stringify(e))).slice(-50);
+        devLog$.next(lines);
+      }
       if (paused) return; // ignore batch while paused; we still update connection$ above
       const next = reduceEvents(uiState$.value, data.events);
       uiState$.next(next);
@@ -152,6 +158,16 @@ export function useUiState() {
   const [val, setVal] = useState(uiState$.value);
   useEffect(() => {
     const s = uiState$.subscribe(setVal);
+    return () => s.unsubscribe();
+  }, []);
+  return val;
+}
+
+/** React hook for dev logs. */
+export function useDevLog() {
+  const [val, setVal] = useState(devLog$.value);
+  useEffect(() => {
+    const s = devLog$.subscribe(setVal);
     return () => s.unsubscribe();
   }, []);
   return val;

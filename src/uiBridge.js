@@ -20,7 +20,7 @@ export function startUIBridge({ port = 8077, allowOrigin = "*" } = {}) {
 
   // WS-Bridge
   const wsBroadcast = (batch) => {
-    const payload = JSON.stringify({ type: "ui.batch", batch });
+    const payload = JSON.stringify({ type: 'ui.batch', events: batch });
     for (const c of wss.clients) {
       if (c.readyState === 1) c.send(payload);
     }
@@ -39,7 +39,7 @@ export function startUIBridge({ port = 8077, allowOrigin = "*" } = {}) {
       "Access-Control-Allow-Origin": allowOrigin
     });
     const sub = uiStream$.subscribe((batch) => {
-      res.write(`event: ui.batch\ndata:${JSON.stringify(batch)}\n\n`);
+      res.write(`event: ui.batch\ndata:${JSON.stringify({ events: batch })}\n\n`);
     });
     req.on("close", () => sub.unsubscribe());
   });

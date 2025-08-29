@@ -3,12 +3,14 @@ import { BehaviorSubject, Observable } from 'rxjs';
 /**
  * Open UI websocket with auto reconnect and heartbeat.
  * @param {object} [opts]
- * @param {string} [opts.url] Override websocket url.
+ * @param {string} [opts.url] Override websocket URL.
  * @param {number} [opts.heartbeat=10000] Heartbeat timeout in ms.
  * @returns {{messages$: Observable<string>, status$: BehaviorSubject<{status:string,lastMessageTs:number|null}> , close: ()=>void}}
  */
 export function openUiSocket(opts = {}) {
-  const url = opts.url || import.meta.env.VITE_WS_URL || `${location.origin.replace(/^http/, 'ws')}/ws/ui`;
+  const base = import.meta.env.VITE_SERVER_URL || 'http://localhost:7071';
+  const path = import.meta.env.VITE_WS_PATH || '/ui';
+  const url = opts.url || `${base.replace(/^http/, 'ws')}${path}`;
   const heartbeat = opts.heartbeat ?? 10000;
   const status$ = new BehaviorSubject({ status: 'connecting', lastMessageTs: null });
   let ws;

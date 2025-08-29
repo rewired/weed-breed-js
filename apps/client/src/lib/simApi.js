@@ -1,13 +1,15 @@
 // apps/client/src/lib/simApi.js
 // REST + WS helpers with relative defaults; resilient in dev.
 
-// --- Base URLs (relative by default for Vite proxy)
-const apiBase = (import.meta?.env?.VITE_API_BASE ?? '').trim(); // '' => same-origin
-const wsUrl   = (import.meta?.env?.VITE_WS_URL   ?? '/ws/ui').trim();
+// --- Base URLs (configurable)
+const serverUrl = (import.meta?.env?.VITE_SERVER_URL ?? 'http://localhost:7071').trim().replace(/\/$/, '');
+const wsPath = (import.meta?.env?.VITE_WS_PATH ?? '/ui').trim();
+const apiBase = serverUrl;
+const wsUrl = `${serverUrl.replace(/^http/, 'ws')}${wsPath.startsWith('/') ? wsPath : `/${wsPath}`}`;
 
 // --- Health
 export async function health() {
-  const r = await fetch(`${apiBase}/api/health`);
+  const r = await fetch(`${apiBase}/healthz`);
   return r.json();
 }
 
@@ -53,11 +55,14 @@ export async function setSpeed(speed) {
 
 // --- WS (telemetry only)
 export function openUiWs(onMessage) {
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const finalUrl = wsUrl.startsWith('/') ? `${proto}//${window.location.host}${wsUrl}` : wsUrl;
-  const ws = new WebSocket(finalUrl);
+  const ws = new WebSocket(wsUrl);
   ws.onmessage = (ev) => {
-    try { onMessage(JSON.parse(ev.data)); } catch {}
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg?.type === 'ui.batch' && Array.isArray(msg.events)) {
+        onMessage(msg.events);
+      }
+    } catch {}
   };
   return ws;
 }
