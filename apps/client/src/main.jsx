@@ -1,13 +1,22 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import React, { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import { startUiStream } from './store/uiStore.js';
 import './styles.css';
 
+/** Bootstraps the React app safely and logs diagnostics. */
 startUiStream();
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+const rootEl = document.getElementById('root');
+if (!rootEl) {
+  console.error('[boot] #root not found');
+} else {
+  console.info('[boot] React', React.version, 'mode', import.meta.env.MODE);
+  const t = performance.now();
+  createRoot(rootEl).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+  console.info('[boot] mounted in', Math.round(performance.now() - t), 'ms');
+}

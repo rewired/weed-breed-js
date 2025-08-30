@@ -8,10 +8,10 @@
   "main": "src/server/index.mjs",
   "scripts": {
     "dev:server": "node --watch src/server/index.mjs",
-    "dev:client": "vite --host --config apps/client/vite.config.js",
+    "dev:client": "vite --host --config apps/client/vite.config.mjs",
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
-    "build": "vite build --config apps/client/vite.config.js",
-    "preview": "vite preview --config apps/client/vite.config.js",
+    "build": "vite build --config apps/client/vite.config.mjs",
+    "preview": "vite preview --config apps/client/vite.config.mjs",
     "start": "node src/server/index.mjs",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "sim": "node src/demos/structure_rooms_zones_demo.js"
