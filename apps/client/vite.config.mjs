@@ -14,8 +14,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
     host: true,
+    port: 5173,
     proxy: {
       '/healthz': { target: 'http://localhost:7071', changeOrigin: true },
       '/api': { target: 'http://localhost:7071', changeOrigin: true },
@@ -27,4 +27,5 @@ export default defineConfig({
     outDir: path.resolve(__dirname, '../../dist/client'),
     emptyOutDir: true,
   },
+  appType: 'spa',
 });
