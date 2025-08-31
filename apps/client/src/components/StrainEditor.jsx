@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react'
 import ajv from '@/lib/ajv2020.js'
-import { registerSchemas, compileWith } from '@/lib/schemaRegistry.js'
 
-// Root schema (no import attributes)
+// Root schema (plain JSON import; no import attributes)
 import strainSchema from '@/schemas/strain.schema.json'
 
-// If your strain schema $ref other local schemas, import them here (no assert)
-// Example (uncomment/adjust if present):
+// If your root schema uses $ref to other local schemas, import and register them here:
 // import deviceSchema from '@/schemas/device.schema.json'
 // import cultivationMethodSchema from '@/schemas/cultivation_method.schema.json'
-// registerSchemas(ajv, deviceSchema, cultivationMethodSchema)
+// ajv.addSchema(deviceSchema)
+// ajv.addSchema(cultivationMethodSchema)
 
-const validate = compileWith(ajv, strainSchema)
+// Compile once
+const validate = ajv.compile(strainSchema)
 
 const exampleValid = {
   id: 'strain-demo-1',
