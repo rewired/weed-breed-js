@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { openUiSocket } from '../api/ws.js';
+import { socket } from '@/lib/socket.js';
 import { useEffect, useState } from 'react';
 
 /** @typedef {Object} UiState
@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react';
  */
 
 export const connection$ = new BehaviorSubject({
-  status: 'connecting',
+  status: socket.connected ? 'connected' : 'connecting',
   lastMessageTs: null,
   lastBatchSize: 0,
 });
@@ -40,47 +40,62 @@ export const uiState$ = new BehaviorSubject({
 export const devLog$ = new BehaviorSubject([]);
 
 let paused = true; // start paused; UI ignores incoming batches until unpaused
-let socket;
-let sub;
-let statusSub;
+let handlersAttached = false;
+let handlers = { connect: null, disconnect: null, events: {} };
 
 /** Start the websocket stream and wire to store. */
 export function startUiStream() {
-  if (socket) {
+  if (handlersAttached) {
     paused = false;
-    // reflect in store
     uiState$.next({ ...uiState$.value, paused });
-    return;
-  }
-  try {
-    socket = openUiSocket();
-  } catch {
-    connection$.next({ status: 'error' });
     return;
   }
   paused = false;
   uiState$.next({ ...uiState$.value, paused });
-  statusSub = socket.status$.subscribe((s) => {
-    connection$.next({ ...connection$.value, status: s.status, lastMessageTs: s.lastMessageTs });
-  });
-  sub = socket.messages$.subscribe((msg) => {
-    let data;
-    try {
-      data = JSON.parse(msg);
-    } catch {
-      return;
+
+  const onConnect = () => {
+    connection$.next({ ...connection$.value, status: 'connected' });
+  };
+  const onDisconnect = () => {
+    connection$.next({ ...connection$.value, status: 'disconnected' });
+  };
+  socket.on('connect', onConnect);
+  socket.on('disconnect', onDisconnect);
+
+  const eventTypes = [
+    'sim.tickCompleted',
+    'plant.stageChanged',
+    'plant.harvested',
+    'zone.thresholdCrossed',
+    'device.degraded',
+    'market.saleCompleted',
+    'tick.summary',
+  ];
+
+  const eventHandler = (type) => (payload) => {
+    const ev = { type, ...(payload || {}) };
+    connection$.next({
+      ...connection$.value,
+      lastBatchSize: 1,
+      lastMessageTs: Date.now(),
+    });
+    if (import.meta.env.DEV) {
+      const lines = devLog$.value.concat(JSON.stringify(ev)).slice(-50);
+      devLog$.next(lines);
     }
-    if (data?.type === 'ui.batch' && Array.isArray(data.events)) {
-      connection$.next({ ...connection$.value, lastBatchSize: data.events.length, lastMessageTs: Date.now() });
-      if (import.meta.env.DEV) {
-        const lines = devLog$.value.concat(data.events.map(e => JSON.stringify(e))).slice(-50);
-        devLog$.next(lines);
-      }
-      if (paused) return; // ignore batch while paused; we still update connection$ above
-      const next = reduceEvents(uiState$.value, data.events);
-      uiState$.next(next);
-    }
+    if (paused) return;
+    const next = reduceEvents(uiState$.value, [ev]);
+    uiState$.next(next);
+  };
+
+  handlers = { connect: onConnect, disconnect: onDisconnect, events: {} };
+  eventTypes.forEach((evt) => {
+    const h = eventHandler(evt);
+    handlers.events[evt] = h;
+    socket.on(evt, h);
   });
+
+  handlersAttached = true;
 }
 
 /** Pause incoming event processing. */
@@ -92,10 +107,11 @@ export function setPaused(v) {
 
 /** Stop stream and close socket. */
 export function closeUiStream() {
-  sub?.unsubscribe();
-  statusSub?.unsubscribe();
-  socket?.close();
-  socket = null;
+  if (!handlersAttached) return;
+  socket.off('connect', handlers.connect);
+  socket.off('disconnect', handlers.disconnect);
+  Object.entries(handlers.events).forEach(([evt, h]) => socket.off(evt, h));
+  handlersAttached = false;
 }
 
 /**

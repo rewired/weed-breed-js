@@ -3,9 +3,7 @@
 
 // --- Base URLs (configurable)
 const serverUrl = (import.meta?.env?.VITE_SERVER_URL ?? 'http://localhost:7071').trim().replace(/\/$/, '');
-const wsPath = (import.meta?.env?.VITE_WS_PATH ?? '/ui').trim();
 const apiBase = serverUrl;
-const wsUrl = `${serverUrl.replace(/^http/, 'ws')}${wsPath.startsWith('/') ? wsPath : `/${wsPath}`}`;
 
 // --- Health
 export async function health() {
@@ -51,20 +49,6 @@ export async function setSpeed(speed) {
   });
   if (!r.ok) throw new Error('sim/speed failed');
   return r.json();
-}
-
-// --- WS (telemetry only)
-export function openUiWs(onMessage) {
-  const ws = new WebSocket(wsUrl);
-  ws.onmessage = (ev) => {
-    try {
-      const msg = JSON.parse(ev.data);
-      if (msg?.type === 'ui.batch' && Array.isArray(msg.events)) {
-        onMessage(msg.events);
-      }
-    } catch {}
-  };
-  return ws;
 }
 
 // --- Strain API
