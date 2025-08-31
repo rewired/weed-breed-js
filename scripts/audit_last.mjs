@@ -100,6 +100,8 @@ for (const [zoneId, arr] of zoneMap.entries()) {
     harvestEvents,
     firstHarvestDay: isFinite(firstHarvestDay) ? firstHarvestDay : null,
     lastHarvestDay: isFinite(lastHarvestDay) ? lastHarvestDay : null,
+    avgStress_day1: day1?.avgStress ?? null,
+    avgStress_lastDay: lastWithPlants?.avgStress ?? null,
     // BEGIN: REPLANTING v1 (do not remove)
     replantsAttempted,
     replantsSucceeded,

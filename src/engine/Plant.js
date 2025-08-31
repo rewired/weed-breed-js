@@ -423,6 +423,69 @@ export class Plant {
     });
   }
 
+  /**
+   * Returns an integer stress score [0..100].
+   * Falls back to current plant stress state if present.
+   * @param {object} [ctx]
+   * @returns {number}
+   */
+  getStressScore(ctx = {}) {
+    const existing = this.state?.stress?.current;
+    if (Number.isFinite(existing)) {
+      return Math.round(clamp(0, existing, 100));
+    }
+    const raw = Number(this.stress ?? 0);
+    return Math.round(clamp(0, raw * 100, 100));
+  }
+
+  /**
+   * Returns a normalized breakdown [0..1] per component.
+   * Missing components default to 0.
+   * @param {object} [ctx]
+   * @returns {{temp:number,vpd:number,light:number,water:number,nutrients:number,pathogens:number}}
+   */
+  getStressBreakdown(ctx = {}) {
+    const out = { temp: 0, vpd: 0, light: 0, water: 0, nutrients: 0, pathogens: 0 };
+    const src = this.state?.stress?.components || this.stressors || {};
+    out.temp = Number(src.temperature?.severity ?? src.temp ?? 0);
+    out.vpd = Number(src.humidity?.severity ?? src.vpd ?? 0);
+    out.light = Number(src.light?.severity ?? 0);
+    out.water = Number(src.water?.severity ?? 0);
+    out.nutrients = Number(src.nutrients?.severity ?? 0);
+    out.pathogens = Number(src.pathogens?.severity ?? 0);
+    for (const k of Object.keys(out)) {
+      let v = out[k];
+      if (!Number.isFinite(v)) v = 0;
+      out[k] = Math.max(0, Math.min(1, v));
+    }
+    return out;
+  }
+
+  /**
+   * True if the plant meets harvest readiness (maturity window reached, not dead).
+   * Uses existing maturity/age/stage fields; does not hardcode strain names.
+   * @param {object} [ctx]
+   * @returns {boolean}
+   */
+  isHarvestReady(ctx = {}) {
+    if (this.isDead || this._harvested) return false;
+    const stage = String(this.stage || '').toLowerCase();
+    if (stage === 'harvestready') return true;
+    if (stage === 'harvested' || stage === 'dead') return false;
+    const maturity = Number(this.maturity ?? this.state?.maturity ?? this.payload?.maturity ?? 0);
+    if (stage.startsWith('flower') && maturity >= 1) return true;
+    const vegDays = this.strain?.vegDays ?? this.strain?.photoperiod?.vegetationDays;
+    const flowerDays = this.strain?.flowerDays ?? this.strain?.photoperiod?.floweringDays;
+    if (Number.isFinite(this.ageHours) && (vegDays != null || flowerDays != null)) {
+      const total = (Number(vegDays ?? 0) + Number(flowerDays ?? 0));
+      if (total > 0) {
+        const ageDays = this.ageHours / 24;
+        if (ageDays >= total) return true;
+      }
+    }
+    return false;
+  }
+
   /** Idempotent harvest call (executed at most once). */
   harvestOnce(tctx) {
     if (this._harvested) return 0;
