@@ -3,15 +3,8 @@ import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// __dirname in ESM
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/**
- * Vite ist *hier* im Ordner /apps/client konfiguriert:
- * - root: genau dieses Verzeichnis (damit ./src/main.jsx sicher existiert)
- * - envDir: ebenfalls /apps/client (kein Leak aus Repo-Root)
- * - envPrefix: ausschließlich VITE_ (Hartverdrahtung)
- */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, 'VITE_')
   const serverUrl = env.VITE_SERVER_URL || 'http://localhost:7071'
@@ -22,20 +15,15 @@ export default defineConfig(({ mode }) => {
     envDir: __dirname,
     envPrefix: 'VITE_',
     plugins: [react()],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, 'src'),
-      },
-    },
+    resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
     server: {
       host: true,
       port: 5173,
-      strictPort: true,        // kein „Port hüpfen“
-      open: false,
+      strictPort: true,
       proxy: {
         '/healthz': { target: serverUrl, changeOrigin: true },
-        '/api':     { target: serverUrl, changeOrigin: true },
-        // Socket.IO/SignalR nicht proxfizieren, wenn Cross-Origin ok ist.
+        '/api': { target: serverUrl, changeOrigin: true },
+        [wsPath]: { target: serverUrl, changeOrigin: true, ws: true }, // WS-Upgrade aktiv
       },
     },
     define: {
