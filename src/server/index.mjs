@@ -49,6 +49,9 @@ function bootstrap() {
   console.log('[world]', summary)
 }
 
+bootstrap()
+broadcastWorld()
+
 io.on('connection', (socket) => {
   console.log('[io] connected', socket.id)
   socket.emit('sim.state', sim.state())
@@ -81,5 +84,4 @@ io.on('connection', (socket) => {
   }catch(e){ return ack?.({ok:false,error:e?.message||String(e)})}})
 })
 
-bootstrap()
 httpServer.listen(PORT, ()=> console.log(`[server] http://localhost:${PORT}  path=${SOCKET_PATH}`))
