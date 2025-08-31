@@ -12,7 +12,6 @@ function emitWithAck(event, payload) {
   })
 }
 
-/** Loads the default savegame (or a specific path via payload.path) on the server. */
 export async function loadDefaultSavegame(path) {
   const payload = path ? { path } : {}
   const res = await emitWithAck('savegame.load', payload)
@@ -20,7 +19,12 @@ export async function loadDefaultSavegame(path) {
   return res
 }
 
-/** Hook that subscribes to 'world.summary'. */
+export async function requestWorld() {
+  const res = await emitWithAck('world.get', {})
+  if (!res?.ok) throw new Error(res?.error || 'world.get failed')
+  return res // { ok, summary, snapshot }
+}
+
 export function useWorldSummary() {
   const [summary, setSummary] = useState(null)
   useEffect(() => {
@@ -29,4 +33,14 @@ export function useWorldSummary() {
     return () => socket.off('world.summary', onSummary)
   }, [])
   return summary
+}
+
+export function useWorldSnapshot() {
+  const [snap, setSnap] = useState(null)
+  useEffect(() => {
+    const onSnap = (s) => setSnap(s)
+    socket.on('world.snapshot', onSnap)
+    return () => socket.off('world.snapshot', onSnap)
+  }, [])
+  return snap
 }

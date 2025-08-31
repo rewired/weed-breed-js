@@ -1,4 +1,4 @@
-// ESM helper to load/save a "world" from JSON and compute a summary.
+// ESM helper to load/save a "world" from JSON and compute derived views.
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -66,4 +66,30 @@ export function computeSummary(world) {
   }
   const harvests = Number(world?.metrics?.harvests ?? 0)
   return { rooms: roomCount, zones: zoneCount, plants: plantCount, harvests }
+}
+
+/**
+ * Compute a lightweight structure snapshot for UI lists.
+ * Includes rooms, zones, per-zone plant count and dominant phase.
+ */
+export function computeSnapshot(world) {
+  const rooms = world?.structure?.rooms ?? []
+  const outRooms = []
+  for (const r of rooms) {
+    const zones = r?.zones ?? []
+    const outZones = zones.map((z) => {
+      const plants = z?.plants ?? []
+      const count = plants.length
+      // derive a simple "phase" label from most frequent stage
+      const stageCounts = plants.reduce((acc, p) => {
+        const k = String(p?.stage || 'unknown'); acc[k] = (acc[k] || 0) + 1; return acc
+      }, {})
+      const phase = Object.entries(stageCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] ?? '—'
+      return {
+        id: z.id, name: z.name, plantsCount: count, phase
+      }
+    })
+    outRooms.push({ id: r.id, name: r.name, zones: outZones })
+  }
+  return { rooms: outRooms }
 }

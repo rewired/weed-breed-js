@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import StructureView from '../views/StructureView.jsx';
+import StructurePage from '../pages/Structure.jsx';
 import RoomView from '../views/RoomView.jsx';
 import ZoneView from '../views/ZoneView.jsx';
 import DevicesView from '../views/DevicesView.jsx';
@@ -14,7 +14,7 @@ export default function Router() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  let View = StructureView;
+  let View = StructurePage;
   let params = {};
   const mRoom = hash.match(/^#\/room\/(.+)$/);
   const mZone = hash.match(/^#\/zone\/(.+)$/);
