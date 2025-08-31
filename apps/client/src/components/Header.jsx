@@ -28,13 +28,16 @@ export default function Header() {
         </label>
       </div>
 
-      <div style={rightGroup}>
-        <span style={{ opacity:0.7, marginRight:8, borderRight:'1px solid #2b3344', paddingRight:8 }}>Tools</span>
-        <a href="/#/strains" style={toolLink}>Strain Editor</a>
-        <span style={{ marginLeft:12 }}>
-          WS: <b style={{ color: diag.connected ? 'limegreen' : 'crimson' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, justifySelf:'end' }}>
+        <span>
+          WS:{' '}
+          <b style={{ color: diag.connected ? 'limegreen' : 'crimson' }}>
             {diag.connected ? 'connected' : 'disconnected'}
-          </b> · events: {diag.eventCount} · last: <code>{diag.lastEventType ?? '—'}</code> · tx: <code>{diag.transport}</code> · mode: <code>{diag.mode}</code>
+          </b>
+          {' · '}events: {diag.eventCount}
+          {' · '}last: <code>{diag.lastEventType ?? '—'}</code>
+          {' · '}tx: <code>{diag.transport}</code>
+          {' · '}mode: <code>{diag.mode}</code>
         </span>
       </div>
 
@@ -48,6 +51,5 @@ export default function Header() {
 
 const bar = { display:'grid', gridTemplateColumns:'1fr auto 1fr', alignItems:'center', gap:12, padding:'8px 12px', background:'#0b0e14', color:'#d6deeb', fontFamily:'system-ui, sans-serif', position:'sticky', top:0, zIndex:10 }
 const controls = { display:'inline-flex', alignItems:'center', gap:8 }
-const rightGroup = { display:'flex', justifySelf:'end', alignItems:'center', gap:8 }
-const toolLink = { color:'#7fc4ff', textDecoration:'none' }
 const status = { gridColumn:'1 / -1', fontSize:12, opacity:0.8 }
+
