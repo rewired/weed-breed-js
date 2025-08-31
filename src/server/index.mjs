@@ -1,44 +1,40 @@
-// src/server/index.mjs
-import express from 'express';
-import http from 'node:http';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { attachUiWs } from '../sim/uiStreamWs.js';
-import { createSimController } from './simControl.mjs';
-import { createStrainRouter } from './strainRouter.mjs';
-import pkg from '../../package.json' with { type: 'json' };
+import http from 'node:http'
+import express from 'express'
+import cors from 'cors'
+import { Server as IOServer } from 'socket.io'
 
-const PORT = Number(process.env.PORT || 7071);
+const PORT = Number(process.env.PORT || 7071)
+const SOCKET_PATH = process.env.SOCKET_IO_PATH || '/ui' // wichtig: /ui
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express()
+app.use(cors({ origin: ['http://localhost:5173'], credentials: true }))
+app.get('/healthz', (_req, res) => res.json({ ok: true, message: 'server up' }))
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json({ limit: '1mb' }));
+const httpServer = http.createServer(app)
 
-// Routes
-const sim = createSimController();
-app.use('/api/sim', sim.router);
-app.use('/api/strains', createStrainRouter().router);
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
-app.get('/healthz', (_req, res) => {
-  res.json({ status: 'ok', version: pkg.version, uptime: process.uptime() });
-});
+const io = new IOServer(httpServer, {
+  path: SOCKET_PATH,
+  cors: {
+    origin: ['http://localhost:5173'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  transports: ['polling', 'websocket'], // Polling erlaubt → später Upgrade
+  allowEIO3: false, // wir setzen auf EIO4 (socket.io v4)
+})
 
-// Serve built client
-app.use(express.static(path.resolve(__dirname, '../../dist/client')));
-app.use((_req, res) => {
-  res.sendFile(path.resolve(__dirname, '../../dist/client/index.html'));
-});
+io.on('connection', (socket) => {
+  console.log('[io] connected', socket.id)
+  socket.on('disconnect', (reason) => {
+    console.log('[io] disconnected', socket.id, reason)
+  })
+})
 
-const server = http.createServer(app);
+// Demo-Events (sichtbarer "Herzschlag")
+setInterval(() => {
+  io.emit('sim.tickCompleted', { tick: Date.now() })
+}, 1500)
 
-// Bridge runtime telemetry to the UI
-attachUiWs(server, { path: '/ui', logger: console });
-
-server.listen(PORT, () => {
-  console.log(`[server] v${pkg.version} listening on http://localhost:${PORT}`);
-});
+httpServer.listen(PORT, () => {
+  console.log(`[server] http://localhost:${PORT}  ws path=${SOCKET_PATH}`)
+})

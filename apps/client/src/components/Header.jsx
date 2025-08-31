@@ -3,7 +3,6 @@ import { useSocketDiagnostics } from '@/lib/socket.js'
 
 export default function Header() {
   const diag = useSocketDiagnostics()
-
   return (
     <div style={bar}>
       <span style={{ fontWeight: 600 }}>Weed Breed</span>
@@ -17,7 +16,6 @@ export default function Header() {
     </div>
   )
 }
-
 const bar = {
   display: 'flex',
   justifyContent: 'space-between',
