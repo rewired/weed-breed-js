@@ -100,3 +100,15 @@ nav a.active {
   background: #dc2626;
   color: #fff;
 }
+button {
+  padding: 4px 8px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
