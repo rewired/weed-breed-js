@@ -10,45 +10,30 @@ export default function Header() {
 
   async function doStart() {
     try {
-      setBusy(true)
-      await startSim()
+      setBusy(true); await startSim()
     } catch (e) {
       setSim((s) => ({ ...s, error: e?.message || String(e) }))
-    } finally {
-      setBusy(false)
-    }
+    } finally { setBusy(false) }
   }
-
   async function doPause() {
     try {
-      setBusy(true)
-      await pauseSim()
+      setBusy(true); await pauseSim()
     } catch (e) {
       setSim((s) => ({ ...s, error: e?.message || String(e) }))
-    } finally {
-      setBusy(false)
-    }
+    } finally { setBusy(false) }
   }
-
   async function doStep() {
     try {
-      setBusy(true)
-      await stepSim()
+      setBusy(true); await stepSim()
     } catch (e) {
       setSim((s) => ({ ...s, error: e?.message || String(e) }))
-    } finally {
-      setBusy(false)
-    }
+    } finally { setBusy(false) }
   }
-
   async function onSpeedChange(e) {
     const val = Number(e.target.value)
     setSim((s) => ({ ...s, speed: val }))
-    try {
-      await setSpeed(val)
-    } catch (e2) {
-      setSim((s) => ({ ...s, error: e2?.message || String(e2) }))
-    }
+    try { await setSpeed(val) }
+    catch (e2) { setSim((s) => ({ ...s, error: e2?.message || String(e2) })) }
   }
 
   return (
@@ -56,23 +41,20 @@ export default function Header() {
       <span style={{ fontWeight: 600 }}>Weed Breed</span>
 
       <div style={controls}>
-        <button onClick={doStart} disabled={disabled || sim.running} title="Start (Space)">
+        <button onClick={doStart} disabled={disabled || sim.running} title="Start">
           ▶ Start
         </button>
-        <button onClick={doPause} disabled={disabled || !sim.running} title="Pause (Space)">
+        <button onClick={doPause} disabled={disabled || !sim.running} title="Pause">
           ❚❚ Pause
         </button>
-        <button onClick={doStep} disabled={!diag.connected || sim.running || busy} title="Step (.)">
+        <button onClick={doStep} disabled={!diag.connected || sim.running || busy} title="Step">
           ▷ Step
         </button>
 
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <span>Speed</span>
           <input
-            type="range"
-            min="0.25"
-            max="8"
-            step="0.25"
+            type="range" min="0.25" max="8" step="0.25"
             value={sim.speed}
             onChange={onSpeedChange}
             disabled={!diag.connected || busy}
@@ -87,15 +69,16 @@ export default function Header() {
           <b style={{ color: diag.connected ? 'limegreen' : 'crimson' }}>
             {diag.connected ? 'connected' : 'disconnected'}
           </b>
-          {' · '}events: {diag.eventCount} {' · '}last: <code>{diag.lastEventType ?? '—'}</code>
+          {' · '}events: {diag.eventCount}
+          {' · '}last: <code>{diag.lastEventType ?? '—'}</code>
+          {' · '}tx: <code>{diag.transport}</code>
+          {' · '}mode: <code>{diag.mode}</code>
         </span>
       </div>
 
-      {/* Statuszeile */}
       <div style={status}>
         <span>
-          {sim.running ? 'running' : 'paused'} · lastTick:{' '}
-          <code>{sim.lastTick ?? 'n/a'}</code>
+          {sim.running ? 'running' : 'paused'} · lastTick: <code>{sim.lastTick ?? 'n/a'}</code>
         </span>
         {sim.error && <span style={{ color: 'salmon' }}>error: {sim.error}</span>}
       </div>
@@ -116,15 +99,5 @@ const bar = {
   top: 0,
   zIndex: 10,
 }
-
-const controls = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 8,
-}
-
-const status = {
-  gridColumn: '1 / -1',
-  fontSize: 12,
-  opacity: 0.8,
-}
+const controls = { display: 'inline-flex', alignItems: 'center', gap: 8 }
+const status = { gridColumn: '1 / -1', fontSize: 12, opacity: 0.8 }
