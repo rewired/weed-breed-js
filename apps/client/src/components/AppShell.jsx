@@ -7,11 +7,11 @@ import ConnectionBanner from './ConnectionBanner.jsx';
  * Application shell layout with header, sidebar and content.
  * @param {{children: React.ReactNode}} props
  */
-export default function AppShell({ children, onOpenEditor }) {
+export default function AppShell({ children }) {
   return (
     <div className="app-shell">
       <ConnectionBanner />
-      <Header onOpenEditor={onOpenEditor} />
+      <Header />
       <div className="app-body">
         <Sidebar />
         <main className="app-content">{children}</main>

@@ -4,6 +4,7 @@ import RoomView from '../views/RoomView.jsx';
 import ZoneView from '../views/ZoneView.jsx';
 import DevicesView from '../views/DevicesView.jsx';
 import PlantsView from '../views/PlantsView.jsx';
+import StrainsPage from '../pages/Strains.jsx';
 
 /** Simple hash router. */
 export default function Router() {
@@ -28,6 +29,8 @@ export default function Router() {
     View = DevicesView;
   } else if (hash.startsWith('#/plants')) {
     View = PlantsView;
+  } else if (hash.startsWith('#/strains')) {
+    View = StrainsPage;
   }
 
   return <View {...params} />;
