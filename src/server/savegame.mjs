@@ -19,7 +19,7 @@ export function ensureSampleSave(filePath = getDefaultSavePath()) {
           { id: 'zone_a1_ak47', name: 'Zone A1 (AK-47)', simulation: { strainId: '550e8400-e29b-41d4-a716-446655440000', methodId: 'sog' } },
           { id: 'zone_a2_ww',   name: 'Zone A2 (White Widow)', simulation: { strainId: '550e8400-e29b-41d4-a716-446655440001', methodId: 'scrog' } }
         ]
-      }]}
+      }]
     },
     metrics: { harvests: 0 }
   }
