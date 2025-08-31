@@ -52,11 +52,41 @@ export function computeSummary(world) {
   for (const r of rooms) {
     for (const z of r?.zones ?? []) {
       zoneCount++
-      if (Array.isArray(z?.plants)) plantCount += z.plants.length
+      plantCount += estimatePlantsForZone(z)
     }
   }
   const harvests = Number(world?.metrics?.harvests ?? 0)
   return { rooms: roomCount, zones: zoneCount, plants: plantCount, harvests }
+}
+
+export function resolveMethod(id) {
+  const name = `${id}.json`
+  const candidates = [
+    path.resolve(process.cwd(), 'data', 'methods', name),
+    path.resolve(process.cwd(), 'data', 'cultivation_methods', name),
+    path.resolve(process.cwd(), 'data', 'cultivationMethods', name),
+  ]
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      try {
+        return JSON.parse(fs.readFileSync(p, 'utf8'))
+      } catch {
+        /* ignore malformed file */
+      }
+    }
+  }
+  return { areaPerPlant: 0.25, containerSpec: { packingDensity: 0.95 } }
+}
+
+export function estimatePlantsForZone(zone) {
+  const sim = zone?.simulation || {}
+  const method = resolveMethod(sim.methodId)
+  const areaPerPlant = Number(method?.areaPerPlant ?? 0.25)
+  const density = Number(method?.containerSpec?.packingDensity ?? 1)
+  const area = Number(zone?.area ?? 0)
+  const effectiveArea = area * (Number.isFinite(density) ? density : 1)
+  const plants = Math.max(0, Math.floor(effectiveArea / Math.max(1e-6, areaPerPlant)))
+  return plants
 }
 
 function humanizeMethod(id) {
@@ -87,18 +117,30 @@ export function computeSnapshot(world) {
           const st = p?.stage
           if (st) counts[st] = (counts[st] || 0) + 1
         }
-        phase = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null
+        phase = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null
       }
+      const plantsPlanned = estimatePlantsForZone(z)
       const sim = z?.simulation || {}
       const strainId = sim.strainId || null
       const strainLabel = labelFromZoneName(z?.name, strainId)
       const methodId = sim.methodId || null
       const methodLabel = humanizeMethod(methodId)
+      const devices = (z?.devices || []).map((d) => ({
+        blueprintId: d.blueprintId,
+        count: Number(d.count || 0),
+      }))
+      const devicesTotal = devices.reduce((a, d) => a + (d.count || 0), 0)
       const zoneSnap = {
-        id: z.id, name: z.name,
+        id: z.id,
+        name: z.name,
         plantsCount,
-        strainId, strainLabel,
-        methodId, methodLabel,
+        plantsPlanned,
+        strainId,
+        strainLabel,
+        methodId,
+        methodLabel,
+        devices,
+        devicesTotal,
       }
       if (phase) zoneSnap.phase = phase
       return zoneSnap

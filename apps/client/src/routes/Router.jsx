@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import StructurePage from '../pages/Structure.jsx';
 import RoomView from '../views/RoomView.jsx';
 import ZoneView from '../views/ZoneView.jsx';
-import DevicesView from '../views/DevicesView.jsx';
-import PlantsView from '../views/PlantsView.jsx';
+import DevicesPage from '../pages/Devices.jsx';
+import PlantsPage from '../pages/Plants.jsx';
 import StrainsPage from '../pages/Strains.jsx';
 
 /** Simple hash router. */
@@ -26,9 +26,9 @@ export default function Router() {
     View = ZoneView;
     params = { zoneId: mZone[1] };
   } else if (hash.startsWith('#/devices')) {
-    View = DevicesView;
+    View = DevicesPage;
   } else if (hash.startsWith('#/plants')) {
-    View = PlantsView;
+    View = PlantsPage;
   } else if (hash.startsWith('#/strains')) {
     View = StrainsPage;
   }
