@@ -1,9 +1,22 @@
 // ESM helpers for savegames and derived views
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export function getDefaultSavePath() {
   return path.resolve(process.cwd(), 'data', 'savegames', 'default.json')
+}
+
+export function resolveExistingDefaultSavePath() {
+  const candidates = [
+    path.resolve(process.cwd(), 'data', 'savegames', 'default.json'),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/savegames/default.json'),
+    path.resolve(process.cwd(), 'apps', 'server', 'data', 'savegames', 'default.json'),
+  ]
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p
+  }
+  return getDefaultSavePath()
 }
 
 export function ensureSampleSave(filePath = getDefaultSavePath()) {
@@ -35,8 +48,13 @@ export function computeSummary(world) {
   const rooms = world?.structure?.rooms ?? []
   const roomCount = rooms.length
   let zoneCount = 0
-  let plantCount = 0 // echte Pflanzeninstanzen sind im Save nicht vorhanden → 0
-  for (const r of rooms) zoneCount += (r?.zones ?? []).length
+  let plantCount = 0
+  for (const r of rooms) {
+    for (const z of r?.zones ?? []) {
+      zoneCount++
+      if (Array.isArray(z?.plants)) plantCount += z.plants.length
+    }
+  }
   const harvests = Number(world?.metrics?.harvests ?? 0)
   return { rooms: roomCount, zones: zoneCount, plants: plantCount, harvests }
 }
@@ -60,16 +78,30 @@ export function computeSnapshot(world) {
   for (const r of rooms) {
     const zones = r?.zones ?? []
     const outZones = zones.map((z) => {
+      const plants = Array.isArray(z?.plants) ? z.plants : []
+      const plantsCount = plants.length
+      let phase = null
+      if (plantsCount > 0) {
+        const counts = {}
+        for (const p of plants) {
+          const st = p?.stage
+          if (st) counts[st] = (counts[st] || 0) + 1
+        }
+        phase = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null
+      }
       const sim = z?.simulation || {}
       const strainId = sim.strainId || null
       const strainLabel = labelFromZoneName(z?.name, strainId)
       const methodId = sim.methodId || null
       const methodLabel = humanizeMethod(methodId)
-      return {
+      const zoneSnap = {
         id: z.id, name: z.name,
+        plantsCount,
         strainId, strainLabel,
         methodId, methodLabel,
       }
+      if (phase) zoneSnap.phase = phase
+      return zoneSnap
     })
     outRooms.push({ id: r.id, name: r.name, zones: outZones })
   }

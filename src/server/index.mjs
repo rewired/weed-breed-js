@@ -1,10 +1,13 @@
 import http from 'node:http'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import { Server as IOServer } from 'socket.io'
 import { SimEngine } from './simEngine.mjs'
 import {
-  getDefaultSavePath,
+  resolveExistingDefaultSavePath,
   ensureSampleSave,
   loadWorldFromFile,
   computeSummary,
@@ -14,7 +17,7 @@ import {
 const PORT = Number(process.env.PORT || 7071)
 const SOCKET_PATH = process.env.SOCKET_IO_PATH || '/ui'
 const BASE_MS = Number(process.env.TICK_WALL_MS || 200)
-const SAVE_PATH = process.env.SAVEGAME_PATH || getDefaultSavePath()
+const SAVE_PATH = process.env.SAVEGAME_PATH || resolveExistingDefaultSavePath()
 
 const app = express()
 app.use(cors({ origin: ['http://localhost:5173'], credentials: true }))
@@ -43,20 +46,32 @@ function broadcastWorld() {
   io.emit('world.snapshot', snapshot)
 }
 function bootstrap() {
+  const exists = fs.existsSync(SAVE_PATH)
+  const cwd = process.cwd()
+  const dir = path.dirname(fileURLToPath(import.meta.url))
+  console.info('[startup] cwd=%s dir=%s', cwd, dir)
+  console.info('[startup] resolved SAVE_PATH=%s exists=%s', SAVE_PATH, exists)
   ensureSampleSave(SAVE_PATH)
   world = loadWorldFromFile(SAVE_PATH)
   recompute()
-  console.log('[world]', summary)
+  console.info(
+    '[startup] loaded summary: rooms=%d zones=%d plants=%d harvests=%d snapshotRooms=%d',
+    summary.rooms,
+    summary.zones,
+    summary.plants,
+    summary.harvests,
+    snapshot?.rooms?.length ?? 0,
+  )
 }
 
 bootstrap()
 broadcastWorld()
 
 io.on('connection', (socket) => {
-  console.log('[io] connected', socket.id)
   socket.emit('sim.state', sim.state())
   socket.emit('world.summary', summary)
   socket.emit('world.snapshot', snapshot)
+  console.log('[io] connected', socket.id)
 
   socket.on('sim.control', (p={}, ack)=>{ try{
     const a = String(p.action||'').toLowerCase()
@@ -75,6 +90,7 @@ io.on('connection', (socket) => {
   }catch(e){ return ack?.({ok:false,error:e?.message||String(e)})}})
 
   socket.on('world.get', (_p, ack)=> ack?.({ok:true, summary, snapshot}))
+  socket.on('world.debug', (_p, ack)=> ack?.({ ok:true, path:SAVE_PATH, summary, snapshotRooms:snapshot?.rooms?.length ?? 0 }))
 
   socket.on('savegame.load', (p={}, ack)=>{ try{
     const file = p?.path || SAVE_PATH
