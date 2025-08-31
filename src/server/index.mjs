@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import { Server as IOServer } from 'socket.io'
+import { EventEmitter } from 'node:events'
 import { SimEngine } from './simEngine.mjs'
 import {
   resolveExistingDefaultSavePath,
@@ -13,7 +14,7 @@ import {
   computeSummary,
   computeSnapshot,
 } from './savegame.mjs'
-import { events$ } from '../runtime/eventBus.js'
+import { attachSimEngineEventBridge } from '../engine/SimEngineEventBridge.mjs'
 
 const PORT = Number(process.env.PORT || 7071)
 const SOCKET_PATH = process.env.SOCKET_IO_PATH || '/ui'
@@ -37,6 +38,15 @@ const sim = new SimEngine(io, { baseMs: BASE_MS })
 let world = null
 let summary = { rooms: 0, zones: 0, plants: 0, harvests: 0 }
 let snapshot = { rooms: [] }
+
+// Central event bus for derived simulation events
+const events$ = new EventEmitter()
+const bridge = attachSimEngineEventBridge({
+  engine: io,
+  events$,
+  getState: () => world,
+  ticksPerDay: Number(process.env.TICKS_PER_DAY || 24),
+})
 
 function recompute() {
   summary = computeSummary(world)
@@ -68,11 +78,11 @@ function bootstrap() {
 bootstrap()
 broadcastWorld()
 
-events$.subscribe((e) => {
-  if (['sim:day','harvest:event','finance:update','sim:tick'].includes(e.type)) {
-    io.emit(e.type, e.payload)
-  }
-})
+const relay = (name) => (payload) => io.emit(name, payload)
+events$
+  .on('sim:day', relay('sim:day'))
+  .on('finance:update', relay('finance:update'))
+  .on('harvest:event', relay('harvest:event'))
 
 io.on('connection', (socket) => {
   socket.emit('sim.state', sim.state())
