@@ -18,6 +18,7 @@ import { uiStream$, emit } from '../runtime/eventBus.js';
 import { telemetryAdapter } from '../sim/telemetryAdapter.js';
 import { ensureRng } from '../lib/rng.mjs';
 import { resolveProjectPath } from '../lib/pathutil.mjs';
+import { computeDailyOperatingCosts } from '../economy/computeDailyCosts.js';
 
 /**
  * @typedef {object} Engine
@@ -48,6 +49,8 @@ export function createEngine(opts = {}) {
   let zones = [];
   /** @type {any} */
   let structure = null;
+  /** @type {CostEngine|null} */
+  let costEngine = null;
 
   // bind telemetry adapter to existing runtime/eventBus
   const bus = {
@@ -64,7 +67,7 @@ export function createEngine(opts = {}) {
     const strainPriceMap = await loadStrainPriceMap();
     const blueprints = await loadAllDevices();
 
-    const costEngine = new CostEngine({ devicePriceMap, strainPriceMap });
+    costEngine = new CostEngine({ devicePriceMap, strainPriceMap });
     const world = { totalBuds_g: 0, strainStats: new Map() };
 
     const runtimeBase = { logger, rng: rngWrapped, costEngine, devicePriceMap, strainPriceMap, blueprints, world };
@@ -126,6 +129,9 @@ export function createEngine(opts = {}) {
 
   /** run one simulation tick over all zones */
   async function step() {
+    const ticksPerDay = zones[0] ? Math.round(24 / zones[0].tickLengthInHours) : 24;
+    costEngine?.startTick(tick + 1);
+
     // Simple sequential updates to keep event loop responsive
     for (const z of zones) {
       try {
@@ -139,8 +145,36 @@ export function createEngine(opts = {}) {
     // Optional additional orchestration (e.g., XState) could be wired here
     try { createTickMachine; } catch {}
 
+    const totals = costEngine?.commitTick?.();
+    if (totals) costEngine.recordTickTotals?.(totals);
+
+    emit('finance:update', { cash: costEngine?.getBalance?.() ?? 0 }, tick);
+
     // Telemetry heartbeat
     try { onTick?.(tick); } catch (err) { logger?.warn?.({ err: String(err) }, 'telemetry emit failed'); }
+
+    const dayFrac = (tick % ticksPerDay) / ticksPerDay;
+    emit('sim:tick', { tick, dayFrac }, tick);
+
+    if ((tick + 1) % ticksPerDay === 0) {
+      const day = Math.floor((tick + 1) / ticksPerDay);
+      const zoneStats = zones.map(z => {
+        z.recomputeMetrics?.();
+        const avgStress = z.getAverageStress?.() ?? 0;
+        const eventsToday = (z.harvestEvents - (z._prevHarvestEvents ?? 0));
+        z._prevHarvestEvents = z.harvestEvents;
+        return {
+          zoneId: z.id,
+          avgStress: Math.round(avgStress),
+          totalBiomass_g: z.metrics?.totalBiomass_g ?? 0,
+          totalBuds_g: z.metrics?.totalBuds_g ?? 0,
+          harvestEventsToday: eventsToday,
+        };
+      });
+      const dailyCosts = computeDailyOperatingCosts({ costEngine, ticksPerDay }) || 0;
+      const finance = { cash: costEngine?.getBalance?.() ?? 0, dailyCosts };
+      emit('sim:day', { day, finance, zoneStats }, tick);
+    }
 
     tick += 1;
   }

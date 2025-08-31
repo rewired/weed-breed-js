@@ -13,6 +13,7 @@ import {
   computeSummary,
   computeSnapshot,
 } from './savegame.mjs'
+import { events$ } from '../runtime/eventBus.js'
 
 const PORT = Number(process.env.PORT || 7071)
 const SOCKET_PATH = process.env.SOCKET_IO_PATH || '/ui'
@@ -66,6 +67,12 @@ function bootstrap() {
 
 bootstrap()
 broadcastWorld()
+
+events$.subscribe((e) => {
+  if (['sim:day','harvest:event','finance:update','sim:tick'].includes(e.type)) {
+    io.emit(e.type, e.payload)
+  }
+})
 
 io.on('connection', (socket) => {
   socket.emit('sim.state', sim.state())

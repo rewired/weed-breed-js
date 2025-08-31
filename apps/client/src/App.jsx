@@ -5,6 +5,7 @@ import Router from '@/routes/Router.jsx';
 import DevConsole from '@/components/DevConsole.jsx';
 import DevBadge from '@/components/DevBadge.jsx';
 import DevErrorBoundary from '@/components/DevErrorBoundary.jsx';
+import FooterMiniFinance from '@/components/FooterMiniFinance.tsx';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
       <AppShell>
         <Router />
       </AppShell>
+      <FooterMiniFinance />
       <DevConsole />
       <DevBadge />
     </DevErrorBoundary>

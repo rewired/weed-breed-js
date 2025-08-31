@@ -207,6 +207,25 @@ export class Zone {
     return this.metrics;
   }
 
+  /**
+   * Average plant stress in this zone as integer [0..100].
+   * @param {object} [ctx]
+   * @returns {number}
+   */
+  getAverageStress(ctx = {}) {
+    let sum = 0;
+    let count = 0;
+    for (const p of this.plants ?? []) {
+      if (p?.isDead) continue;
+      const s = p.getStressScore?.(ctx);
+      if (Number.isFinite(s)) {
+        sum += s;
+        count += 1;
+      }
+    }
+    return count > 0 ? Math.round(sum / count) : 0;
+  }
+
   // --- Public Methods ----------------------------------------------------
 
   /**
@@ -317,7 +336,12 @@ export class Zone {
   }
 
   harvestAndInventory(tickIndex) {
-    this.#harvestAndReplant(tickIndex);
+    try {
+      const ready = (this.plants ?? []).some(p => p?.isHarvestReady?.({ tick: tickIndex, zone: this }));
+      if (ready) this.#harvestAndReplant(tickIndex);
+    } catch {
+      /* ignore */
+    }
     this.#replaceBrokenDevices();
   }
 
@@ -490,7 +514,7 @@ export class Zone {
     const ready = [];
     const keep = [];
     for (const p of this.plants) {
-      if (p.stage === 'harvestReady') ready.push(p);
+      if (p?.isHarvestReady?.({ tick: tickIndex, zone: this })) ready.push(p);
       else if (!p.isDead && p.stage !== 'dead') keep.push(p);
     }
     const ticksPerDay = Math.round(24 / this.tickLengthInHours);
@@ -500,10 +524,12 @@ export class Zone {
     if (ready.length === 0) return;
 
     let revenueEUR = 0;
+    let budsDelta = 0;
     const world = this.runtime.world;
     const day = Math.floor(tickIndex / ticksPerDay) + 1;
     for (const plant of ready) {
       const buds = plant.harvestOnce({ day, tick: tickIndex, zoneId: this.id, runId: process.env.RUN_ID });
+      budsDelta += buds;
       const strainId = plant.strain?.id;
       const priceInfo = get(this.strainPriceMap, strainId) ?? {};
       const pricePerGram = Number(priceInfo.harvestPricePerGram ?? priceInfo.pricePerGram ?? 0);
@@ -535,6 +561,7 @@ export class Zone {
         const dayIdx = Math.floor(tickIndex / ticksPerDay);
         if (this.firstHarvestDay == null) this.firstHarvestDay = dayIdx;
         this.lastHarvestDay = dayIdx;
+        emit('harvest:event', { zoneId: this.id, day: dayIdx, plantsHarvested: harvested, buds_g_delta: budsDelta }, tickIndex);
         if (process.env.DEBUG_HARVEST && this.harvestedPlants > 0) {
           console.assert(this.totalBuds_g >= this.harvestedPlants * 0.1, 'totalBuds_g too low');
         }

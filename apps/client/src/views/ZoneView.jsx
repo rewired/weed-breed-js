@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUiState } from '../store/uiStore.js';
+import { useSimState } from '../store/simStore.ts';
 import {
   fmtCelsius,
   fmtPercent,
@@ -13,6 +14,8 @@ import {
 export default function ZoneView({ zoneId }) {
   const { zones, plants } = useUiState();
   const zone = zones.get(zoneId);
+  const sim = useSimState();
+  const simZone = sim.zones[zoneId] || {};
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
@@ -24,11 +27,19 @@ export default function ZoneView({ zoneId }) {
 
   const plantCount = Array.from(plants.values()).filter((p) => p.zoneId === zoneId).length;
   const points = history.map((v, i) => `${i * 5},${50 - (v || 0)}`).join(' ');
-  const lastHarvest = zone.lastHarvestTs ? new Date(zone.lastHarvestTs).toLocaleString() : 'n/a';
+  const lastHarvest = simZone.lastHarvestDay ? `Day ${simZone.lastHarvestDay}` : 'n/a';
+  const stress = simZone.avgStress ?? 0;
+  let stressColor = 'bg-green-600';
+  if (stress > 75) stressColor = 'bg-red-600';
+  else if (stress > 50) stressColor = 'bg-orange-500';
+  else if (stress > 20) stressColor = 'bg-yellow-500';
 
   return (
     <div>
-      <h2>Zone {zoneId}</h2>
+      <h2>
+        Zone {zoneId}
+        <span className={`ml-2 px-2 py-1 rounded text-white text-xs ${stressColor}`}>{Math.round(stress)}</span>
+      </h2>
       <div>
         Temp: {fmtCelsius(zone.temp_C)} | Humidity: {fmtPercent(zone.humidity_rel)} | CO₂: {fmtPPM(zone.co2_ppm)} | PPFD: {fmtPPFD(zone.ppfd_umol_m2s)}
       </div>
