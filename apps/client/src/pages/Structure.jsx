@@ -7,12 +7,7 @@ export default function StructurePage() {
   const snapshot = useWorldSnapshot()
   const [sim] = useSimState()
 
-  // ensure initial data if user opens page later
-  useEffect(() => {
-    if (!summary || !snapshot) {
-      requestWorld().catch(() => {})
-    }
-  }, [summary, snapshot])
+  useEffect(() => { if (!summary || !snapshot) requestWorld().catch(()=>{}) }, [summary, snapshot])
 
   return (
     <div style={wrap}>
@@ -50,22 +45,14 @@ function TableHeader() {
     <div style={thead}>
       <div style={{ flex: 2 }}>Room</div>
       <div style={{ flex: 2 }}>Zones</div>
-      <div style={{ flex: 1 }}>Plants</div>
-      <div style={{ flex: 1 }}>Phase</div>
+      <div style={{ flex: 2 }}>Strain</div>
+      <div style={{ flex: 1 }}>Method</div>
     </div>
   )
 }
 
 function RoomRow({ room }) {
   const zones = room.zones || []
-  const plantsTotal = zones.reduce((acc, z) => acc + (z.plantsCount || 0), 0)
-  const topPhase = (() => {
-    const counts = zones.reduce((acc, z) => {
-      const k = z.phase || '—'; acc[k] = (acc[k] || 0) + 1; return acc
-    }, {})
-    return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] ?? '—'
-  })()
-
   return (
     <div style={trow}>
       <div style={{ flex: 2, fontWeight: 600 }}>{room.name || room.id}</div>
@@ -73,13 +60,29 @@ function RoomRow({ room }) {
         {zones.length
           ? zones.map((z) => (
               <span key={z.id} style={tag}>
-                {z.name || z.id} · {z.plantsCount}
+                {z.name || z.id}
               </span>
             ))
           : <span style={{ opacity: 0.6 }}>—</span>}
       </div>
-      <div style={{ flex: 1 }}>{plantsTotal}</div>
-      <div style={{ flex: 1 }}>{topPhase}</div>
+      <div style={{ flex: 2 }}>
+        {zones.length
+          ? zones.map((z) => (
+              <span key={z.id} style={tagSoft}>
+                {z.strainLabel ?? z.strainId ?? '—'}
+              </span>
+            ))
+          : <span style={{ opacity: 0.6 }}>—</span>}
+      </div>
+      <div style={{ flex: 1 }}>
+        {zones.length
+          ? zones.map((z) => (
+              <span key={z.id} style={tagSoft}>
+                {z.methodLabel ?? z.methodId ?? '—'}
+              </span>
+            ))
+          : <span style={{ opacity: 0.6 }}>—</span>}
+      </div>
     </div>
   )
 }
@@ -89,7 +92,7 @@ function EmptyRow() {
     <div style={{ ...trow, opacity: 0.7 }}>
       <div style={{ flex: 2 }}>—</div>
       <div style={{ flex: 2 }}>No rooms loaded</div>
-      <div style={{ flex: 1 }}>0</div>
+      <div style={{ flex: 2 }}>—</div>
       <div style={{ flex: 1 }}>—</div>
     </div>
   )
@@ -101,3 +104,4 @@ const card = { background: '#1b1f2a', padding: 12, borderRadius: 8, border: '1px
 const thead = { display: 'flex', gap: 12, padding: '8px 4px', borderBottom: '1px solid #2b3344', opacity: 0.8 }
 const trow = { display: 'flex', gap: 12, padding: '10px 4px', borderBottom: '1px dashed #2b3344' }
 const tag = { display: 'inline-block', background: '#232a39', border: '1px solid #2b3344', padding: '2px 6px', borderRadius: 8, marginRight: 6 }
+const tagSoft = { ...tag, opacity: 0.9 }

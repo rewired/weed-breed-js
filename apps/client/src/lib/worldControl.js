@@ -2,45 +2,20 @@ import { socket } from '@/lib/socket.js'
 import { useEffect, useState } from 'react'
 
 const ACK_TIMEOUT_MS = 2000
+const ack = (ev,p={}) => new Promise((resolve,reject)=>{
+  socket.timeout(ACK_TIMEOUT_MS).emit(ev,p,(err,res)=> err?reject(err):resolve(res))
+})
 
-function emitWithAck(event, payload) {
-  return new Promise((resolve, reject) => {
-    socket.timeout(ACK_TIMEOUT_MS).emit(event, payload, (err, ack) => {
-      if (err) return reject(err)
-      resolve(ack)
-    })
-  })
-}
-
-export async function loadDefaultSavegame(path) {
-  const payload = path ? { path } : {}
-  const res = await emitWithAck('savegame.load', payload)
-  if (!res?.ok) throw new Error(res?.error || 'load failed')
-  return res
-}
-
-export async function requestWorld() {
-  const res = await emitWithAck('world.get', {})
-  if (!res?.ok) throw new Error(res?.error || 'world.get failed')
-  return res // { ok, summary, snapshot }
-}
+export const loadDefaultSavegame = (path) => ack('savegame.load', path?{path}:{})
+export const requestWorld = () => ack('world.get', {})
 
 export function useWorldSummary() {
   const [summary, setSummary] = useState(null)
-  useEffect(() => {
-    const onSummary = (s) => setSummary(s)
-    socket.on('world.summary', onSummary)
-    return () => socket.off('world.summary', onSummary)
-  }, [])
+  useEffect(()=>{ const h=(s)=>setSummary(s); socket.on('world.summary',h); return ()=>socket.off('world.summary',h)},[])
   return summary
 }
-
 export function useWorldSnapshot() {
   const [snap, setSnap] = useState(null)
-  useEffect(() => {
-    const onSnap = (s) => setSnap(s)
-    socket.on('world.snapshot', onSnap)
-    return () => socket.off('world.snapshot', onSnap)
-  }, [])
+  useEffect(()=>{ const h=(s)=>setSnap(s); socket.on('world.snapshot',h); return ()=>socket.off('world.snapshot',h)},[])
   return snap
 }

@@ -13,6 +13,7 @@ export default function Sidebar() {
     ['#/structure', 'Structure'],
     ['#/devices', 'Devices'],
     ['#/plants', 'Plants'],
+    ['#/strains', 'Strains'],
   ];
 
   return (
