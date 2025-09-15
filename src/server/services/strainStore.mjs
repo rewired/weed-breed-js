@@ -45,6 +45,10 @@ export function createDraft(input) {
 }
 
 export async function saveDraft(draft) {
+  // Validate ID format to prevent path injection
+  if (!/^[a-zA-Z0-9-_]+$/.test(draft.id)) {
+    throw new Error('Invalid ID format');
+  }
   const { valid, errors } = validateStrain(draft);
   if (!valid) throw new Error(`Validation failed: ${JSON.stringify(errors)}`);
   const fp = draftPath(draft.id);
@@ -54,6 +58,10 @@ export async function saveDraft(draft) {
 }
 
 export async function updateDraft(id, patch) {
+  // Validate ID format to prevent path injection
+  if (!/^[a-zA-Z0-9-_]+$/.test(id)) {
+    throw new Error('Invalid ID format');
+  }
   const existing = await getDraft(id) || {};
   const merged = {
     ...existing,

@@ -3,10 +3,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+/** Sanitize run ID to prevent path injection */
+function sanitizeRunId(id) {
+  if (!id) return null;
+  // Only allow alphanumeric, underscore, and hyphen
+  const sanitized = String(id).replace(/[^a-zA-Z0-9_-]/g, '');
+  // Limit length to prevent DoS
+  return sanitized.slice(0, 50);
+}
+
 /** Resolve run directories under ./logs/reports/<RUN_ID> */
 export function getRunDirs() {
   const base = path.resolve(process.cwd(), 'logs', 'reports');
-  const runId = process.env.RUN_ID || new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15).replace(/(\d{8})(\d{6}).*/, '$1_$2');
+  const rawRunId = process.env.RUN_ID || new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15).replace(/(\d{8})(\d{6}).*/, '$1_$2');
+  const runId = sanitizeRunId(rawRunId) || 'default';
   const runDir = path.join(base, runId);
   fs.mkdirSync(runDir, { recursive: true });
   return { base, runId, runDir };

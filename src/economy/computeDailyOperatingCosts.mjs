@@ -1,66 +1,35 @@
 /**
- * Compute daily operating costs across zones, devices and global consumables.
- * Works defensively: missing fields simply contribute zero. No exceptions are
- * thrown for incomplete state objects.
- *
+ * Compute daily operating costs from the simulation state
  * @module economy/computeDailyOperatingCosts
  */
 
 /**
- * Compute daily operating costs across the given state.
- *
- * @param {any} state - Engine state snapshot
- * @returns {number} daily operating costs in EUR (rounded to 2 decimals)
+ * Calculate daily operating costs
+ * @param {{ costEngine?: any, ticksPerDay?: number }} state
+ * @returns {number} Daily operating costs
  */
-export function computeDailyOperatingCosts(state = {}) {
-  const finance = state?.finance || state?.costEngine || {};
-  const energyPrice = Number(
-    finance.energyPricePerKWh ?? finance.energyPricePerKwh ?? 0
-  );
-  let total = 0;
-
-  total += Number(finance.fixedDailyCosts) || 0;
-
-  // Traversal helpers ----------------------------------------------------
-  function collectZones(s) {
-    const zones = [];
-    if (!s) return zones;
-    if (Array.isArray(s.zones)) zones.push(...s.zones);
-    if (Array.isArray(s.rooms)) {
-      for (const r of s.rooms) {
-        if (Array.isArray(r?.zones)) zones.push(...r.zones);
-      }
-    }
-    if (Array.isArray(s.buildings)) {
-      for (const b of s.buildings) {
-        if (Array.isArray(b?.rooms)) {
-          for (const r of b.rooms) {
-            if (Array.isArray(r?.zones)) zones.push(...r.zones);
-          }
-        }
-      }
-    }
-    return zones;
+export function computeDailyOperatingCosts(state) {
+  if (!state) return 0;
+  
+  const { costEngine, ticksPerDay = 24 } = state;
+  
+  if (!costEngine) return 0;
+  
+  // Get accumulated costs from cost engine
+  let dailyCosts = 0;
+  
+  if (typeof costEngine.getDailyCosts === 'function') {
+    dailyCosts = costEngine.getDailyCosts();
+  } else if (typeof costEngine.getTotals === 'function') {
+    const totals = costEngine.getTotals();
+    // Estimate daily costs from totals
+    dailyCosts = (totals.totalCosts || 0) / Math.max(1, ticksPerDay);
+  } else if (costEngine.ledger) {
+    // Fallback to ledger if available
+    dailyCosts = (costEngine.ledger.totalCosts || 0) / Math.max(1, ticksPerDay);
   }
-
-  const zones = collectZones(state);
-  for (const z of zones) {
-    const devices = Array.isArray(z?.devices) ? z.devices : [];
-    for (const d of devices) {
-      total += Number(d?.costs?.daily || d?.operatingCostPerDay || 0);
-      total += Number(d?.costs?.maintenancePerDay || 0);
-      const wh = Number(d?.energyWhPerDay || 0);
-      if (wh) {
-        total += (wh / 1000) * energyPrice;
-      }
-    }
-  }
-
-  total += Number(state?.consumables?.waterDailyCost || 0);
-  total += Number(state?.consumables?.nutrientsDailyCost || 0);
-
-  if (!Number.isFinite(total) || total <= 0) total = 5;
-  return Number(total.toFixed(2));
+  
+  return Math.max(0, dailyCosts);
 }
 
-export default { computeDailyOperatingCosts };
+export default computeDailyOperatingCosts;

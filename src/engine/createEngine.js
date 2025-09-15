@@ -45,6 +45,7 @@ export function createEngine(opts = {}) {
   let timer = null;
   let tick = 0;
   let tickMsCurrent = Math.max(10, Number(tickMs || 100));
+  let inFlight = false; // Guard against overlapping steps
   /** @type {Array<any>} */
   let zones = [];
   /** @type {any} */
@@ -103,9 +104,11 @@ export function createEngine(opts = {}) {
           const strain = await loadStrainById(sim.strainId);
           const areaPerPlant = method?.areaPerPlant ?? 0.25;
           const n = Math.max(0, Math.floor((zone.area ?? 0) / areaPerPlant));
+          // Hoist the dynamic import outside the loop for performance
+          const { Plant } = await import('../engine/Plant.js');
           for (let i = 0; i < n; i++) {
             // Plant ctor resolves shape internally using provided method/strain
-            const plant = new (await import('../engine/Plant.js')).Plant({ strain, method, rng: rngWrapped, area_m2: areaPerPlant });
+            const plant = new Plant({ strain, method, rng: rngWrapped, area_m2: areaPerPlant });
             zone.addPlant(plant);
           }
         }
@@ -129,54 +132,76 @@ export function createEngine(opts = {}) {
 
   /** run one simulation tick over all zones */
   async function step() {
-    const ticksPerDay = zones[0] ? Math.round(24 / zones[0].tickLengthInHours) : 24;
-    costEngine?.startTick(tick + 1);
+    // Prevent overlapping steps
+    if (inFlight) {
+      logger?.warn?.({ tick }, 'Skipping tick - previous step still in progress');
+      return;
+    }
+    inFlight = true;
+    
+    try {
+      const ticksPerDay = zones[0] ? Math.round(24 / zones[0].tickLengthInHours) : 24;
+      costEngine?.startTick(tick + 1);
 
-    // Simple sequential updates to keep event loop responsive
-    for (const z of zones) {
-      try {
-        // Keep parity with tickMachine ordering by using Zone.update
-        await z.update({ tick });
-      } catch (err) {
-        logger?.warn?.({ err: String(err), zoneId: z.id, tick }, 'zone update failed');
+      // Simple sequential updates to keep event loop responsive
+      for (const z of zones) {
+        try {
+          // Keep parity with tickMachine ordering by using Zone.update
+          await z.update({ tick });
+        } catch (err) {
+          logger?.warn?.({ err: String(err), zoneId: z.id, tick }, 'zone update failed');
+        }
       }
+
+      // Optional additional orchestration (e.g., XState) could be wired here
+      try { createTickMachine; } catch {}
+
+      const totals = costEngine?.commitTick?.();
+      if (totals) costEngine.recordTickTotals?.(totals);
+
+      emit('finance:update', { cash: costEngine?.getBalance?.() ?? 0 }, tick);
+
+      // Telemetry heartbeat
+      try { onTick?.(tick); } catch (err) { logger?.warn?.({ err: String(err) }, 'telemetry emit failed'); }
+
+      const dayFrac = (tick % ticksPerDay) / ticksPerDay;
+      emit('sim:tick', { tick, dayFrac }, tick);
+
+      if ((tick + 1) % ticksPerDay === 0) {
+        const day = Math.floor((tick + 1) / ticksPerDay);
+        const zoneStats = zones.map(z => {
+          z.recomputeMetrics?.();
+          const avgStress = z.getAverageStress?.() ?? 0;
+          const eventsToday = (z.harvestEvents - (z._prevHarvestEvents ?? 0));
+          z._prevHarvestEvents = z.harvestEvents;
+          return {
+            zoneId: z.id,
+            avgStress: Math.round(avgStress),
+            totalBiomass_g: z.metrics?.totalBiomass_g ?? 0,
+            totalBuds_g: z.metrics?.totalBuds_g ?? 0,
+            harvestEventsToday: eventsToday,
+          };
+        });
+        const dailyCosts = computeDailyOperatingCosts({ costEngine, ticksPerDay }) || 0;
+        const finance = { cash: costEngine?.getBalance?.() ?? 0, dailyCosts };
+        emit('sim:day', { day, finance, zoneStats }, tick);
+      }
+
+      tick += 1;
+    } finally {
+      inFlight = false;
     }
+  }
 
-    // Optional additional orchestration (e.g., XState) could be wired here
-    try { createTickMachine; } catch {}
-
-    const totals = costEngine?.commitTick?.();
-    if (totals) costEngine.recordTickTotals?.(totals);
-
-    emit('finance:update', { cash: costEngine?.getBalance?.() ?? 0 }, tick);
-
-    // Telemetry heartbeat
-    try { onTick?.(tick); } catch (err) { logger?.warn?.({ err: String(err) }, 'telemetry emit failed'); }
-
-    const dayFrac = (tick % ticksPerDay) / ticksPerDay;
-    emit('sim:tick', { tick, dayFrac }, tick);
-
-    if ((tick + 1) % ticksPerDay === 0) {
-      const day = Math.floor((tick + 1) / ticksPerDay);
-      const zoneStats = zones.map(z => {
-        z.recomputeMetrics?.();
-        const avgStress = z.getAverageStress?.() ?? 0;
-        const eventsToday = (z.harvestEvents - (z._prevHarvestEvents ?? 0));
-        z._prevHarvestEvents = z.harvestEvents;
-        return {
-          zoneId: z.id,
-          avgStress: Math.round(avgStress),
-          totalBiomass_g: z.metrics?.totalBiomass_g ?? 0,
-          totalBuds_g: z.metrics?.totalBuds_g ?? 0,
-          harvestEventsToday: eventsToday,
-        };
-      });
-      const dailyCosts = computeDailyOperatingCosts({ costEngine, ticksPerDay }) || 0;
-      const finance = { cash: costEngine?.getBalance?.() ?? 0, dailyCosts };
-      emit('sim:day', { day, finance, zoneStats }, tick);
+  // Helper to run the tick loop safely
+  async function runTickLoop() {
+    if (!timer) return;
+    await step();
+    // Schedule next tick if still running
+    if (timer) {
+      timer = setTimeout(runTickLoop, tickMsCurrent);
+      if (timer.unref) timer.unref();
     }
-
-    tick += 1;
   }
 
   let building = null;
@@ -191,22 +216,24 @@ export function createEngine(opts = {}) {
     async start() {
       if (timer) return; // idempotent
       await ensureBuilt();
-      timer = setInterval(() => { step().catch(() => {}); }, tickMsCurrent);
+      // Use setTimeout with async loop instead of setInterval
+      timer = setTimeout(runTickLoop, 0);
       if (timer.unref) timer.unref();
       logger?.info?.({ msg: 'engine started', tickMs: tickMsCurrent, zones: zones.length });
     },
     stop() {
-      if (timer) { clearInterval(timer); timer = null; logger?.info?.({ msg: 'engine stopped' }); }
+      if (timer) { 
+        clearTimeout(timer); 
+        timer = null; 
+        inFlight = false; // Reset the guard
+        logger?.info?.({ msg: 'engine stopped' }); 
+      }
     },
     isRunning() { return Boolean(timer); },
     setSpeed(ms) {
       const next = Math.max(10, Number(ms));
       tickMsCurrent = next;
-      if (timer) {
-        clearInterval(timer);
-        timer = setInterval(() => { step().catch(() => {}); }, tickMsCurrent);
-        if (timer.unref) timer.unref();
-      }
+      // If running, the next tick will use the new speed
       logger?.info?.({ msg: 'engine speed set', tickMs: tickMsCurrent });
     },
     getTickMs() { return tickMsCurrent; },
@@ -219,4 +246,3 @@ export function createEngine(opts = {}) {
 }
 
 export default createEngine;
-
