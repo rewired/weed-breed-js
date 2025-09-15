@@ -25,7 +25,7 @@ Units are implicit across the data model; field names never contain unit suffixe
     [.](.)
 2. Navigate to the project directory:
     ```sh
-    cd weed-breed-js-zwo
+    cd weed-breed-js
     ```
     // .
     [.](.)
@@ -86,20 +86,20 @@ npm run sim
 
 This will execute the simulation defined in `src/index.js`.
 
-To start the web server and interact with the simulation through the frontend, use:
+To start the web server and frontend during development run two processes:
 
 ```sh
-npm run dev
+npm run dev:server
+npm run dev:client
 ```
 // src/server/index.mjs
 [src/server/index.mjs](src/server/index.mjs)
 
-The client is served through [Vite](https://vitejs.dev/). To run only the
-frontend during development, start the Vite dev server:
+The server listens on [http://localhost:7071](http://localhost:7071) and the client on [http://localhost:5173](http://localhost:5173).
+Socket.IO uses the path `/ui`.
 
-```sh
-npm run dev:client
-```
+Simulation can be controlled via Socket.IO events (`sim.control`, `sim.step`, `sim.speed`) or HTTP endpoints under `/api/sim` (`POST start|pause|step|speed`).
+Set `ALLOW_UNSAFE_CONTROL=false` to disable these endpoints in production.
 
 Opening `apps/client/index.html` directly in the browser will not load the
 modules correctly; always use the dev server or a production build.

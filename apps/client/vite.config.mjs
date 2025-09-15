@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, 'VITE_')
   const serverUrl = env.VITE_SERVER_URL || 'http://localhost:7071'
-  const wsPath = env.VITE_WS_PATH || '/ui'
+  const wsPath = env.VITE_SOCKET_PATH || '/ui'
 
   return {
     root: __dirname,

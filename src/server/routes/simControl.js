@@ -1,55 +1,47 @@
 import express from 'express';
 
 /**
- * Create router for simulation control.
- * @param {{ engine: any, dispatch: Function, logger?: any, meta?: any }} opts
+ * HTTP control endpoints for the simulation.
+ * @param {{ engine: any }} opts
  */
-export function createSimControlRouter({ engine, dispatch, logger, meta }) {
+export function createSimControlRouter({ engine }) {
   const router = express.Router();
   router.use(express.json());
 
-  const token = process.env.SIM_CONTROL_TOKEN;
-  let warned = false;
-  function requireControlToken(req, res, next) {
-    if (token) {
-      if (req.get('X-Sim-Control') === token) return next();
-      return res.status(401).end();
-    }
-    if (!warned) {
-      logger?.warn?.('SIM_CONTROL_TOKEN not set; allowing unauthenticated control (dev mode).');
-      warned = true;
-    }
+  const allow = String(process.env.ALLOW_UNSAFE_CONTROL || 'true').toLowerCase() === 'true';
+  function guard(_req, res, next) {
+    if (!allow) return res.status(403).json({ error: 'control disabled' });
     next();
   }
 
-  const call = (cmd) => dispatch(cmd, { engine, logger, meta });
-
-  router.post('/start', requireControlToken, async (req, res) => {
-    await call({ type: 'sim.start' });
-    res.json({ ok: true });
+  router.post('/start', guard, (_req, res) => {
+    engine.start();
+    res.json({ status: 'running' });
   });
 
-  router.post('/stop', requireControlToken, async (req, res) => {
-    await call({ type: 'sim.stop' });
-    res.json({ ok: true });
+  router.post('/pause', guard, (_req, res) => {
+    engine.pause();
+    res.json({ status: 'paused' });
   });
 
-  router.post('/speed', requireControlToken, async (req, res) => {
-    const tickMs = Number(req.body?.tickMs);
-    if (!Number.isFinite(tickMs) || tickMs < 10) {
-      return res.status(400).json({ error: 'tickMs must be >=10' });
+  router.post('/step', guard, (req, res) => {
+    const n = Number(req.body?.ticks ?? 1);
+    if (engine.running) return res.status(400).json({ error: 'pause first' });
+    for (let i = 0; i < n; i++) engine.step();
+    res.json({ status: 'paused', tick: engine.state().tick });
+  });
+
+  router.post('/speed', guard, (req, res) => {
+    try {
+      const m = Number(req.body?.multiplier);
+      engine.setSpeed(m);
+      res.json({ status: engine.state().running ? 'running' : 'paused', speed: engine.state().speed });
+    } catch (e) {
+      res.status(400).json({ error: e?.message || String(e) });
     }
-    await call({ type: 'sim.setSpeed', payload: { tickMs } });
-    res.json({ ok: true, tickMs });
-  });
-
-  router.get('/status', requireControlToken, async (req, res) => {
-    const status = await call({ type: 'sim.status' });
-    res.json(status);
   });
 
   return router;
 }
 
 export default { createSimControlRouter };
-

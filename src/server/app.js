@@ -1,5 +1,6 @@
 /**
  * Server App factory to start/stop HTTP + WS + Engine programmatically.
+ * @deprecated merged into index.mjs
  */
 import http from 'node:http';
 import express from 'express';

@@ -6,12 +6,12 @@ This document describes all backend endpoints provided by the Weed Breed simulat
 
 ## General
 
-- **Base URL:** `http://<host>:<port>` (default port `3000`)
+- **Base URL:** `http://<host>:<port>` (default port `7071`)
 - **Data format:** JSON encoded as UTF‑8
 - **Authentication:** none
 - **Environment variables:**
   - `PORT` – server port
-  - `SSE_ALLOW_ORIGIN` – CORS origin for Server‑Sent Events (`http://localhost:5173` by default)
+  - `ALLOW_UNSAFE_CONTROL` – disable `/api/sim` and socket control when `false`
 
 ---
 
@@ -69,24 +69,16 @@ This document describes all backend endpoints provided by the Weed Breed simulat
   }
   ```
 
-### 1.2 Modern Control (`/api/sim/*`)
+### 1.2 Control API (`/api/sim/*`)
 
-| Method | Path               | Description                                                        |
-|--------|--------------------|--------------------------------------------------------------------|
-| GET    | `/api/sim/state`   | Return the current simulation state.                              |
-| POST   | `/api/sim/command` | Execute a command (`play`, `pause`, `step`, `reset`, `setSpeed`). |
+| Method | Path                 | Description                               |
+|--------|----------------------|-------------------------------------------|
+| POST   | `/api/sim/start`     | Start the simulation.                     |
+| POST   | `/api/sim/pause`     | Pause the simulation.                     |
+| POST   | `/api/sim/step`      | Advance a number of ticks (`{ticks?:n}`). |
+| POST   | `/api/sim/speed`     | Set speed multiplier (`{multiplier:n}`).  |
 
-#### Example for `POST /api/sim/command`
-
-```json
-{
-  "type": "step",
-  "steps": 5,          // only for type=step
-  "speed": 2           // only for type=setSpeed
-}
-```
-
-**Response:** current state `{ "running": true, "tick": 123, "speed": 1 }` or HTTP 400 for invalid commands.
+All endpoints return `{ status: 'running'|'paused' }` plus the modified values.
 
 ---
 
@@ -199,13 +191,7 @@ Example response (shortened):
 
 ## 4. Streaming & Real‑Time Interfaces
 
-### 4.1 Server‑Sent Events (SSE)
-
-- **Endpoint:** `GET /sse`
-- **Description:** Emits continuous UI events (`event: ui.batch`) as NDJSON stream.
-- **CORS:** Allowed origin controlled by `SSE_ALLOW_ORIGIN`.
-
-### 4.2 WebSocket
+### 4.1 WebSocket
 
 - **Path:** `ws://<host>:<port>/ui`
 - **Description:**

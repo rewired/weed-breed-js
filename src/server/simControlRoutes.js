@@ -1,6 +1,7 @@
 /**
  * Express routes for controlling the simulation state.
  * @module server/simControlRoutes
+ * @deprecated merged into routes/simControl.js
  */
 import express from 'express';
 import cors from 'cors';

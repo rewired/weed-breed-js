@@ -160,8 +160,8 @@ High-level operational views for **Structure → Rooms → Zones → Plants**.
 
 ## Implementation Files
 
-- [frontend/main.js](../../frontend/main.js)
-- [frontend/editor/strainEditor.js](../../frontend/editor/strainEditor.js)
+- [apps/client/src/main.js](../../apps/client/src/main.js)
+- [apps/client/src/editor/strainEditor.js](../../apps/client/src/editor/strainEditor.js)
 
 ## Roadmap
 

@@ -7,6 +7,7 @@ import cors from 'cors'
 import { Server as IOServer } from 'socket.io'
 import { EventEmitter } from 'node:events'
 import { SimEngine } from './simEngine.mjs'
+import { createSimControlRouter } from './routes/simControl.js'
 import {
   resolveExistingDefaultSavePath,
   ensureSampleSave,
@@ -23,7 +24,9 @@ const SAVE_PATH = process.env.SAVEGAME_PATH || resolveExistingDefaultSavePath()
 
 const app = express()
 app.use(cors({ origin: ['http://localhost:5173'], credentials: true }))
+app.use(express.json())
 app.get('/healthz', (_req, res) => res.json({ ok: true }))
+app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
 const httpServer = http.createServer(app)
 const io = new IOServer(httpServer, {
@@ -34,6 +37,7 @@ const io = new IOServer(httpServer, {
 })
 
 const sim = new SimEngine(io, { baseMs: BASE_MS })
+app.use('/api/sim', createSimControlRouter({ engine: sim }))
 
 let world = null
 let summary = { rooms: 0, zones: 0, plants: 0, harvests: 0 }
@@ -41,8 +45,8 @@ let snapshot = { rooms: [] }
 
 // Central event bus for derived simulation events
 const events$ = new EventEmitter()
-const bridge = attachSimEngineEventBridge({
-  engine: io,
+attachSimEngineEventBridge({
+  engine: sim,
   events$,
   getState: () => world,
   ticksPerDay: Number(process.env.TICKS_PER_DAY || 24),
@@ -84,25 +88,48 @@ events$
   .on('finance:update', relay('finance:update'))
   .on('harvest:event', relay('harvest:event'))
 
+const forwardEvents = [
+  'sim.tickCompleted',
+  'plant.stageChanged',
+  'plant.harvested',
+  'zone.thresholdCrossed',
+  'device.degraded',
+  'market.saleCompleted',
+  'tick.summary',
+]
+for (const evt of forwardEvents) {
+  sim.events.on(evt, (p) => {
+    events$.emit(evt, p)
+    io.emit(evt, p)
+  })
+}
+
 io.on('connection', (socket) => {
   socket.emit('sim.state', sim.state())
   socket.emit('world.summary', summary)
   socket.emit('world.snapshot', snapshot)
   console.log('[io] connected', socket.id)
 
+  const allowControl = String(process.env.ALLOW_UNSAFE_CONTROL || 'true').toLowerCase() === 'true'
+
   socket.on('sim.control', (p={}, ack)=>{ try{
+    if(!allowControl) return ack?.({ok:false,error:'control disabled'})
     const a = String(p.action||'').toLowerCase()
     if (a==='start'){ sim.start(); io.emit('sim.state', sim.state()); return ack?.({ok:true})}
     if (a==='pause'){ sim.pause(); io.emit('sim.state', sim.state()); return ack?.({ok:true})}
     return ack?.({ok:false,error:'unknown action'})
   }catch(e){ return ack?.({ok:false,error:e?.message||String(e)})}})
 
-  socket.on('sim.step', (_p, ack)=>{ try{
+  socket.on('sim.step', (p={}, ack)=>{ try{
+    if(!allowControl) return ack?.({ok:false,error:'control disabled'})
+    const steps = Number(p.ticks||1)
     if (sim.running) return ack?.({ok:false,error:'pause first'})
-    sim.step(); io.emit('sim.state', sim.state()); return ack?.({ok:true})
+    for(let i=0;i<steps;i++) sim.step()
+    io.emit('sim.state', sim.state()); return ack?.({ok:true})
   }catch(e){ return ack?.({ok:false,error:e?.message||String(e)})}})
 
   socket.on('sim.speed', (p={}, ack)=>{ try{
+    if(!allowControl) return ack?.({ok:false,error:'control disabled'})
     sim.setSpeed(Number(p.multiplier)); io.emit('sim.state', sim.state()); return ack?.({ok:true})
   }catch(e){ return ack?.({ok:false,error:e?.message||String(e)})}})
 
