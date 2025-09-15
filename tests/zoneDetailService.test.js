@@ -48,7 +48,8 @@ test('createZoneDetailDTO aggregates targets, stress and plants', () => {
     expect(dto.environment.co2.target).toBe(900);
     expect(dto.stress.breakdown.temperature.count).toBe(1);
     expect(dto.stress.breakdown.humidity.count).toBe(1);
-    expect(dto.plants[0].id).toBe('aaaaaaaa');
+    expect(dto.plants[0].shortId).toBe('aaaaaaaa');
+    expect(dto.plants[0].id).toBe('aaaaaaaaaaaaaaaa');
     expect(dto.plants[0].strain).toBe('Alpha');
     expect(dto.plants[0].ageHours).toBe(48);
 });

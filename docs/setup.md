@@ -2,8 +2,8 @@
 
 ## Voraussetzungen
 
-- Node.js v22.18.0
-- npm v11.4.2
+- Node.js v23+
+- npm
 - keine weiteren globalen Tools notwendig
 
 ## Installation
@@ -17,9 +17,10 @@ npm install
 ## Starten
 
 - Simulation: `npm run sim`
-- Server mit Hot Reload: `npm run dev`
+- Server: `npm run dev:server`
+- Client: `npm run dev:client`
 
 ## Standard-Umgebungsvariablen
 
-- `PORT` – Port des Servers, Standardwert `3000`
-- `SSE_ALLOW_ORIGIN` – erlaubter Origin für Server-Sent Events, Standardwert `http://localhost:5173`
+- `PORT` – Port des Servers, Standardwert `7071`
+- `ALLOW_UNSAFE_CONTROL` – ob Steuerendpunkte erlaubt sind (default `true`)

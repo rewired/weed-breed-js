@@ -13,6 +13,7 @@ import { createRng } from '../lib/rng.js';
 // BEGIN: REPLANTING v1 (do not remove)
 import crypto from 'node:crypto';
 // END: REPLANTING v1
+import { normalizeStrain } from '../shared/normalizeStrain.js';
 
 /**
  * Simulation model for a single plant.
@@ -43,7 +44,7 @@ export class Plant {
     this.stage = stage;
     this.ageHours = Number(ageHours || 0);
     this.rng = rng;
-    this.strain = strain;
+    this.strain = strain ? normalizeStrain(strain) : null;
     this.method = method;
     this.payload = payload;
 
@@ -251,8 +252,8 @@ export class Plant {
     if (lightsOn) this.lightHours += tickH;
 
     const photoperiodic = this.strain?.photoperiodic ?? true;
-    const vegDays = this.strain?.vegDays ?? this.strain?.photoperiod?.vegetationDays ?? 21;
-    const flowerDays = this.strain?.flowerDays ?? this.strain?.photoperiod?.floweringDays ?? 56;
+    const vegDays = this.strain?._norm?.vegetationDays ?? 21;
+    const flowerDays = this.strain?._norm?.floweringDays ?? 56;
     const autoDays = this.strain?.autoFlowerDays;
     const thresholds = this.strain?.stageChangeThresholds ?? {};
 
@@ -474,10 +475,10 @@ export class Plant {
     if (stage === 'harvested' || stage === 'dead') return false;
     const maturity = Number(this.maturity ?? this.state?.maturity ?? this.payload?.maturity ?? 0);
     if (stage.startsWith('flower') && maturity >= 1) return true;
-    const vegDays = this.strain?.vegDays ?? this.strain?.photoperiod?.vegetationDays;
-    const flowerDays = this.strain?.flowerDays ?? this.strain?.photoperiod?.floweringDays;
+    const vegDays = this.strain?._norm?.vegetationDays;
+    const flowerDays = this.strain?._norm?.floweringDays;
     if (Number.isFinite(this.ageHours) && (vegDays != null || flowerDays != null)) {
-      const total = (Number(vegDays ?? 0) + Number(flowerDays ?? 0));
+      const total = Number(vegDays ?? 0) + Number(flowerDays ?? 0);
       if (total > 0) {
         const ageDays = this.ageHours / 24;
         if (ageDays >= total) return true;

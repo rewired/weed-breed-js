@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSimState } from '@/store/simStore.ts';
+import { useSimState } from '@/store/simStore';
 
 /**
  * Fixed footer showing current cash and daily operating costs.

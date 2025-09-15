@@ -7,7 +7,7 @@ import http from "node:http";
 import { WebSocketServer } from "ws";
 
 // ⚠️ Pfad ggf. anpassen:
-import { uiStream$ } from "./eventBus.js"; // muss ein Observable von Arrays sein
+import { uiStream$ } from "../runtime/eventBus.js"; // muss ein Observable von Arrays sein
 
 /**
  * Start the UI bridge server.

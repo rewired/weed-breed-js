@@ -2,7 +2,7 @@ import { io } from 'socket.io-client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 // ENV
-const WS_PATH = import.meta.env.VITE_WS_PATH || '/ui'
+const WS_PATH = import.meta.env.VITE_SOCKET_PATH || '/ui'
 const VIA_PROXY = (import.meta.env.VITE_WS_VIA_PROXY || 'true').toLowerCase() === 'true'
 const SERVER_URL = VIA_PROXY ? '' : (import.meta.env.VITE_SERVER_URL || 'http://localhost:7071')
 

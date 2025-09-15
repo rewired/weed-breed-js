@@ -84,7 +84,8 @@ export function createZoneDetailDTO(zone) {
     };
 
     const plants = zone.plants.map(p => ({
-        id: p.id.slice(0, 8),
+        id: p.id,
+        shortId: p.id.slice(0, 8),
         strain: p.strain?.name ?? 'N/A',
         stage: p.stage,
         ageHours: p.ageHours,

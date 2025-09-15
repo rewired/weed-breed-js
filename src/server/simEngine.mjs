@@ -1,5 +1,7 @@
 // Simple controllable simulation loop with Socket.IO v4
 // ESM module
+import { EventEmitter } from 'node:events'
+
 export class SimEngine {
   /**
    * @param {import('socket.io').Server} io
@@ -12,6 +14,7 @@ export class SimEngine {
     this.speed = 1.0
     this.tick = 0
     this._timer = null
+    this.events = new EventEmitter()
 
     this._performTick = this._performTick.bind(this)
   }
@@ -27,6 +30,7 @@ export class SimEngine {
     try {
       const payload = { tick: this.tick, at: Date.now() }
       this.io.emit('sim.tickCompleted', payload)
+      this.events.emit('sim.tickCompleted', payload)
       this.tick += 1
     } catch (err) {
       // Log and continue

@@ -5,6 +5,8 @@
  * @typedef {import('../../engine/CostEngine.js').CostEngine} CostEngine
  */
 
+import { normalizeStrain } from '../../shared/normalizeStrain.js';
+
 /**
  * Generates a Data Transfer Object for the Zone Overview UI.
  * @param {Zone} zone - The zone instance.
@@ -33,8 +35,23 @@ export function createZoneOverviewDTO(zone, costEngine) {
         pct: Math.round((count / zone.plants.length) * 100)
     }));
 
-      const harvestEtaDays = zone.plants.length > 0 ? Math.round(zone.plants.reduce((sum, p) => sum + ((p.strain.vegDays ?? p.strain.photoperiod.vegetationDays) + (p.strain.flowerDays ?? p.strain.photoperiod.floweringDays) - p.ageHours / 24), 0) / zone.plants.length) : 0;
     const yieldForecastGrams = zone.plants.reduce((sum, p) => sum + p.calculateYield(), 0);
+
+    let harvestEtaDays = null;
+    if (zone.plants.length > 0) {
+        let acc = 0;
+        let count = 0;
+        for (const p of zone.plants) {
+            p.strain = p.strain ? normalizeStrain(p.strain) : p.strain;
+            const veg = p.strain?._norm?.vegetationDays;
+            const flo = p.strain?._norm?.floweringDays;
+            if (veg != null && flo != null) {
+                acc += veg + flo - p.ageHours / 24;
+                count += 1;
+            }
+        }
+        if (count > 0) harvestEtaDays = Math.round(acc / count);
+    }
 
     // --- Plant Stress Aggregation ---
     const stressTotals = {
@@ -79,47 +96,49 @@ export function createZoneOverviewDTO(zone, costEngine) {
             occupancyPct,
             dominantStage,
             stageMix,
-            coveragePct: 0, // TODO
+            coveragePct: null,
+            areaM2: zone.area,
+            devicesCount: zone.devices.length,
         },
         predictions: {
             harvestEtaDays,
             yieldForecastGrams,
         },
         environment: {
-            temperature: { set: 24, actual: zone.status.temperatureC, delta: 0, stability: 0 }, // TODO
-            humidity: { set: 0.60, actual: zone.status.humidity, delta: 0, stability: 0 }, // TODO
-            co2: { set: co2Target, actual: zone.status.co2ppm, delta: 0, stability: 0 }, // TODO
-            ppfd: { set: 700, actual: zone.status.ppfd, delta: 0, stability: 0 }, // TODO
+            temperature: { set: 24, actual: zone.status.temperatureC, delta: null, stability: null },
+            humidity: { set: 0.60, actual: zone.status.humidity, delta: null, stability: null },
+            co2: { set: co2Target, actual: zone.status.co2ppm, delta: null, stability: null },
+            ppfd: { set: 700, actual: zone.status.ppfd, delta: null, stability: null },
         },
         plantStress,
         controllers: {
-            hvac: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
-            dehumidifier: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
-            co2Injector: { status: co2Status, dutyCyclePct24h: 0, targetRange: co2Range, mode: co2Mode },
-            lights: { status: 'N/A', dutyCyclePct24h: 0 }, // TODO
+            hvac: null,
+            dehumidifier: null,
+            co2Injector: { status: co2Status, dutyCyclePct24h: null, targetRange: co2Range, mode: co2Mode },
+            lights: null,
         },
         resourcesDaily: {
-            energyKWh: 0, // TODO
-            waterL: 0, // TODO
-            co2g: 0, // TODO
-            topConsumers: [], // TODO
+            energyKWh: null,
+            waterL: null,
+            co2g: null,
+            topConsumers: [],
         },
         opexDailyEUR: {
-            total: 0, // TODO
+            total: null,
             breakdown: {
-                energy: 0,
-                water: 0,
-                maintenance: 0,
-                rentShare: 0,
-                labor: 0,
+                energy: null,
+                water: null,
+                maintenance: null,
+                rentShare: null,
+                labor: null,
             },
         },
         devices: {
             active: zone.devices.filter(d => d.status === 'ok').length,
             total: zone.devices.length,
             avgHealth: zone.devices.length > 0 ? Math.round(zone.devices.reduce((sum, d) => sum + d.health, 0) / zone.devices.length * 100) : 100,
-            maintenanceDueInTicks: 0, // TODO
-            warnings24h: 0, // TODO
+            maintenanceDueInTicks: null,
+            warnings24h: null,
         },
         plantPackages: Object.values(zone.plants.reduce((acc, p) => {
             const key = `${p.strain.name}-${p.stage}`;
