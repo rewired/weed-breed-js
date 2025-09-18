@@ -1,0 +1,59 @@
+{
+  "id": "2c574211-0e96-44f1-82ee-327056ac5fcb",
+  "kind": "Pest",
+  "name": "Broad Mites / Russet Mites",
+  "category": "sap-sucking",
+  "targets": [
+    "meristems",
+    "flowers",
+    "leaves"
+  ],
+  "environmentalRisk": {
+    "temperatureRange": [
+      20,
+      28
+    ],
+    "humidityRange": [
+      0.4,
+      0.8
+    ]
+  },
+  "populationDynamics": {
+    "dailyReproductionRate": 0.33,
+    "dailyMortalityRate": 0.07,
+    "carryingCapacity": 1.0
+  },
+  "damageModel": {
+    "photosynthesisReductionPerDay": 0.2,
+    "rootUptakeReductionPerDay": 0.0,
+    "budLossFractionPerDay": 0.0,
+    "diseaseVectorRisk": 0.2,
+    "honeydew": false
+  },
+  "detection": {
+    "symptoms": [
+      "Twisted, hardened new growth",
+      "Bronzed, rough leaf surfaces",
+      "Flower deformities"
+    ],
+    "monitoring": [
+      "High-magnification scope (≥60x) on meristems",
+      "Sentinel plants in hotspots"
+    ]
+  },
+  "controlOptions": {
+    "biological": [
+      "Predatory mites (Amblyseius swirskii, A. andersoni)"
+    ],
+    "cultural": [
+      "Quarantine and destroy heavily infested stock",
+      "Strict sanitation"
+    ],
+    "mechanical": [
+      "Remove infested tips"
+    ],
+    "chemical": [
+      "Targeted miticides where compliant; rotate modes"
+    ]
+  }
+}

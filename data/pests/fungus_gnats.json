@@ -1,0 +1,61 @@
+{
+  "id": "33fc7bb4-9ca1-42e8-8d70-8267f8b6abe3",
+  "kind": "Pest",
+  "name": "Fungus Gnats",
+  "category": "soil-dwelling",
+  "targets": [
+    "roots",
+    "substrate"
+  ],
+  "environmentalRisk": {
+    "temperatureRange": [
+      18,
+      26
+    ],
+    "humidityRange": [
+      0.5,
+      0.9
+    ],
+    "overwateringRisk": 0.9
+  },
+  "populationDynamics": {
+    "dailyReproductionRate": 0.27,
+    "dailyMortalityRate": 0.08,
+    "carryingCapacity": 1.0
+  },
+  "damageModel": {
+    "photosynthesisReductionPerDay": 0.05,
+    "rootUptakeReductionPerDay": 0.15,
+    "budLossFractionPerDay": 0.0,
+    "diseaseVectorRisk": 0.5,
+    "honeydew": false
+  },
+  "detection": {
+    "symptoms": [
+      "Adults on soil surface and near pots",
+      "Larvae feed on roots causing stunting",
+      "Algae growth on wet media"
+    ],
+    "monitoring": [
+      "Yellow sticky cards at substrate level",
+      "Potato slice test for larvae"
+    ]
+  },
+  "controlOptions": {
+    "biological": [
+      "Steinernema feltiae (nematodes)",
+      "Bacillus thuringiensis israelensis (Bti)"
+    ],
+    "cultural": [
+      "Dry-down cycles",
+      "Improve drainage",
+      "Avoid algae"
+    ],
+    "mechanical": [
+      "Top-dress with sand/perlite layer"
+    ],
+    "chemical": [
+      "H2O2 drenches (careful), compliant larvicides where allowed"
+    ]
+  }
+}

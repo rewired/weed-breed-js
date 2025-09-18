@@ -1,0 +1,62 @@
+{
+  "id": "7a887ad2-34ed-4284-9c86-b573aadffdb9",
+  "kind": "Pest",
+  "name": "Spider Mites",
+  "category": "sap-sucking",
+  "targets": [
+    "leaves",
+    "stems"
+  ],
+  "environmentalRisk": {
+    "temperatureRange": [
+      24,
+      32
+    ],
+    "humidityRange": [
+      0.3,
+      0.6
+    ],
+    "lowAirflowRisk": 0.6,
+    "dustyCanopyRisk": 0.5
+  },
+  "populationDynamics": {
+    "dailyReproductionRate": 0.35,
+    "dailyMortalityRate": 0.05,
+    "carryingCapacity": 1.0
+  },
+  "damageModel": {
+    "photosynthesisReductionPerDay": 0.18,
+    "rootUptakeReductionPerDay": 0.0,
+    "budLossFractionPerDay": 0.0,
+    "diseaseVectorRisk": 0.2,
+    "honeydew": false
+  },
+  "detection": {
+    "symptoms": [
+      "Fine yellow stippling on upper leaf surfaces",
+      "Webbing under leaves at high density",
+      "Leaves bronzing and drying out"
+    ],
+    "monitoring": [
+      "Use hand lens (≥40x) under leaves",
+      "Sticky traps for presence trends"
+    ]
+  },
+  "controlOptions": {
+    "biological": [
+      "Predatory mites (Phytoseiulus persimilis, Amblyseius californicus)"
+    ],
+    "cultural": [
+      "Increase humidity short-term",
+      "Improve airflow",
+      "Quarantine new plants"
+    ],
+    "mechanical": [
+      "Rinse undersides, remove heavily infested leaves"
+    ],
+    "chemical": [
+      "Horticultural oils",
+      "Soaps (rotate actives to avoid resistance)"
+    ]
+  }
+}
