@@ -1,0 +1,118 @@
+{
+  "kind": "DiseaseBalancing",
+  "version": "1.0.0",
+  "notes": "Phase- and environment-level multipliers for disease progression and recovery; values are normalized (0..1) or unitless multipliers.",
+  "global": {
+    "baseDailyInfectionMultiplier": 1.0,
+    "baseRecoveryMultiplier": 1.0,
+    "maxConcurrentDiseases": 2,
+    "symptomDelayDays": {
+      "min": 1,
+      "max": 5
+    },
+    "eventWeights": {
+      "emitOnThresholdCross": 1.0,
+      "emitOnFatality": 1.0
+    }
+  },
+  "phaseMultipliers": {
+    "seedling": {
+      "infection": 1.2,
+      "degeneration": 1.1,
+      "recovery": 0.85
+    },
+    "vegetation": {
+      "infection": 1.0,
+      "degeneration": 1.0,
+      "recovery": 1.0
+    },
+    "earlyFlower": {
+      "infection": 1.1,
+      "degeneration": 1.2,
+      "recovery": 0.95
+    },
+    "lateFlower": {
+      "infection": 1.3,
+      "degeneration": 1.4,
+      "recovery": 0.8
+    },
+    "ripening": {
+      "infection": 1.1,
+      "degeneration": 1.5,
+      "recovery": 0.75
+    }
+  },
+  "environmentModifiers": {
+    "relativeHumidity": {
+      "sensitivity": 1.0,
+      "optimalRange": [
+        0.5,
+        0.65
+      ],
+      "aboveOptimalInfectionMultPer+0.05": 1.1,
+      "belowOptimalInfectionMultPer-0.05": 1.05
+    },
+    "temperature": {
+      "sensitivity": 0.8,
+      "optimalRange": [
+        22,
+        26
+      ],
+      "distanceToOptimalMultPer+2C": 1.05
+    },
+    "leafWetness": {
+      "sensitivity": 1.2,
+      "wetnessBonusInfectionMultiplier": 1.25
+    },
+    "airflow": {
+      "lowAirflowRiskMultiplier": 1.15,
+      "goodAirflowRecoveryMultiplier": 1.1
+    }
+  },
+  "strainResistanceWeights": {
+    "generalResilienceWeight": 0.7,
+    "specificResistanceWeight": 0.3
+  },
+  "treatmentEfficacy": {
+    "cultural": {
+      "infectionMultiplier": 0.9,
+      "degenerationMultiplier": 0.95,
+      "recoveryMultiplier": 1.05
+    },
+    "biological": {
+      "infectionMultiplier": 0.85,
+      "degenerationMultiplier": 0.9,
+      "recoveryMultiplier": 1.1
+    },
+    "mechanical": {
+      "infectionMultiplier": 0.8,
+      "degenerationMultiplier": 0.85,
+      "recoveryMultiplier": 1.05
+    },
+    "chemical": {
+      "infectionMultiplier": 0.7,
+      "degenerationMultiplier": 0.8,
+      "recoveryMultiplier": 1.15
+    }
+  },
+  "caps": {
+    "minDailyDegeneration": 0.0,
+    "maxDailyDegeneration": 0.2,
+    "minDailyRecovery": 0.0,
+    "maxDailyRecovery": 0.2
+  },
+  "integrationHints": {
+    "applyOrder": [
+      "phaseMultipliers",
+      "environmentModifiers",
+      "strainResistanceWeights",
+      "treatmentEfficacy",
+      "caps"
+    ],
+    "mapToDiseaseModel": {
+      "dailyInfectionIncrement": "× global.baseDailyInfectionMultiplier × phaseMultipliers.*.infection × environmentModifiers.* × (1 - resistance)",
+      "degenerationRate": "× phaseMultipliers.*.degeneration × treatmentEfficacy.*.degenerationMultiplier → clamp caps",
+      "recoveryRate": "× phaseMultipliers.*.recovery × treatmentEfficacy.*.recoveryMultiplier → clamp caps"
+    }
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "kind": "PestBalancing",
+  "version": "1.0.0",
+  "notes": "Population growth, damage and control multipliers for pests; normalized values and unitless multipliers.",
+  "global": {
+    "baseDailyReproductionMultiplier": 1.0,
+    "baseDailyMortalityMultiplier": 1.0,
+    "baseDamageMultiplier": 1.0,
+    "maxConcurrentPests": 3,
+    "economicThresholds": {
+      "photosynthesisReductionAlert": 0.08,
+      "rootUptakeReductionAlert": 0.12,
+      "budLossAlert": 0.02
+    },
+    "eventWeights": {
+      "emitOnOutbreak": 1.0,
+      "emitOnControlSuccess": 1.0
+    }
+  },
+  "phaseMultipliers": {
+    "seedling": {
+      "reproduction": 1.1,
+      "damage": 1.15,
+      "mortality": 0.95
+    },
+    "vegetation": {
+      "reproduction": 1.0,
+      "damage": 1.0,
+      "mortality": 1.0
+    },
+    "earlyFlower": {
+      "reproduction": 1.05,
+      "damage": 1.15,
+      "mortality": 0.95
+    },
+    "lateFlower": {
+      "reproduction": 1.1,
+      "damage": 1.3,
+      "mortality": 0.9
+    },
+    "ripening": {
+      "reproduction": 0.95,
+      "damage": 1.4,
+      "mortality": 0.95
+    }
+  },
+  "environmentModifiers": {
+    "relativeHumidity": {
+      "hotDryBoostForMitesAtRH<0.45": 1.2,
+      "wetMediaBoostForGnatsAtRH>0.70": 1.25
+    },
+    "temperature": {
+      "warmBoostForMitesAtT>26": 1.15,
+      "coolSlowdownForWhitefliesAtT<20": 0.85
+    },
+    "substrate": {
+      "overwateringBoost": 1.3,
+      "goodDrainageMortalityBoost": 1.1
+    },
+    "airflow": {
+      "lowAirflowReproductionBoost": 1.1
+    }
+  },
+  "naturalEnemies": {
+    "backgroundPredationPerDay": 0.03,
+    "enhancedPredationWithBiocontrol": 0.12
+  },
+  "controlEfficacy": {
+    "biological": {
+      "reproductionMultiplier": 0.8,
+      "mortalityMultiplier": 1.2,
+      "damageMultiplier": 0.9
+    },
+    "cultural": {
+      "reproductionMultiplier": 0.9,
+      "mortalityMultiplier": 1.05,
+      "damageMultiplier": 0.95
+    },
+    "mechanical": {
+      "reproductionMultiplier": 0.85,
+      "mortalityMultiplier": 1.1,
+      "damageMultiplier": 0.9
+    },
+    "chemical": {
+      "reproductionMultiplier": 0.7,
+      "mortalityMultiplier": 1.3,
+      "damageMultiplier": 0.8
+    }
+  },
+  "diseaseInteraction": {
+    "vectorRiskToInfectionMultiplier": 1.15,
+    "honeydewToMoldRiskMultiplier": 1.2
+  },
+  "caps": {
+    "minDailyReproduction": 0.0,
+    "maxDailyReproduction": 0.6,
+    "minDailyMortality": 0.0,
+    "maxDailyMortality": 0.6,
+    "minDailyDamage": 0.0,
+    "maxDailyDamage": 0.4
+  },
+  "integrationHints": {
+    "applyOrder": [
+      "phaseMultipliers",
+      "environmentModifiers",
+      "naturalEnemies",
+      "controlEfficacy",
+      "caps"
+    ],
+    "mapToPestModel": {
+      "populationGrowth": "populationDynamics.dailyReproductionRate × global.baseDailyReproductionMultiplier × phaseMultipliers.*.reproduction × envMods → − mortality",
+      "mortality": "populationDynamics.dailyMortalityRate × global.baseDailyMortalityMultiplier × phaseMultipliers.*.mortality × (1 + naturalEnemies.backgroundPredationPerDay)",
+      "damage": "damageModel.* × global.baseDamageMultiplier × phaseMultipliers.*.damage × controlEfficacy.*.damageMultiplier → clamp caps"
+    }
+  }
+}
