@@ -1,0 +1,44 @@
+{
+  "id": "259acd2f-d4af-49dd-8f0e-450c3045aea1",
+  "kind": "Disease",
+  "name": "Hop Latent Viroid (HpLVd)",
+  "pathogenType": "viroid",
+  "targets": [
+    "systemic"
+  ],
+  "environmentalRisk": {
+    "temperatureRange": [
+      18,
+      28
+    ]
+  },
+  "transmission": [
+    "clones",
+    "sap",
+    "tools"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.03,
+    "infectionThreshold": 0.15,
+    "degenerationRate": 0.03,
+    "recoveryRate": 0.002,
+    "regenerationRate": 0.002,
+    "fatalityThreshold": 0.85
+  },
+  "detection": {
+    "symptoms": [
+      "General growth suppression ('dudding')",
+      "Small, deformed leaves; reduced resin production"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Use tested clones only",
+      "Strict tool hygiene"
+    ],
+    "mechanical": [
+      "Screen and remove infected mother plants"
+    ]
+  }
+}

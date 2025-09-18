@@ -1,0 +1,55 @@
+{
+  "id": "55741064-9052-407f-8fbe-9eb3690ff851",
+  "kind": "Disease",
+  "name": "Root Rot (Pythium/Fusarium/Rhizoctonia)",
+  "pathogenType": "fungus-complex",
+  "targets": [
+    "roots",
+    "crown"
+  ],
+  "environmentalRisk": {
+    "idealHumidityRange": [
+      0.4,
+      0.7
+    ],
+    "temperatureRange": [
+      18,
+      26
+    ],
+    "substrateWaterloggingRisk": 0.9,
+    "poorDrainageRisk": 0.85
+  },
+  "transmission": [
+    "contaminatedWater",
+    "substrate",
+    "tools"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.07,
+    "infectionThreshold": 0.22,
+    "degenerationRate": 0.04,
+    "recoveryRate": 0.012,
+    "regenerationRate": 0.009,
+    "fatalityThreshold": 0.98
+  },
+  "detection": {
+    "symptoms": [
+      "Plants wilting despite wet soil",
+      "Brown, slimy roots with foul smell"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Avoid overwatering",
+      "Improve drainage",
+      "Extend irrigation intervals"
+    ],
+    "biological": [
+      "Trichoderma spp."
+    ],
+    "mechanical": [
+      "Remove heavily affected plants"
+    ]
+  }
+}

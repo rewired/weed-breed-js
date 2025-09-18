@@ -1,0 +1,45 @@
+{
+  "id": "da9b207b-3aeb-4784-875e-bbee1e27ced9",
+  "kind": "Disease",
+  "name": "Mosaic Virus (TMV/CMV-like)",
+  "pathogenType": "virus",
+  "targets": [
+    "leaves",
+    "systemic"
+  ],
+  "environmentalRisk": {
+    "temperatureRange": [
+      18,
+      28
+    ]
+  },
+  "transmission": [
+    "sap",
+    "tools",
+    "pests"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.04,
+    "infectionThreshold": 0.18,
+    "degenerationRate": 0.028,
+    "recoveryRate": 0.003,
+    "regenerationRate": 0.003,
+    "fatalityThreshold": 0.9
+  },
+  "detection": {
+    "symptoms": [
+      "Mottled light and dark green leaf patterns (mosaic)",
+      "Leaf deformation, stunted growth"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Use pathogen-free plant material",
+      "Disinfect tools"
+    ],
+    "mechanical": [
+      "Remove infected plants"
+    ]
+  }
+}

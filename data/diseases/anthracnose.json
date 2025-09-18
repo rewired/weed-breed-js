@@ -1,0 +1,49 @@
+{
+  "id": "83c4447f-8439-44cb-84ab-bbed8725e190",
+  "kind": "Disease",
+  "name": "Anthracnose",
+  "pathogenType": "fungus",
+  "targets": [
+    "leaves",
+    "stems"
+  ],
+  "environmentalRisk": {
+    "idealHumidityRange": [
+      0.6,
+      0.9
+    ],
+    "temperatureRange": [
+      18,
+      28
+    ],
+    "leafWetnessRequired": true
+  },
+  "transmission": [
+    "splashingWater",
+    "tools"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.05,
+    "infectionThreshold": 0.25,
+    "degenerationRate": 0.025,
+    "recoveryRate": 0.015,
+    "regenerationRate": 0.012,
+    "fatalityThreshold": 0.93
+  },
+  "detection": {
+    "symptoms": [
+      "Dark, sunken lesions on leaves and stems",
+      "Possible spore rings"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Avoid overhead irrigation",
+      "Disinfect tools"
+    ],
+    "mechanical": [
+      "Remove infected shoots"
+    ]
+  }
+}

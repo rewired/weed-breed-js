@@ -1,0 +1,49 @@
+{
+  "id": "645b6253-4692-4396-ab6a-f3b02c9783bf",
+  "kind": "Disease",
+  "name": "Downy Mildew",
+  "pathogenType": "fungus",
+  "targets": [
+    "leaves"
+  ],
+  "environmentalRisk": {
+    "idealHumidityRange": [
+      0.7,
+      0.95
+    ],
+    "temperatureRange": [
+      15,
+      24
+    ],
+    "leafWetnessRequired": true,
+    "lowAirflowRisk": 0.7
+  },
+  "transmission": [
+    "airborneSpores",
+    "splashingWater"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.055,
+    "infectionThreshold": 0.2,
+    "degenerationRate": 0.022,
+    "recoveryRate": 0.012,
+    "regenerationRate": 0.01,
+    "fatalityThreshold": 0.92
+  },
+  "detection": {
+    "symptoms": [
+      "Yellowish angular leaf spots",
+      "Gray-white fungal growth on leaf undersides"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Avoid night condensation",
+      "Irrigate during day"
+    ],
+    "mechanical": [
+      "Remove infected leaves"
+    ]
+  }
+}

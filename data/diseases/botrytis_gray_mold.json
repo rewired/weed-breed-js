@@ -1,0 +1,55 @@
+{
+  "id": "eaca3c76-875c-4ebe-9ea5-c91dc9651f73",
+  "kind": "Disease",
+  "name": "Botrytis (Gray Mold / Bud Rot)",
+  "pathogenType": "fungus",
+  "targets": [
+    "buds",
+    "flowers",
+    "leaves"
+  ],
+  "environmentalRisk": {
+    "idealHumidityRange": [
+      0.6,
+      0.9
+    ],
+    "temperatureRange": [
+      15,
+      22
+    ],
+    "leafWetnessRequired": true,
+    "lowAirflowRisk": 0.8,
+    "denseCanopyRisk": 0.85
+  },
+  "transmission": [
+    "airborneSpores",
+    "wounds"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.08,
+    "infectionThreshold": 0.15,
+    "degenerationRate": 0.05,
+    "recoveryRate": 0.01,
+    "regenerationRate": 0.008,
+    "fatalityThreshold": 0.9
+  },
+  "yieldImpact": {
+    "budLossFractionPerDay": 0.05
+  },
+  "detection": {
+    "symptoms": [
+      "Brown-gray, mushy spots inside buds",
+      "Cottony mold growth with musty smell"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Maintain rH < 0.55 in late flowering",
+      "Increase air circulation"
+    ],
+    "mechanical": [
+      "Remove affected buds"
+    ]
+  }
+}

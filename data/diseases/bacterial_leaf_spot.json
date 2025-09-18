@@ -1,0 +1,49 @@
+{
+  "id": "c1823c46-47df-4106-a039-88e60a6aa5ed",
+  "kind": "Disease",
+  "name": "Bacterial Leaf Spot",
+  "pathogenType": "bacteria",
+  "targets": [
+    "leaves"
+  ],
+  "environmentalRisk": {
+    "idealHumidityRange": [
+      0.6,
+      0.95
+    ],
+    "temperatureRange": [
+      18,
+      28
+    ],
+    "leafWetnessRequired": true
+  },
+  "transmission": [
+    "splashingWater",
+    "tools",
+    "workers"
+  ],
+  "contagious": true,
+  "model": {
+    "dailyInfectionIncrement": 0.06,
+    "infectionThreshold": 0.22,
+    "degenerationRate": 0.03,
+    "recoveryRate": 0.014,
+    "regenerationRate": 0.01,
+    "fatalityThreshold": 0.9
+  },
+  "detection": {
+    "symptoms": [
+      "Water-soaked, later brown spots with yellow halo",
+      "Oily sheen, marginal necrosis"
+    ]
+  },
+  "treatments": {
+    "cultural": [
+      "Keep foliage dry",
+      "Disinfect tools"
+    ],
+    "mechanical": [
+      "Remove heavily infected leaves"
+    ]
+  }
+}
