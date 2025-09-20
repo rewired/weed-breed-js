@@ -1,7 +1,7 @@
 {
   "kind": "TreatmentOptions",
-  "version": "1.0.0",
-  "notes": "Unified treatment catalogue for diseases and pests. All efficacy values are multipliers applied on top of blueprint/balancing values. Values <1 reduce infection/reproduction/damage; values >1 increase recovery/mortality. Costs are per application unless stated otherwise.",
+  "version": "1.1.0",
+  "notes": "Unified treatment catalogue for diseases and pests. All efficacy values are multipliers applied on top of blueprint/balancing values. Values <1 reduce infection/reproduction/damage; values >1 increase recovery/mortality. Costs: materialsCost uses a costBasis to scale to the actual application size.",
   "global": {
     "stackingRules": {
       "maxConcurrentTreatmentsPerZone": 3,
@@ -18,6 +18,14 @@
         "broadSpectrumInsecticide",
         "sulfurHighDose"
       ]
+    },
+    "costModel": {
+      "costBasis": {
+        "perZone": "materialsCost applies once per application for the entire zone (scaleFactor=1).",
+        "perPlant": "materialsCost is multiplied by the number of plants in the treated zone.",
+        "perSquareMeter": "materialsCost is multiplied by the zone area in square meters."
+      },
+      "totalCostFormula": "totalCost = (materialsCost × scaleFactor) + laborMinutes×wageRate + optionalEnergy + optionalEquipment"
     }
   },
   "options": [
@@ -50,10 +58,11 @@
       },
       "costs": {
         "laborMinutes": 45,
-        "materialsEUR": 0.0
+        "materialsCost": 0.0
       },
       "cooldownDays": 0,
-      "notes": "Pruning lower leaves, repositioning fans, cleaning filters."
+      "notes": "Pruning lower leaves, repositioning fans, cleaning filters.",
+      "costBasis": "perZone"
     },
     {
       "id": "97187f66-817f-4e8a-b0cb-db237b663743",
@@ -76,11 +85,12 @@
       },
       "costs": {
         "laborMinutes": 10,
-        "materialsEUR": 2.0,
-        "energyPerHourKWh": 1.2
+        "energyPerHourKWh": 1.2,
+        "materialsCost": 2.0
       },
       "cooldownDays": 0,
-      "notes": "Adjust setpoints to prevent condensation; pairs well with defoliation."
+      "notes": "Adjust setpoints to prevent condensation; pairs well with defoliation.",
+      "costBasis": "perZone"
     },
     {
       "id": "0828046f-3986-456b-9abe-3f35f5a1f9c4",
@@ -108,10 +118,11 @@
       },
       "costs": {
         "laborMinutes": 15,
-        "materialsEUR": 0.0
+        "materialsCost": 0.0
       },
       "cooldownDays": 2,
-      "notes": "Especially effective against fungus gnats and root pathogens."
+      "notes": "Especially effective against fungus gnats and root pathogens.",
+      "costBasis": "perZone"
     },
     {
       "id": "fa328792-9539-4254-bd5d-cbe8233b6289",
@@ -134,13 +145,14 @@
       },
       "costs": {
         "laborMinutes": 20,
-        "materialsEUR": 35.0
+        "materialsCost": 35.0
       },
       "cooldownDays": 7,
       "risks": {
         "beneficialsHarm": false
       },
-      "notes": "Best for spider/broad mites; maintain moderate RH."
+      "notes": "Best for spider/broad mites; maintain moderate RH.",
+      "costBasis": "perPlant"
     },
     {
       "id": "a0e34f90-c9de-4a95-a88d-9a1a615dd747",
@@ -162,10 +174,11 @@
       },
       "costs": {
         "laborMinutes": 30,
-        "materialsEUR": 18.0
+        "materialsCost": 18.0
       },
       "cooldownDays": 7,
-      "notes": "Preventive + early curative against powdery mildew."
+      "notes": "Preventive + early curative against powdery mildew.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "80edee83-4577-4063-877c-68f8d6ab35bc",
@@ -193,10 +206,11 @@
       },
       "costs": {
         "laborMinutes": 20,
-        "materialsEUR": 22.0
+        "materialsCost": 22.0
       },
       "cooldownDays": 10,
-      "notes": "Suppresses root pathogens; slight benefit vs root aphids."
+      "notes": "Suppresses root pathogens; slight benefit vs root aphids.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "26eba5ec-66e0-41e9-98b5-cce64ebbc079",
@@ -219,10 +233,11 @@
       },
       "costs": {
         "laborMinutes": 20,
-        "materialsEUR": 15.0
+        "materialsCost": 15.0
       },
       "cooldownDays": 7,
-      "notes": "Highly effective on fungus gnat larvae; drench media."
+      "notes": "Highly effective on fungus gnat larvae; drench media.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "8241536e-1b0e-4f7b-8857-63bca0179c3e",
@@ -245,10 +260,11 @@
       },
       "costs": {
         "laborMinutes": 25,
-        "materialsEUR": 1.5
+        "materialsCost": 1.5
       },
       "cooldownDays": 0,
-      "notes": "Bag and discard; disinfect tools between cuts."
+      "notes": "Bag and discard; disinfect tools between cuts.",
+      "costBasis": "perZone"
     },
     {
       "id": "40d709c5-5cc6-4bbf-92d0-7e172057170c",
@@ -273,10 +289,11 @@
       },
       "costs": {
         "laborMinutes": 10,
-        "materialsEUR": 8.0
+        "materialsCost": 8.0
       },
       "cooldownDays": 0,
-      "notes": "Monitoring plus partial mass trapping of flying adults."
+      "notes": "Monitoring plus partial mass trapping of flying adults.",
+      "costBasis": "perZone"
     },
     {
       "id": "327a4266-caba-4129-8538-0f7f2c12fbd0",
@@ -297,10 +314,11 @@
       },
       "costs": {
         "laborMinutes": 30,
-        "materialsEUR": 0.5
+        "materialsCost": 0.5
       },
       "cooldownDays": 3,
-      "notes": "Effective on aphids/mites early; avoid oversaturation of media."
+      "notes": "Effective on aphids/mites early; avoid oversaturation of media.",
+      "costBasis": "perZone"
     },
     {
       "id": "91d9ee39-32e5-4d83-9702-1365d171a5ea",
@@ -327,13 +345,14 @@
       },
       "costs": {
         "laborMinutes": 35,
-        "materialsEUR": 12.0
+        "materialsCost": 12.0
       },
       "cooldownDays": 7,
       "risks": {
         "phytotoxicity": "medium",
         "notes": "Avoid on open flowers; can harm beneficials."
-      }
+      },
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "ba30fafa-3751-4c56-9315-c289c8780dd0",
@@ -355,10 +374,11 @@
       },
       "costs": {
         "laborMinutes": 25,
-        "materialsEUR": 6.0
+        "materialsCost": 6.0
       },
       "cooldownDays": 5,
-      "notes": "Good knockdown for powdery mildew; pH shock on leaf surface."
+      "notes": "Good knockdown for powdery mildew; pH shock on leaf surface.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "131fe37b-967b-4ff3-a9fd-d15cab018dc0",
@@ -383,14 +403,15 @@
       },
       "costs": {
         "laborMinutes": 30,
-        "materialsEUR": 10.0
+        "materialsCost": 10.0
       },
       "cooldownDays": 10,
       "risks": {
         "phytotoxicity": "medium",
         "beneficialsHarm": "medium"
       },
-      "notes": "Do not combine with oils within 10–14 days."
+      "notes": "Do not combine with oils within 10–14 days.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "b5792994-eb74-4d89-8c50-246308b138a2",
@@ -412,13 +433,14 @@
       },
       "costs": {
         "laborMinutes": 25,
-        "materialsEUR": 18.0
+        "materialsCost": 18.0
       },
       "cooldownDays": 10,
       "risks": {
         "beneficialsHarm": "high"
       },
-      "notes": "Rotate modes of action to prevent resistance."
+      "notes": "Rotate modes of action to prevent resistance.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "dfac9a95-ea56-4606-9417-e5e1382892ed",
@@ -441,10 +463,11 @@
       },
       "costs": {
         "laborMinutes": 20,
-        "materialsEUR": 14.0
+        "materialsCost": 14.0
       },
       "cooldownDays": 7,
-      "notes": "Selective for caterpillars; minimal impact on beneficials."
+      "notes": "Selective for caterpillars; minimal impact on beneficials.",
+      "costBasis": "perSquareMeter"
     },
     {
       "id": "5dc92d86-7f0f-4e7f-8577-69b50f71ee78",
@@ -469,14 +492,15 @@
       },
       "costs": {
         "laborMinutes": 20,
-        "materialsEUR": 0.0,
-        "equipmentRentalEUR": 25.0
+        "equipmentRentalEUR": 25.0,
+        "materialsCost": 0.0
       },
       "cooldownDays": 14,
       "risks": {
         "phytotoxicity": "high"
       },
-      "notes": "Short exposure; high risk for tender tissue. Safety protocols required."
+      "notes": "Short exposure; high risk for tender tissue. Safety protocols required.",
+      "costBasis": "perZone"
     }
   ]
 }
